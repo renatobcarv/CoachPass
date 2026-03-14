@@ -3,84 +3,105 @@ import { useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
-  Dumbbell,
-  Apple,
+  Briefcase,
   Mail,
   Lock,
   ChevronRight,
   Sparkles,
   Zap,
+  Apple,
+  Dumbbell,
   X,
   CheckCircle,
 } from 'lucide-react';
-import { useAuth, UserRole } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 
-const roles = [
+// Define os papéis permitidos no login (Aluno ou Profissional)
+type LoginRole = 'student' | 'professional';
+
+// Configuração visual e de conteúdo para cada tipo de usuário
+const roles: { id: LoginRole; label: string; icon: any; color: string; gradient: string; description: string }[] = [
   {
-    id: 'student' as UserRole,
+    id: 'student',
     label: 'Aluno',
     icon: User,
-    color: '#10b981',
+    color: '#10b981', // Verde esmeralda sutil para alunos
     gradient: 'linear-gradient(135deg, #10b981, #059669)',
     description: 'Acompanhe seus treinos e dieta',
   },
   {
-    id: 'personal' as UserRole,
-    label: 'Personal',
-    icon: Dumbbell,
-    color: '#3b82f6',
-    gradient: 'linear-gradient(135deg, #3b82f6, #1d4ed8)',
-    description: 'Gerencie seus alunos e treinos',
-  },
-  {
-    id: 'nutritionist' as UserRole,
-    label: 'Nutricionista',
-    icon: Apple,
-    color: '#f59e0b',
-    gradient: 'linear-gradient(135deg, #f59e0b, #d97706)',
-    description: 'Crie planos alimentares',
+    id: 'professional',
+    label: 'Profissional',
+    icon: Briefcase,
+    color: '#0f172a', // Azul escuro/ardósia premium para profissionais
+    gradient: 'linear-gradient(135deg, #1e293b, #0f172a)',
+    description: 'Gerencie seus alunos e pacientes',
   },
 ];
 
 export function Login() {
-  const [selectedRole, setSelectedRole] = useState<UserRole>('student');
+  // --- Estados do Componente ---
+  // Guardam as informações digitadas e a aba selecionada
+  const [selectedRole, setSelectedRole] = useState<LoginRole>('student');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Estados para o modal de "Esqueci a senha"
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  
+  // Utiliza a função 'login' do nosso contexto de autenticação
   const { login } = useAuth();
+  
+  // Permite navegar para outras páginas (ex: Dashboard)
   const navigate = useNavigate();
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!email || !password) return;
+  // Encontra os dados visuais (cor, ícone) baseados na aba logada
+  const selectedRoleData = roles.find((r) => r.id === selectedRole)!;
 
-    setLoading(true);
+  // --- Funções de Ação ---
+
+  // Função disparada ao clicar em "Entrar"
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault(); // Evita recarregar a página
+    if (!email || !password) return; // Se vazio, não faz nada
+
+    setLoading(true); // Ativa o estado de carregamento (mostra o spinner)
+    
     try {
-      const actualRole = await login(email, password, selectedRole);
-      // Redireciona baseado no perfil real do usuário
+      // Dica visual de role para ajudar o AuthContext a rotear inicialmente
+      const roleHint = selectedRole === 'student' ? 'student' : 'personal';
+      
+      // Tenta fazer o login no banco de dados
+      const actualRole = await login(email, password, roleHint);
+
+      // Depois do login validado, decide para onde levar o usuário
       if (actualRole === 'student') {
-        navigate('/');
-      } else if (actualRole === 'personal') {
-        navigate('/personal');
+        navigate('/'); // Alunos vão direto para seu dashboard principal
       } else {
-        navigate('/nutritionist');
+        // Profissionais (Personal ou Nutricionista) vão para a seleção de painel
+        navigate('/selecionar-painel');
       }
     } catch (error) {
       console.error('Erro no login:', error);
+      // O toast (notificação) de erro já é tratado no AuthContext, então não repetimos aqui
     } finally {
-      setLoading(false);
+      setLoading(false); // Desativa o spinner independente de sucesso ou erro
     }
   };
 
+  // Função disparada ao pedir redefinição de senha
   const handleForgotPassword = (e: React.FormEvent) => {
     e.preventDefault();
     if (!forgotEmail) return;
-    setForgotSent(true);
+    
+    setForgotSent(true); // Mostra a tela de sucesso
     toast.success(`Link de recuperação enviado para ${forgotEmail}`);
+    
+    // Fecha o modal automaticamente após 3 segundos
     setTimeout(() => {
       setShowForgotPassword(false);
       setForgotSent(false);
@@ -88,17 +109,16 @@ export function Login() {
     }, 3000);
   };
 
-  const selectedRoleData = roles.find((r) => r.id === selectedRole)!;
-
+  // --- Renderização Visual (Interface do Usuário) ---
   return (
     <div className="min-h-screen flex items-center justify-center p-4 dark:bg-zinc-950 bg-slate-50">
-      {/* Background decoration */}
+      {/* Decoração de Fundo (brilhos sutis nos cantos) */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 -left-20 w-72 h-72 rounded-full blur-3xl opacity-20" style={{ background: selectedRoleData.gradient }} />
-        <div className="absolute bottom-20 -right-20 w-96 h-96 rounded-full blur-3xl opacity-20" style={{ background: selectedRoleData.gradient }} />
+        <div className="absolute top-20 -left-20 w-72 h-72 rounded-full blur-[100px] opacity-10" style={{ background: selectedRoleData.gradient }} />
+        <div className="absolute bottom-20 -right-20 w-96 h-96 rounded-full blur-[100px] opacity-10" style={{ background: selectedRoleData.gradient }} />
       </div>
 
-      {/* Forgot Password Modal */}
+      {/* Modal de Recuperação de Senha */}
       <AnimatePresence>
         {showForgotPassword && (
           <motion.div
@@ -113,18 +133,16 @@ export function Login() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md dark:bg-zinc-900 bg-white rounded-3xl p-8 border dark:border-zinc-800 border-slate-200 shadow-2xl"
+              className="w-full max-w-md dark:bg-zinc-900 bg-white rounded-2xl p-8 border dark:border-zinc-800 border-slate-200 shadow-xl"
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>Recuperar senha</h3>
-                  <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">
-                    Enviaremos um link para seu e-mail
-                  </p>
+                  <h3 className="dark:text-white text-slate-900 text-lg font-medium">Recuperar senha</h3>
+                  <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">Enviaremos um link para seu e-mail</p>
                 </div>
                 <button
                   onClick={() => setShowForgotPassword(false)}
-                  className="w-8 h-8 rounded-xl dark:bg-zinc-800 bg-slate-100 flex items-center justify-center dark:text-zinc-400 text-slate-500 hover:text-red-400 transition-colors"
+                  className="w-8 h-8 rounded-lg dark:bg-zinc-800 bg-slate-100 flex items-center justify-center dark:text-zinc-400 text-slate-500 hover:text-red-400 transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -133,7 +151,7 @@ export function Login() {
               {!forgotSent ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div>
-                    <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
+                    <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2 font-medium">
                       E-mail cadastrado
                     </label>
                     <div className="relative">
@@ -144,7 +162,7 @@ export function Login() {
                         onChange={(e) => setForgotEmail(e.target.value)}
                         placeholder="seu@email.com"
                         autoFocus
-                        className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 transition-all"
+                        className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-1 focus:ring-emerald-500 transition-all font-light"
                         required
                       />
                     </div>
@@ -152,8 +170,8 @@ export function Login() {
                   <button
                     type="submit"
                     disabled={!forgotEmail}
-                    className="w-full py-3 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                    style={{ background: selectedRoleData.gradient, fontWeight: 600 }}
+                    className="w-full py-3 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 font-medium"
+                    style={{ background: selectedRoleData.gradient }}
                   >
                     Enviar link de recuperação
                   </button>
@@ -163,8 +181,8 @@ export function Login() {
                   <div className="w-16 h-16 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
                     <CheckCircle className="w-8 h-8 text-emerald-500" />
                   </div>
-                  <p className="dark:text-white text-slate-900 mb-1" style={{ fontWeight: 600 }}>Link enviado!</p>
-                  <p className="text-sm dark:text-zinc-400 text-slate-500">Verifique sua caixa de entrada em {forgotEmail}</p>
+                  <p className="dark:text-white text-slate-900 mb-1 font-medium">Link enviado!</p>
+                  <p className="text-sm dark:text-zinc-400 text-slate-500 font-light">Verifique sua caixa de entrada em {forgotEmail}</p>
                 </div>
               )}
             </motion.div>
@@ -173,169 +191,168 @@ export function Login() {
       </AnimatePresence>
 
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
+        initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
+        transition={{ duration: 0.4 }}
         className="w-full max-w-5xl relative"
       >
-        <div className="grid md:grid-cols-2 gap-8 items-center">
-          {/* Left Side - Branding */}
+        <div className="grid md:grid-cols-2 gap-10 items-center">
+          {/* Lado Esquerdo - Apresentação da Plataforma */}
           <div className="text-center md:text-left space-y-6">
-            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-2xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: selectedRoleData.gradient }}>
-                <Sparkles className="w-5 h-5 text-white" />
+            <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200">
+              <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: selectedRoleData.gradient }}>
+                <Sparkles className="w-4 h-4 text-white" />
               </div>
               <div className="text-left">
-                <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 700 }}>FitSync</p>
-                <p className="text-xs dark:text-zinc-500 text-slate-400">Fitness & Nutrition AI</p>
+                <p className="text-sm dark:text-white text-slate-900 font-bold tracking-wide">FITSYNC</p>
+                <p className="text-xs dark:text-zinc-500 text-slate-400">Inteligência Estratégica</p>
               </div>
             </div>
 
             <div>
-              <h1 className="dark:text-white text-slate-900 mb-3" style={{ fontSize: '2.5rem', fontWeight: 800, lineHeight: 1.2 }}>
-                Bem-vindo de volta! 👋
+              <h1 className="dark:text-white text-slate-900 mb-3 tracking-tight" style={{ fontSize: '2.5rem', fontWeight: 700, lineHeight: 1.1 }}>
+                BEM VINDOS
               </h1>
-              <p className="text-lg dark:text-zinc-400 text-slate-600">
-                Entre na plataforma mais completa de treino e nutrição com IA
+              <p className="text-base dark:text-zinc-400 text-slate-600 font-light max-w-sm">
+                Acesse o ambiente de alta performance. Gerenciamento profissional contínuo.
               </p>
             </div>
 
-            <div className="space-y-3">
+            <div className="space-y-4 pt-4">
               {[
-                { icon: Zap, text: 'Treinos personalizados com IA' },
-                { icon: Apple, text: 'Planos alimentares inteligentes' },
-                { icon: Dumbbell, text: 'Acompanhamento em tempo real' },
+                { icon: Zap, text: 'Personalização avançada via inteligência artifical' },
+                { icon: Apple, text: 'Painel nutricional integrado e estruturado' },
+                { icon: Dumbbell, text: 'Análises de métricas e performance' },
               ].map(({ icon: Icon, text }) => (
-                <div key={text} className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: `${selectedRoleData.color}20` }}>
-                    <Icon className="w-4 h-4" style={{ color: selectedRoleData.color }} />
+                <div key={text} className="flex items-center gap-4">
+                  <div className="w-8 h-8 rounded border dark:border-zinc-800 border-slate-200 flex items-center justify-center dark:bg-zinc-900 bg-white">
+                    <Icon className="w-4 h-4 dark:text-zinc-400 text-slate-500" />
                   </div>
-                  <p className="text-sm dark:text-zinc-300 text-slate-600">{text}</p>
+                  <p className="text-sm dark:text-zinc-300 text-slate-600 font-light">{text}</p>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Right Side - Login Form */}
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-8 border dark:border-zinc-800 border-slate-200 shadow-2xl">
-            <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>Entrar na conta</h2>
-            <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">Selecione seu perfil e faça login</p>
-
-            {/* Role Selector */}
-            <div className="grid grid-cols-3 gap-2 mb-6 p-1 dark:bg-zinc-800/50 bg-slate-100 rounded-2xl">
+          {/* Lado Direito - Formulário de Login */}
+          <div className="dark:bg-[#0a0a0a] bg-white rounded-2xl p-8 border dark:border-zinc-800/50 border-slate-200 shadow-lg">
+            
+            {/* Seletor de Perfil (Abas) */}
+            <div className="flex border-b dark:border-zinc-800 border-slate-200 mb-8">
               {roles.map((role) => {
-                const Icon = role.icon;
+                const isSelected = selectedRole === role.id;
                 return (
                   <button
                     key={role.id}
                     onClick={() => setSelectedRole(role.id)}
-                    className={`relative p-3 rounded-xl transition-all duration-300 ${
-                      selectedRole === role.id
-                        ? 'text-white shadow-lg scale-105'
-                        : 'dark:text-zinc-500 text-slate-500 hover:dark:text-zinc-300 hover:text-slate-700'
+                    className={`flex-1 pb-3 text-sm font-medium transition-all relative ${
+                      isSelected 
+                        ? 'dark:text-white text-slate-900' 
+                        : 'dark:text-zinc-500 text-slate-400 hover:dark:text-zinc-300 hover:text-slate-600'
                     }`}
-                    style={selectedRole === role.id ? { background: role.gradient } : {}}
                   >
-                    <Icon className="w-5 h-5 mx-auto mb-1" />
-                    <p className="text-xs" style={{ fontWeight: selectedRole === role.id ? 600 : 400 }}>
-                      {role.label}
-                    </p>
+                    {role.label}
+                    {isSelected && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute bottom-0 left-0 right-0 h-0.5"
+                        style={{ background: role.color }}
+                      />
+                    )}
                   </button>
                 );
               })}
             </div>
 
-            <motion.p
-              key={selectedRole}
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-xs dark:text-zinc-500 text-slate-400 text-center mb-6"
-            >
+            {/* Descrição sutil da aba */}
+            <p className="text-xs dark:text-zinc-500 text-slate-400 mb-6 font-light">
               {selectedRoleData.description}
-            </motion.p>
+            </p>
 
-            {/* Login Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            {/* Formulário Principal */}
+            <form onSubmit={handleSubmit} className="space-y-5">
+              
+              {/* Campo: E-mail */}
               <div>
-                <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                  E-mail
+                <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                  Credencial de Acesso
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+                  <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                   <input
                     type="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="seu@email.com"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all"
+                    placeholder="E-mail"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-zinc-500 transition-all font-light text-sm"
                     required
                   />
                 </div>
               </div>
 
+              {/* Campo: Senha */}
               <div>
-                <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                  Senha
+                <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                  Código de Segurança
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+                  <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                   <input
                     type="password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 transition-all"
+                    placeholder="Senha"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-zinc-500 transition-all font-light text-sm"
                     required
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-sm">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    className="w-4 h-4 rounded border-zinc-700 text-emerald-500 focus:ring-emerald-500"
-                  />
-                  <span className="dark:text-zinc-400 text-slate-600">Lembrar de mim</span>
+              {/* Links Auxiliares */}
+              <div className="flex items-center justify-between mt-2">
+                <label className="flex items-center gap-2 cursor-pointer group">
+                  <input type="checkbox" className="w-4 h-4 rounded border-zinc-700 bg-transparent text-slate-800 focus:ring-0 cursor-pointer" />
+                  <span className="text-xs dark:text-zinc-500 text-slate-500 group-hover:dark:text-zinc-300 group-hover:text-slate-700 font-light transition-colors">Manter acesso</span>
                 </label>
                 <button
                   type="button"
                   onClick={() => { setShowForgotPassword(true); setForgotEmail(email); }}
-                  className="dark:text-zinc-400 text-slate-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-colors hover:underline"
+                  className="text-xs dark:text-zinc-500 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors font-light"
                 >
-                  Esqueceu a senha?
+                  Recuperar credencial
                 </button>
               </div>
 
+              {/* Botão de Ação */}
               <button
                 type="submit"
                 disabled={loading || !email || !password}
-                className="w-full py-3 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 shadow-lg"
-                style={{ background: selectedRoleData.gradient, fontWeight: 600 }}
+                className="w-full py-3.5 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 mt-4 text-sm font-medium"
+                style={{ background: selectedRoleData.gradient }}
               >
                 {loading ? (
                   <>
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Entrando...
+                    Autenticando...
                   </>
                 ) : (
                   <>
-                    Entrar
+                    Acessar Plataforma
                     <ChevronRight className="w-4 h-4" />
                   </>
                 )}
               </button>
             </form>
 
-            <div className="mt-6 pt-6 border-t dark:border-zinc-800 border-slate-200 text-center">
-              <p className="text-sm dark:text-zinc-500 text-slate-500">
-                Não tem uma conta?{' '}
+            {/* Rodapé: Novo Cadastro */}
+            <div className="mt-8 pt-6 border-t dark:border-zinc-800/80 border-slate-200 text-center">
+              <p className="text-xs dark:text-zinc-500 text-slate-500 font-light">
+                Ainda não possui credencial?{' '}
                 <button
                   onClick={() => navigate('/cadastro')}
-                  className="dark:text-zinc-300 text-slate-700 hover:underline"
-                  style={{ fontWeight: 600 }}
+                  className="dark:text-white text-slate-900 font-medium hover:underline"
                 >
-                  Cadastre-se grátis
+                  Criar acesso
                 </button>
               </p>
             </div>

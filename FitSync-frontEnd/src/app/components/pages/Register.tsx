@@ -6,711 +6,364 @@ import {
   Briefcase,
   Mail,
   Lock,
-  Phone,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
-  Award,
   Heart,
-  TrendingUp,
-  Users,
-  Zap,
-  Shield,
-  CreditCard,
   Check,
-  Dumbbell,
+  Shield,
+  AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { toast } from 'sonner';
 
+// Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
-type ProfessionalType = 'personal' | 'nutritionist' | null;
 
+// Os dados que precisamos para criar a conta na Auth. 
+// O restante dos dados (WhatsApp, CREF/CRN) será coletado no Onboarding.
 interface RegisterData {
   userType: UserType;
-  professionalType: ProfessionalType;
   name: string;
   email: string;
   password: string;
-  whatsapp: string;
-  professionalId: string; // CREF ou CRN
-  plan?: 'monthly' | 'semester' | 'annual';
 }
-
-const plans = [
-  {
-    id: 'monthly',
-    name: 'Mensal',
-    price: 70,
-    priceLabel: 'R$ 70',
-    period: '/mês',
-    savings: null,
-    features: ['Acesso completo', 'Alunos ilimitados', 'Suporte por email'],
-  },
-  {
-    id: 'semester',
-    name: 'Semestral',
-    price: 360,
-    priceLabel: 'R$ 360',
-    monthlyEquivalent: 'R$ 60/mês',
-    period: 'a cada 6 meses',
-    savings: 'Economize R$ 60',
-    popular: true,
-    features: ['Tudo do Mensal', '2 meses grátis', 'Suporte prioritário'],
-  },
-  {
-    id: 'annual',
-    name: 'Anual',
-    price: 600,
-    priceLabel: 'R$ 600',
-    monthlyEquivalent: 'R$ 50/mês',
-    period: 'por ano',
-    savings: 'Economize R$ 240',
-    bestValue: true,
-    features: ['Tudo do Semestral', '4 meses grátis', 'Suporte VIP', 'Acesso antecipado'],
-  },
-];
 
 export function Register() {
   const navigate = useNavigate();
+  // Pega a função 'register' de dentro do nosso contexto de autenticação
   const { register: registerUser } = useAuth();
+  
+  // Controle de qual etapa do cadastro o usuário está (1 ou 2)
   const [step, setStep] = useState(1);
+  
+  // Guardamos as respostas do formulário aqui
   const [formData, setFormData] = useState<RegisterData>({
     userType: null,
-    professionalType: null,
     name: '',
     email: '',
     password: '',
-    whatsapp: '',
-    professionalId: '',
   });
+  
+  // Status de carregamento e mensagens de erro nos campos
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [backendError, setBackendError] = useState<string | null>(null);
 
-  // Máscaras
-  const formatWhatsApp = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 11) {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    }
-    return value;
-  };
+  // --- Funções Auxiliares ---
 
-  const formatProfessionalId = (value: string) => {
-    return value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-  };
-
+  // Ajuda a atualizar apenas um campo específico do estado formData
   const handleInputChange = (field: keyof RegisterData, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+    // Limpa os erros logo que o usuário começa a digitar novamente
     setErrors((prev) => ({ ...prev, [field]: '' }));
+    setBackendError(null);
   };
 
+  // Validação explícita dos dados inseridos no Passo 2
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
-    
+
     if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
     if (!formData.email.trim()) newErrors.email = 'E-mail é obrigatório';
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      newErrors.email = 'E-mail inválido';
+      newErrors.email = 'E-mail em formato inválido';
     }
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
     else if (formData.password.length < 6) {
-      newErrors.password = 'Senha deve ter no mínimo 6 caracteres';
-    }
-    if (!formData.whatsapp) newErrors.whatsapp = 'WhatsApp é obrigatório';
-    else if (formData.whatsapp.replace(/\D/g, '').length !== 11) {
-      newErrors.whatsapp = 'WhatsApp inválido';
+      newErrors.password = 'A senha deve ter no mínimo 6 caracteres';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const validateStep3 = () => {
-    const newErrors: Record<string, string> = {};
-    
-    if (!formData.professionalType) {
-      newErrors.professionalType = 'Selecione sua área';
-    }
-    if (!formData.professionalId.trim()) {
-      newErrors.professionalId = `${formData.professionalType === 'personal' ? 'CREF' : 'CRN'} é obrigatório`;
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleNext = async () => {
-    if (step === 2 && !validateStep2()) return;
-    if (step === 3 && formData.userType === 'professional' && !validateStep3()) return;
-    
-    if (step === 2 && formData.userType === 'student') {
-      // Aluno pula direto para finalizar
-      await handleSubmit();
-      return;
-    }
-    
-    setStep(step + 1);
-  };
-
+  // --- Função principal disparada no Finalização (Passo 2) ---
   const handleSubmit = async () => {
-    setLoading(true);
+    // Se a validação não passar, interrompemos aqui
+    if (!validateStep2()) return;
     
-    const role = formData.userType === 'student' 
-      ? 'student' 
-      : formData.professionalType === 'personal' 
-        ? 'personal' 
-        : 'nutritionist';
+    setLoading(true);
+    setBackendError(null);
+
+    // Simplificamos o papel por enquanto. No caso de profissional, 
+    // registramos como 'professional' genérico se a tabela aceitar,
+    // mas o AuthContext atual requer 'personal' ou 'nutritionist'.
+    // Portanto, vamos usar 'personal' como fallback temporário para passar na restrição do Supabase 
+    // e o profissional vai definir o papel correto dele no Onboarding (ou o admin/onboarding corrige).
+    // O mais interessante seria 'professional'. Para bater com o schema anterior, 
+    // passamos `personal` e depois ajustamos no onboarding.
+    const role = formData.userType === 'student' ? 'student' : 'personal';
 
     try {
-      await registerUser(
-        formData.email,
-        formData.password,
-        role,
-        {
-          name: formData.name,
-          whatsapp: formData.whatsapp,
-          professionalId: formData.professionalId,
-          plan: formData.plan,
-        }
-      );
+      // Tenta registrar na base de dados Auth e na tabela de Perfis
+      await registerUser(formData.email, formData.password, role, {
+        name: formData.name,
+        // Enviaremos os outros dados vazios/nulos por enquanto.
+        // O Onboarding será responsável por preenchê-los.
+      });
+
+      // Sucesso no cadastro!
+      toast.success('Conta criada em nossa plataforma.');
       
-      // Redirecionar para dashboard apropriado
-      if (role === 'student') navigate('/');
-      else if (role === 'personal') navigate('/personal');
-      else navigate('/nutritionist');
-    } catch (err) {
-      console.error('Erro no cadastro:', err);
+      // Iremos rotear o aluno ou profissional. 
+      // Todo novo registro deve preencher o onboarding.
+      if (role === 'student') {
+        // Redireciona primeiramente pro root, o Guard de rota vai identificar perfil incompleto (passo futuro)
+        navigate('/');
+      } else {
+        navigate('/selecionar-painel');
+      }
+
+    } catch (err: any) {
+      console.error('Erro na criação de conta:', err);
+      // Tratamento estático de erro para e-mail repetido / duplicidade
+      if (err?.message?.includes('already registered') || err?.code === '23505' || err?.message?.includes('User already registered')) {
+        setBackendError('Este e-mail já está cadastrado em nosso sistema. Faça o login.');
+      } else {
+        setBackendError('Não foi possível completar o cadastro. Verifique os dados forneidos.');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const handlePlanSelect = (planId: string) => {
-    handleInputChange('plan', planId);
-    setStep(5); // Ir para checkout
-  };
+  const totalSteps = 2;
+  const progressPct = (step / totalSteps) * 100;
 
+  // --- Renderização Visual (Interface do Usuário) ---
   return (
     <div className="min-h-screen dark:bg-zinc-950 bg-slate-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-6xl">
-        {/* Progress Bar */}
-        <div className="mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            {[1, 2, formData.userType === 'professional' ? 3 : null, formData.userType === 'professional' ? 4 : null, formData.userType === 'professional' ? 5 : null].filter(Boolean).map((s, index, array) => {
-              const stepNum = s as number;
-              return (
-                <div key={stepNum} className="flex items-center gap-2">
-                  <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm transition-all ${
-                      step >= stepNum
-                        ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg'
-                        : 'dark:bg-zinc-800 bg-slate-200 dark:text-zinc-500 text-slate-400'
-                    }`}
-                    style={{ fontWeight: step >= stepNum ? 700 : 400 }}
-                  >
-                    {step > stepNum ? <CheckCircle className="w-5 h-5" /> : stepNum}
-                  </div>
-                  {index < array.length - 1 && (
-                    <div className={`h-1 w-12 rounded-full transition-all ${step > stepNum ? 'bg-gradient-to-r from-emerald-500 to-blue-500' : 'dark:bg-zinc-800 bg-slate-200'}`} />
-                  )}
-                </div>
-              );
-            })}
+      {/* Decoração sutil de fundo premium */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
+        <div className="w-[800px] h-[800px] rounded-full blur-[120px] opacity-5 mix-blend-screen" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)' }} />
+      </div>
+
+      <div className="w-full max-w-2xl relative z-10">
+        
+        {/* Cabeçalho */}
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200 mb-6">
+            <div className="w-8 h-8 rounded flex items-center justify-center bg-emerald-500/10 dark:bg-emerald-500/20">
+              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <span className="text-sm dark:text-zinc-300 text-slate-700 tracking-wide font-medium">FITSYNC</span>
           </div>
-          <p className="text-center text-sm dark:text-zinc-400 text-slate-500">
-            {step === 1 && 'Escolha seu perfil'}
-            {step === 2 && 'Dados básicos'}
-            {step === 3 && 'Informações profissionais'}
-            {step === 4 && 'Escolha seu plano'}
-            {step === 5 && 'Finalizar pagamento'}
+          <h1 className="dark:text-white text-slate-900 mb-3 tracking-tight" style={{ fontSize: '2rem', fontWeight: 600 }}>
+            BEM VINDOS
+          </h1>
+          <p className="text-sm dark:text-zinc-400 text-slate-500 font-light">
+            {step === 1 ? 'Selecione a modalidade de acesso' : 'Insira as credenciais para estabelecer sua conta'}
           </p>
         </div>
 
+        {/* Barra de Progresso Minimalista */}
+        <div className="mb-8 max-w-sm mx-auto">
+          <div className="flex items-center justify-between text-xs dark:text-zinc-500 text-slate-400 mb-3 uppercase tracking-wider">
+            <span>Passo {step} de {totalSteps}</span>
+            <span>{Math.round(progressPct)}%</span>
+          </div>
+          <div className="h-0.5 dark:bg-zinc-800 bg-slate-200 rounded-full w-full overflow-hidden">
+            <motion.div
+              className="h-full bg-emerald-500"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.5, ease: 'easeInOut' }}
+            />
+          </div>
+        </div>
+
+        {/* Transições Suaves entre Etapas */}
         <AnimatePresence mode="wait">
-          {/* Step 1: User Type Selection */}
+          
+          {/* --- Passo 1: Escolha do papel (Aluno / Profissional) --- */}
           {step === 1 && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="grid md:grid-cols-2 gap-6"
             >
-              {/* Aluno Card */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  handleInputChange('userType', 'student');
-                  setStep(2);
-                }}
-                className="p-8 rounded-3xl border-2 dark:border-zinc-800 border-slate-200 hover:dark:border-blue-500 hover:border-blue-400 transition-all text-left dark:bg-zinc-900 bg-white group"
+              {/* Card - Aluno */}
+              <button
+                onClick={() => { handleInputChange('userType', 'student'); setStep(2); }}
+                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#0a0a0a] bg-white transition-all duration-300 hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/5 overflow-hidden block"
               >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center mb-6">
-                  <Heart className="w-8 h-8 text-white" />
+                {/* Linha indicadora superior sutil ao passar o mouse */}
+                <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <div className="w-12 h-12 rounded border dark:border-zinc-800 border-slate-100 dark:bg-zinc-900 bg-slate-50 flex items-center justify-center mb-6">
+                  <Heart className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-emerald-500 transition-colors" />
                 </div>
-                <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                  Sou Aluno
-                </h2>
-                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                  Quero melhorar minha saúde, receber treinos e acompanhamento nutricional personalizado.
+                
+                <h2 className="dark:text-white text-slate-900 mb-3 font-medium text-lg">Acesso Estudante</h2>
+                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-8 font-light leading-relaxed">
+                  Gerenciamento de dieta e rotina de treinamento orientada, acompanhe seus resultados dinamicamente.
                 </p>
-                <div className="space-y-2">
-                  {['Treinos personalizados', 'Acompanhamento profissional', 'Evolução detalhada'].map((feature) => (
-                    <div key={feature} className="flex items-center gap-2 text-sm dark:text-zinc-300 text-slate-600">
-                      <Check className="w-4 h-4 text-blue-500" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center gap-2 text-blue-500 group-hover:gap-3 transition-all">
-                  <span className="text-sm" style={{ fontWeight: 600 }}>Começar gratuitamente</span>
+                
+                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-500 font-semibold group-hover:gap-4 transition-all">
+                  <span>Prosseguir</span>
                   <ArrowRight className="w-4 h-4" />
                 </div>
-              </motion.button>
+              </button>
 
-              {/* Profissional Card */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  handleInputChange('userType', 'professional');
-                  setStep(2);
-                }}
-                className="p-8 rounded-3xl border-2 dark:border-zinc-800 border-slate-200 hover:dark:border-emerald-500 hover:border-emerald-400 transition-all text-left dark:bg-zinc-900 bg-white group"
+              {/* Card - Profissional */}
+              <button
+                onClick={() => { handleInputChange('userType', 'professional'); setStep(2); }}
+                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#0a0a0a] bg-white transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden block"
               >
-                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 flex items-center justify-center mb-6">
-                  <Briefcase className="w-8 h-8 text-white" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                
+                <div className="w-12 h-12 rounded border dark:border-zinc-800 border-slate-100 dark:bg-zinc-900 bg-slate-50 flex items-center justify-center mb-6">
+                  <Briefcase className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-blue-500 transition-colors" />
                 </div>
-                <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                  Sou Profissional
-                </h2>
-                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                  Gerencie alunos, prescreva treinos e dietas, acompanhe resultados e faça seu negócio crescer.
+                
+                <h2 className="dark:text-white text-slate-900 mb-3 font-medium text-lg">Acesso Profissional</h2>
+                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-8 font-light leading-relaxed">
+                  Painel de gestão administrativa, prescrição clínica/esportiva e controle sistêmico de alunos e pacientes.
                 </p>
-                <div className="space-y-2">
-                  {['Gestão completa de alunos', 'Prescrição de treinos/dietas', 'Relatórios de evolução'].map((feature) => (
-                    <div key={feature} className="flex items-center gap-2 text-sm dark:text-zinc-300 text-slate-600">
-                      <Check className="w-4 h-4 text-emerald-500" />
-                      {feature}
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-6 flex items-center gap-2 text-emerald-500 group-hover:gap-3 transition-all">
-                  <span className="text-sm" style={{ fontWeight: 600 }}>Ver planos</span>
+                
+                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-blue-600 dark:text-blue-500 font-semibold group-hover:gap-4 transition-all">
+                  <span>Prosseguir</span>
                   <ArrowRight className="w-4 h-4" />
                 </div>
-              </motion.button>
+              </button>
+
+              <div className="md:col-span-2 text-center pt-8 border-t dark:border-zinc-800/80 border-slate-200 mt-2">
+                <p className="text-xs dark:text-zinc-500 text-slate-500 font-light">
+                  Conta já registrada?{' '}
+                  <button onClick={() => navigate('/login')} className="dark:text-white text-slate-900 font-medium hover:underline">
+                    Efetuar Autenticação
+                  </button>
+                </p>
+              </div>
             </motion.div>
           )}
 
-          {/* Step 2: Basic Data */}
+          {/* --- Passo 2: Coleta de Dados Básicos (Nome, E-mail, Senha) --- */}
           {step === 2 && (
             <motion.div
               key="step2"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="max-w-md mx-auto dark:bg-zinc-900 bg-white rounded-3xl p-8 border dark:border-zinc-800 border-slate-200"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.98 }}
+              className="dark:bg-[#0a0a0a] bg-white rounded-2xl p-8 lg:p-10 border dark:border-zinc-800 border-slate-200 shadow-xl"
             >
-              <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                Dados Básicos
-              </h2>
-              <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                Preencha suas informações para criar sua conta
-              </p>
+              <div className="flex items-center justify-between mb-8 pb-6 border-b dark:border-zinc-800 border-slate-100">
+                <div className="flex items-center gap-4">
+                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${formData.userType === 'student' ? 'dark:border-emerald-500/20 border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10' : 'dark:border-blue-500/20 border-blue-100 bg-blue-50/50 dark:bg-blue-900/10'}`}>
+                    {formData.userType === 'student' ? <Heart className="w-4 h-4 text-emerald-600" /> : <Briefcase className="w-4 h-4 text-blue-600" />}
+                  </div>
+                  <div>
+                    <h2 className="dark:text-white text-slate-900 font-medium tracking-tight text-lg">Requisitos de Segurança</h2>
+                    <p className="text-xs dark:text-zinc-500 text-slate-500 font-light mt-1">
+                      {formData.userType === 'student' ? 'Perfil: Estudante/Praticante' : 'Perfil: Especialista/Docente'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setStep(1)}
+                  className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors uppercase tracking-wider font-semibold border dark:border-zinc-800 border-slate-200 py-2 px-4 rounded hover:bg-slate-50 dark:hover:bg-zinc-900"
+                >
+                  Alterar
+                </button>
+              </div>
 
-              <div className="space-y-4">
+              {/* Exibe erro devolvido pela integração com o banco (ex: Email duplicado) */}
+              {backendError && (
+                <div className="mb-6 p-4 rounded bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 flex gap-3 text-red-600 dark:text-red-400 text-sm">
+                  <AlertCircle className="w-5 h-5 flex-shrink-0" />
+                  <span className="font-light">{backendError}</span>
+                </div>
+              )}
+
+              <div className="space-y-6">
+                
+                {/* Nome Completo */}
                 <div>
-                  <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
+                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
                     Nome Completo
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Digite seu nome completo"
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border ${
-                        errors.name ? 'border-red-500' : 'dark:border-zinc-700 border-slate-200'
-                      } dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                      placeholder="Identificação formal"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.name ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
                     />
                   </div>
-                  {errors.name && <p className="text-xs text-red-500 mt-1">{errors.name}</p>}
+                  {errors.name && <p className="text-xs text-red-500 mt-2 font-medium">{errors.name}</p>}
                 </div>
 
+                {/* E-mail Institucional / Pessoal */}
                 <div>
-                  <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                    E-mail
+                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                    Correio Eletrônico
                   </label>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="seu@email.com"
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border ${
-                        errors.email ? 'border-red-500' : 'dark:border-zinc-700 border-slate-200'
-                      } dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                      placeholder="Endereço de e-mail"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.email ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
                     />
                   </div>
-                  {errors.email && <p className="text-xs text-red-500 mt-1">{errors.email}</p>}
+                  {errors.email && <p className="text-xs text-red-500 mt-2 font-medium">{errors.email}</p>}
                 </div>
 
+                {/* Senha */}
                 <div>
-                  <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                    Senha
+                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                    Código Criptografado
                   </label>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
                       type="password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Mínimo 6 caracteres"
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border ${
-                        errors.password ? 'border-red-500' : 'dark:border-zinc-700 border-slate-200'
-                      } dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
+                      placeholder="Exigência mínima de 6 caracteres"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
                     />
                   </div>
-                  {errors.password && <p className="text-xs text-red-500 mt-1">{errors.password}</p>}
-                </div>
-
-                <div>
-                  <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                    WhatsApp
-                  </label>
-                  <div className="relative">
-                    <Phone className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                    <input
-                      type="tel"
-                      value={formData.whatsapp}
-                      onChange={(e) => handleInputChange('whatsapp', formatWhatsApp(e.target.value))}
-                      placeholder="(00) 00000-0000"
-                      maxLength={15}
-                      className={`w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border ${
-                        errors.whatsapp ? 'border-red-500' : 'dark:border-zinc-700 border-slate-200'
-                      } dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30`}
-                    />
-                  </div>
-                  {errors.whatsapp && <p className="text-xs text-red-500 mt-1">{errors.whatsapp}</p>}
+                  {errors.password && <p className="text-xs text-red-500 mt-2 font-medium">{errors.password}</p>}
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              {/* Disclaimer de coleta progressiva (Informa o usuário o motivo da redução de tela) */}
+              <div className="mt-6 p-4 rounded bg-slate-50 dark:bg-zinc-900/50 border dark:border-zinc-800 border-slate-100 flex gap-3 text-slate-600 dark:text-zinc-400 text-xs font-light">
+                 <Shield className="w-4 h-4 flex-shrink-0" />
+                 <p>Dados fisiológicos ou certificações profissionais serão solicitados em ambiente seguro posteriormente, visando simplificar sua entrada inicial.</p>
+              </div>
+
+              <div className="mt-8 pt-8 border-t dark:border-zinc-800/80 border-slate-100">
                 <button
-                  onClick={() => setStep(1)}
-                  className="flex-1 py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar
-                </button>
-                <button
-                  onClick={handleNext}
+                  onClick={handleSubmit}
                   disabled={loading}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:opacity-90 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
-                  style={{ fontWeight: 600 }}
+                  className="w-full py-3.5 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium"
+                  style={{ background: formData.userType === 'student' ? '#059669' : '#1e40af' }}
                 >
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Processando...
+                      Estabelecendo conexão...
                     </>
                   ) : (
                     <>
-                      {formData.userType === 'student' ? 'Finalizar' : 'Continuar'}
-                      <ArrowRight className="w-4 h-4" />
+                      Confirmar e Autenticar
+                      <CheckCircle className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
-            </motion.div>
-          )}
 
-          {/* Step 3: Professional Type & ID */}
-          {step === 3 && formData.userType === 'professional' && (
-            <motion.div
-              key="step3"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="max-w-md mx-auto dark:bg-zinc-900 bg-white rounded-3xl p-8 border dark:border-zinc-800 border-slate-200"
-            >
-              <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                Área de Atuação
-              </h2>
-              <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                Selecione sua especialidade profissional
-              </p>
-
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <button
-                  onClick={() => handleInputChange('professionalType', 'personal')}
-                  className={`p-6 rounded-2xl border-2 transition-all ${
-                    formData.professionalType === 'personal'
-                      ? 'border-emerald-500 dark:bg-emerald-500/10 bg-emerald-50'
-                      : 'dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600 hover:border-slate-300'
-                  }`}
-                >
-                  <Dumbbell className={`w-8 h-8 mx-auto mb-3 ${formData.professionalType === 'personal' ? 'text-emerald-500' : 'dark:text-zinc-500 text-slate-400'}`} />
-                  <p className={`text-sm text-center ${formData.professionalType === 'personal' ? 'text-emerald-500' : 'dark:text-zinc-400 text-slate-500'}`} style={{ fontWeight: 600 }}>
-                    Personal Trainer
-                  </p>
-                </button>
-
-                <button
-                  onClick={() => handleInputChange('professionalType', 'nutritionist')}
-                  className={`p-6 rounded-2xl border-2 transition-all ${
-                    formData.professionalType === 'nutritionist'
-                      ? 'border-emerald-500 dark:bg-emerald-500/10 bg-emerald-50'
-                      : 'dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600 hover:border-slate-300'
-                  }`}
-                >
-                  <Award className={`w-8 h-8 mx-auto mb-3 ${formData.professionalType === 'nutritionist' ? 'text-emerald-500' : 'dark:text-zinc-500 text-slate-400'}`} />
-                  <p className={`text-sm text-center ${formData.professionalType === 'nutritionist' ? 'text-emerald-500' : 'dark:text-zinc-400 text-slate-500'}`} style={{ fontWeight: 600 }}>
-                    Nutricionista
-                  </p>
-                </button>
-              </div>
-              {errors.professionalType && <p className="text-xs text-red-500 mb-4">{errors.professionalType}</p>}
-
-              <div>
-                <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                  Registro Profissional {formData.professionalType === 'personal' ? '(CREF)' : '(CRN)'}
-                </label>
-                <div className="relative">
-                  <Shield className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                  <input
-                    type="text"
-                    value={formData.professionalId}
-                    onChange={(e) => handleInputChange('professionalId', formatProfessionalId(e.target.value))}
-                    placeholder={formData.professionalType === 'personal' ? 'Ex: CREF123456' : 'Ex: CRN123456'}
-                    className={`w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border ${
-                      errors.professionalId ? 'border-red-500' : 'dark:border-zinc-700 border-slate-200'
-                    } dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/30 uppercase`}
-                  />
-                </div>
-                {errors.professionalId && <p className="text-xs text-red-500 mt-1">{errors.professionalId}</p>}
-                <p className="text-xs dark:text-zinc-500 text-slate-400 mt-2">
-                  Digite apenas letras e números. Este campo não poderá ser editado depois.
-                </p>
-              </div>
-
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setStep(2)}
-                  className="flex-1 py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar
-                </button>
-                <button
-                  onClick={handleNext}
-                  className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:opacity-90 transition-all flex items-center justify-center gap-2"
-                  style={{ fontWeight: 600 }}
-                >
-                  Continuar
-                  <ArrowRight className="w-4 h-4" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-
-          {/* Step 4: Plans */}
-          {step === 4 && formData.userType === 'professional' && (
-            <motion.div
-              key="step4"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="max-w-5xl mx-auto"
-            >
-              <div className="text-center mb-8">
-                <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                  Escolha seu Plano
-                </h2>
-                <p className="text-sm dark:text-zinc-400 text-slate-500">
-                  Selecione o plano ideal para o seu negócio
-                </p>
-              </div>
-
-              <div className="grid md:grid-cols-3 gap-6">
-                {plans.map((plan) => (
-                  <motion.div
-                    key={plan.id}
-                    whileHover={{ scale: 1.02 }}
-                    className={`relative p-6 rounded-3xl border-2 transition-all ${
-                      plan.popular
-                        ? 'border-emerald-500 dark:bg-emerald-500/5 bg-emerald-50'
-                        : plan.bestValue
-                        ? 'border-blue-500 dark:bg-blue-500/5 bg-blue-50'
-                        : 'dark:border-zinc-800 border-slate-200 dark:bg-zinc-900 bg-white'
-                    }`}
-                  >
-                    {plan.popular && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-emerald-500 text-white text-xs" style={{ fontWeight: 700 }}>
-                        MAIS POPULAR
-                      </div>
-                    )}
-                    {plan.bestValue && (
-                      <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full bg-blue-500 text-white text-xs" style={{ fontWeight: 700 }}>
-                        MELHOR VALOR
-                      </div>
-                    )}
-
-                    <h3 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                      {plan.name}
-                    </h3>
-                    
-                    <div className="mb-4">
-                      <div className="flex items-baseline gap-1 mb-1">
-                        <span className="dark:text-white text-slate-900" style={{ fontSize: '2rem', fontWeight: 800 }}>
-                          {plan.priceLabel}
-                        </span>
-                        <span className="text-sm dark:text-zinc-400 text-slate-500">{plan.period}</span>
-                      </div>
-                      {plan.monthlyEquivalent && (
-                        <p className="text-sm text-emerald-500" style={{ fontWeight: 600 }}>
-                          {plan.monthlyEquivalent}
-                        </p>
-                      )}
-                      {plan.savings && (
-                        <p className="text-xs dark:text-zinc-400 text-slate-500 mt-1">
-                          {plan.savings}
-                        </p>
-                      )}
-                    </div>
-
-                    <ul className="space-y-3 mb-6">
-                      {plan.features.map((feature) => (
-                        <li key={feature} className="flex items-start gap-2 text-sm dark:text-zinc-300 text-slate-600">
-                          <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-
-                    <button
-                      onClick={() => handlePlanSelect(plan.id)}
-                      className={`w-full py-3 rounded-xl transition-all ${
-                        plan.popular || plan.bestValue
-                          ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:opacity-90'
-                          : 'border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-50'
-                      }`}
-                      style={{ fontWeight: 600 }}
-                    >
-                      Selecionar Plano
-                    </button>
-                  </motion.div>
-                ))}
-              </div>
-
-              <button
-                onClick={() => setStep(3)}
-                className="mx-auto mt-6 flex items-center gap-2 text-sm dark:text-zinc-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Voltar
-              </button>
-            </motion.div>
-          )}
-
-          {/* Step 5: Checkout */}
-          {step === 5 && formData.userType === 'professional' && (
-            <motion.div
-              key="step5"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="max-w-2xl mx-auto dark:bg-zinc-900 bg-white rounded-3xl p-8 border dark:border-zinc-800 border-slate-200"
-            >
-              <h2 className="dark:text-white text-slate-900 mb-2" style={{ fontWeight: 700 }}>
-                Finalizar Pagamento
-              </h2>
-              <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                Complete seu cadastro realizando o pagamento
-              </p>
-
-              {/* Summary */}
-              <div className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-6 mb-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <p className="text-sm dark:text-zinc-400 text-slate-500">Plano selecionado</p>
-                    <p className="dark:text-white text-slate-900" style={{ fontWeight: 700 }}>
-                      {plans.find((p) => p.id === formData.plan)?.name}
-                    </p>
-                  </div>
-                  <p className="dark:text-white text-slate-900" style={{ fontSize: '1.5rem', fontWeight: 800 }}>
-                    {plans.find((p) => p.id === formData.plan)?.priceLabel}
-                  </p>
-                </div>
-                {plans.find((p) => p.id === formData.plan)?.savings && (
-                  <div className="flex items-center gap-2 text-sm text-emerald-500 dark:bg-emerald-500/10 bg-emerald-100 rounded-lg p-3">
-                    <Zap className="w-4 h-4" />
-                    {plans.find((p) => p.id === formData.plan)?.savings}
-                  </div>
-                )}
-              </div>
-
-              {/* Payment Methods */}
-              <div className="space-y-4 mb-6">
-                <button className="w-full p-4 rounded-xl border-2 border-emerald-500 dark:bg-emerald-500/10 bg-emerald-50 flex items-center justify-between group">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg bg-emerald-500 flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>PIX</p>
-                      <p className="text-xs dark:text-zinc-400 text-slate-500">Aprovação instantânea</p>
-                    </div>
-                  </div>
-                  <CheckCircle className="w-5 h-5 text-emerald-500" />
-                </button>
-
-                <button className="w-full p-4 rounded-xl border dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600 hover:border-slate-300 flex items-center justify-between transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-lg dark:bg-zinc-800 bg-slate-100 flex items-center justify-center">
-                      <CreditCard className="w-5 h-5 dark:text-zinc-400 text-slate-500" />
-                    </div>
-                    <div className="text-left">
-                      <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Cartão de Crédito</p>
-                      <p className="text-xs dark:text-zinc-400 text-slate-500">Parcelamento disponível</p>
-                    </div>
-                  </div>
-                </button>
-              </div>
-
-              <button
-                onClick={handleSubmit}
-                disabled={loading}
-                className="w-full py-4 rounded-xl bg-gradient-to-r from-emerald-500 to-blue-500 text-white hover:opacity-90 transition-all flex items-center justify-center gap-2 mb-4"
-                style={{ fontWeight: 700 }}
-              >
-                {loading ? (
-                  <>
-                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    Processando...
-                  </>
-                ) : (
-                  <>
-                    <Shield className="w-5 h-5" />
-                    Finalizar Cadastro
-                  </>
-                )}
-              </button>
-
-              <button
-                onClick={() => setStep(4)}
-                className="w-full py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all flex items-center justify-center gap-2"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                Voltar para Planos
-              </button>
-
-              <p className="text-xs dark:text-zinc-500 text-slate-400 text-center mt-4">
-                Ao finalizar, você concorda com nossos Termos de Uso e Política de Privacidade
+              <p className="text-xs dark:text-zinc-600 text-slate-400 text-center mt-6 font-light">
+                Autenticando-se na infraestrutura, você valida as diretrizes de privacidade sistêmicas.
               </p>
             </motion.div>
           )}

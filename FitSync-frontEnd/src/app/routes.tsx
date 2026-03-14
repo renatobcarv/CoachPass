@@ -35,6 +35,9 @@ import { PersonalCursos } from './components/pages/PersonalCursos';
 import { PersonalCanvas } from './components/pages/PersonalCanvas';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { Settings } from './components/pages/Settings';
+import { PanelSelector } from './components/pages/PanelSelector';
+import { StudentOnboarding } from './components/pages/StudentOnboarding';
+import { ProfessionalOnboarding } from './components/pages/ProfessionalOnboarding';
 
 export const router = createBrowserRouter([
   {
@@ -44,6 +47,23 @@ export const router = createBrowserRouter([
   {
     path: '/cadastro',
     Component: Register,
+  },
+  {
+    path: '/selecionar-painel',
+    element: <ProtectedRoute allowedRoles={['personal', 'nutritionist']} />,
+    children: [
+      { index: true, Component: PanelSelector },
+    ],
+  },
+  {
+    path: '/onboarding/student',
+    element: <ProtectedRoute allowedRoles={['student']} />,
+    Component: StudentOnboarding,
+  },
+  {
+    path: '/onboarding/professional',
+    element: <ProtectedRoute allowedRoles={['personal', 'nutritionist']} />,
+    Component: ProfessionalOnboarding,
   },
   // Redirect Portuguese alias to canonical English route
   {
@@ -74,7 +94,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/personal',
-    element: <ProtectedRoute allowedRoles={['personal']} />,
+    element: <ProtectedRoute allowedRoles={['personal', 'nutritionist']} />,
     children: [
       {
         path: '/personal',
@@ -103,7 +123,7 @@ export const router = createBrowserRouter([
   },
   {
     path: '/nutritionist',
-    element: <ProtectedRoute allowedRoles={['nutritionist']} />,
+    element: <ProtectedRoute allowedRoles={['personal', 'nutritionist']} />,
     children: [
       {
         path: '/nutritionist',

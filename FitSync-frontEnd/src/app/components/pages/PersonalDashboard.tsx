@@ -5,7 +5,7 @@ import {
   Search, ChevronRight, Sparkles, ClipboardList, DollarSign,
   Palette, BookOpen, ClipboardCheck, Target, Activity, Clock,
   Award, Zap, CheckCircle, AlertCircle, Star, Plus, FileText,
-  ArrowUpRight, Flame, Timer, Heart,
+  ArrowUpRight, Flame, Timer, Heart, ArrowLeftRight,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
@@ -101,7 +101,12 @@ export function PersonalDashboard() {
           </div>
           <p className="text-sm dark:text-zinc-400 text-slate-500">Bem-vindo de volta! Você tem {todaySessions.filter(s => s.status === 'upcoming').length} sessão hoje.</p>
         </div>
-        <div className="flex gap-3 flex-wrap">
+        <div className="flex gap-3 flex-wrap items-center">
+          <button onClick={() => navigate('/selecionar-painel')}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all hover:opacity-90 border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-100"
+            style={{ fontWeight: 500 }}>
+            <ArrowLeftRight className="w-4 h-4" /> Trocar Painel
+          </button>
           <button onClick={() => navigate('/personal/criar-treino')}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
             style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}>
