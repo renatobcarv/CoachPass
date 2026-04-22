@@ -124,7 +124,11 @@ export interface UserAuthOperations {
 export interface User {
   id: number;
   name?: string | null;
-  role?: ('student' | 'personal' | 'nutritionist') | null;
+  /**
+   * Concede o mesmo poder do papel Master no CMS e libera todos os painéis no app.
+   */
+  isSuperAdmin?: boolean | null;
+  role?: ('master' | 'student' | 'personal' | 'nutritionist') | null;
   whatsapp?: string | null;
   professionalId?: string | null;
   plan?: ('monthly' | 'semester' | 'annual') | null;
@@ -246,6 +250,7 @@ export interface PayloadMigration {
  */
 export interface UsersSelect<T extends boolean = true> {
   name?: T;
+  isSuperAdmin?: T;
   role?: T;
   whatsapp?: T;
   professionalId?: T;
