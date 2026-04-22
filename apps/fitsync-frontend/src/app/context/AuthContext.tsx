@@ -8,13 +8,15 @@ import {
   extractPayloadMessage,
 } from '@/lib/cms';
 
-export type UserRole = 'student' | 'personal' | 'nutritionist';
+export type UserRole = 'master' | 'student' | 'personal' | 'nutritionist';
 
 export interface User {
   id: string;
   name: string;
   email: string;
   role: UserRole;
+  /** Super-admin no Payload (acesso total CMS + painéis no app) */
+  isSuperAdmin?: boolean;
   avatar?: string;
   whatsapp?: string;
   professionalId?: string;
@@ -41,7 +43,8 @@ type PayloadUserDoc = {
   id: string | number;
   email: string;
   name?: string;
-  role?: UserRole;
+  role?: string;
+  isSuperAdmin?: boolean;
   whatsapp?: string;
   professionalId?: string;
   plan?: User['plan'];
@@ -50,11 +53,16 @@ type PayloadUserDoc = {
 
 function buildUser(doc: PayloadUserDoc, accessToken: string): User {
   const name = doc.name || doc.email?.split('@')[0] || 'Usuário';
+  const isSuper = doc.isSuperAdmin === true || doc.role === 'master';
+  const role: UserRole = isSuper
+    ? 'master'
+    : ((doc.role as UserRole) || 'student');
   return {
     id: String(doc.id),
     name,
     email: doc.email || '',
-    role: (doc.role as UserRole) || 'student',
+    role,
+    isSuperAdmin: doc.isSuperAdmin === true || doc.role === 'master',
     avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff`,
     whatsapp: doc.whatsapp,
     professionalId: doc.professionalId,
