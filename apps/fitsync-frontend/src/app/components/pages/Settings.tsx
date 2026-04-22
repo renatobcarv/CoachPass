@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@/lib/supabase/info';
 
 const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-da3e276b`;
 

@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
@@ -115,13 +116,25 @@ export function Register() {
         navigate('/selecionar-painel');
       }
 
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Erro na criação de conta:', err);
-      // Tratamento estático de erro para e-mail repetido / duplicidade
-      if (err?.message?.includes('already registered') || err?.code === '23505' || err?.message?.includes('User already registered')) {
+      const msg =
+        err instanceof PayloadApiError
+          ? extractPayloadMessage(err.data) || err.message
+          : err instanceof Error
+            ? err.message
+            : '';
+      const lower = msg.toLowerCase();
+      if (
+        lower.includes('already') ||
+        lower.includes('duplicate') ||
+        lower.includes('unique') ||
+        lower.includes('já existe') ||
+        (err instanceof PayloadApiError && err.status === 400 && lower.includes('email'))
+      ) {
         setBackendError('Este e-mail já está cadastrado em nosso sistema. Faça o login.');
       } else {
-        setBackendError('Não foi possível completar o cadastro. Verifique os dados forneidos.');
+        setBackendError(msg || 'Não foi possível completar o cadastro. Verifique os dados fornecidos.');
       }
     } finally {
       setLoading(false);

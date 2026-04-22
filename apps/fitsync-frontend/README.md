@@ -5,7 +5,5 @@
 
   ## Running the code
 
-  Run `npm i` to install the dependencies.
-
-  Run `npm run dev` to start the development server.
+  From the repository root, go to `apps/fitsync-frontend`, then run `npm i` and `npm run dev`.
   

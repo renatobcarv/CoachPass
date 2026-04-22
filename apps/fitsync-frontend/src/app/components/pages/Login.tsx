@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
+import { postJson, PayloadApiError, extractPayloadMessage, USERS_API } from '@/lib/cms';
 
 // Define os papéis permitidos no login (Aluno ou Profissional)
 type LoginRole = 'student' | 'professional';
@@ -52,6 +53,7 @@ export function Login() {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
+  const [forgotLoading, setForgotLoading] = useState(false);
   
   // Utiliza a função 'login' do nosso contexto de autenticação
   const { login } = useAuth();
@@ -93,20 +95,30 @@ export function Login() {
     }
   };
 
-  // Função disparada ao pedir redefinição de senha
-  const handleForgotPassword = (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail) return;
-    
-    setForgotSent(true); // Mostra a tela de sucesso
-    toast.success(`Link de recuperação enviado para ${forgotEmail}`);
-    
-    // Fecha o modal automaticamente após 3 segundos
-    setTimeout(() => {
-      setShowForgotPassword(false);
-      setForgotSent(false);
-      setForgotEmail('');
-    }, 3000);
+    if (!forgotEmail || forgotLoading) return;
+    setForgotLoading(true);
+    try {
+      await postJson(`${USERS_API}/forgot-password`, { email: forgotEmail.trim() });
+      setForgotSent(true);
+      toast.success(`Se o e-mail existir, enviamos o link de recuperação para ${forgotEmail}`);
+      setTimeout(() => {
+        setShowForgotPassword(false);
+        setForgotSent(false);
+        setForgotEmail('');
+      }, 3000);
+    } catch (err) {
+      const msg =
+        err instanceof PayloadApiError
+          ? extractPayloadMessage(err.data)
+          : err instanceof Error
+            ? err.message
+            : 'Não foi possível enviar o e-mail';
+      toast.error(msg || 'Tente novamente em instantes.');
+    } finally {
+      setForgotLoading(false);
+    }
   };
 
   // --- Renderização Visual (Interface do Usuário) ---
@@ -169,11 +181,11 @@ export function Login() {
                   </div>
                   <button
                     type="submit"
-                    disabled={!forgotEmail}
+                    disabled={!forgotEmail || forgotLoading}
                     className="w-full py-3 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 font-medium"
                     style={{ background: selectedRoleData.gradient }}
                   >
-                    Enviar link de recuperação
+                    {forgotLoading ? 'Enviando…' : 'Enviar link de recuperação'}
                   </button>
                 </form>
               ) : (
