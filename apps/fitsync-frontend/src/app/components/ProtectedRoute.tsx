@@ -44,6 +44,11 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />;
   }
 
+  // Master / super-admin: acesso a todos os painéis (aluno, personal, nutri)
+  if (user && (user.role === 'master' || user.isSuperAdmin)) {
+    return <Outlet />;
+  }
+
   // Se estiver autenticado mas não tem permissão, redireciona baseado no role
   if (user && !allowedRoles.includes(user.role)) {
     if (user.role === 'student') return <Navigate to="/" replace />;

@@ -81,7 +81,9 @@ export function Login() {
       const actualRole = await login(email, password, roleHint);
 
       // Depois do login validado, decide para onde levar o usuário
-      if (actualRole === 'student') {
+      if (actualRole === 'master') {
+        navigate(selectedRole === 'student' ? '/' : '/selecionar-painel');
+      } else if (actualRole === 'student') {
         navigate('/'); // Alunos vão direto para seu dashboard principal
       } else {
         // Profissionais (Personal ou Nutricionista) vão para a seleção de painel

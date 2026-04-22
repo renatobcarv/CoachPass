@@ -1,5 +1,8 @@
 import type { CollectionConfig, PayloadRequest } from 'payload'
+import { ValidationError } from 'payload'
 import { formatAdminURL } from 'payload/shared'
+
+import { isSuperUser } from '../access/isSuper'
 
 function adminServerURL(req: PayloadRequest): string {
   const config = req.payload.config
@@ -49,8 +52,33 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
-    // Permite cadastro pelo app FitSync (sem sessão). Leitura/edição seguem o padrão do Payload (usuário logado).
-    create: () => true,
+    create: ({ req }) => !req.user || isSuperUser(req),
+    read: ({ req }) => isSuperUser(req) || Boolean(req.user),
+    update: ({ req, id }) =>
+      isSuperUser(req) || Boolean(req.user && String(req.user.id) === String(id)),
+    delete: ({ req }) => isSuperUser(req),
+  },
+  hooks: {
+    beforeValidate: [
+      ({ data, operation, req, collection }) => {
+        const bypass =
+          req.context?.allowMasterCreate === true || req.context?.seedMaster === true
+        if (operation === 'create' && data && !req.user && !bypass) {
+          if (data.role === 'master' || data.isSuperAdmin === true) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [
+                {
+                  path: 'role',
+                  message: 'Conta master não pode ser criada pelo cadastro público.',
+                },
+              ],
+            })
+          }
+        }
+        return data
+      },
+    ],
   },
   fields: [
     {
@@ -60,11 +88,23 @@ export const Users: CollectionConfig = {
       label: 'Nome completo',
     },
     {
+      name: 'isSuperAdmin',
+      type: 'checkbox',
+      label: 'Super administrador (acesso total Payload + app)',
+      defaultValue: false,
+      admin: {
+        description: 'Concede o mesmo poder do papel Master no CMS e libera todos os painéis no app.',
+        position: 'sidebar',
+      },
+      saveToJWT: true,
+    },
+    {
       name: 'role',
       type: 'select',
       required: false,
       defaultValue: 'student',
       options: [
+        { label: 'Super admin (master)', value: 'master' },
         { label: 'Aluno', value: 'student' },
         { label: 'Personal trainer', value: 'personal' },
         { label: 'Nutricionista', value: 'nutritionist' },

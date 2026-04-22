@@ -32,10 +32,10 @@ test.describe('Admin Panel', () => {
     await expect(listViewArtifact).toBeVisible()
   })
 
-  test('can navigate to edit view', async () => {
+  test('can open user create view', async () => {
     await page.goto('http://localhost:3000/admin/collections/users/create')
-    await expect(page).toHaveURL(/\/admin\/collections\/users\/[a-zA-Z0-9-_]+/)
-    const editViewArtifact = page.locator('input[name="email"]')
-    await expect(editViewArtifact).toBeVisible()
+    await expect(page).toHaveURL('http://localhost:3000/admin/collections/users/create')
+    const emailField = page.locator('input[name="email"]')
+    await expect(emailField).toBeVisible()
   })
 })
