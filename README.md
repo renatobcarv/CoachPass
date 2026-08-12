@@ -532,22 +532,21 @@ http://localhost:3000
 Crie um arquivo `.env.local`:
 
 ```env
-NEXT_PUBLIC_API_URL=
+NEXT_PUBLIC_API_URL= oculto
 
-DATABASE_URL=
+DATABASE_URL=oculto
 
-AUTH_SECRET=
+AUTH_SECRET=oculto
 
-AI_API_KEY=
+AI_API_KEY=oculto
 
-WHATSAPP_ACCESS_TOKEN=
+WHATSAPP_ACCESS_TOKEN=oculto
 
-WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_PHONE_NUMBER_ID=oculto
 
-WHATSAPP_VERIFY_TOKEN=
+WHATSAPP_VERIFY_TOKEN=oculto
 ```
 
-> Utilize `.env.example` para documentar as variáveis necessárias sem expor credenciais reais.
 
 ---
 
