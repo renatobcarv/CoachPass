@@ -147,406 +147,45 @@ Dessa forma, o aluno não precisa ficar voltando para uma planilha ou preenchend
 
 ---
 
-# 🚀 Funcionalidades planejadas
-
-## 👨‍💼 Gestão do Personal
-
-* [ ] Cadastro e autenticação
-* [ ] Dashboard
-* [ ] Gestão da carteira de alunos
-* [ ] Cadastro de alunos
-* [ ] Indicadores gerais
-* [ ] Visualização individual dos alunos
-
-## 👤 Gestão do Aluno
-
-* [ ] Cadastro
-* [ ] Perfil individual
-* [ ] Vínculo com personal
-* [ ] Histórico de acompanhamento
-* [ ] Dados de evolução
-* [ ] Registro de treinos
-* [ ] Indicadores de adesão
-
-## 💬 WhatsApp
-
-* [ ] Integração com WhatsApp Business API
-* [ ] Recebimento de mensagens
-* [ ] Envio de mensagens
-* [ ] Webhooks
-* [ ] Fluxos automatizados de acompanhamento
-
-## 🤖 Inteligência Artificial
-
-* [ ] Interpretação de mensagens
-* [ ] Extração de informações
-* [ ] Estruturação automática dos dados
-* [ ] Identificação de padrões
-* [ ] Análise de adesão
-* [ ] Análise de desempenho
-* [ ] Geração de insights
-* [ ] Identificação de pontos de atenção
-
-## 📊 Dashboard
-
-* [ ] Evolução de peso
-* [ ] Frequência
-* [ ] Adesão
-* [ ] Desempenho
-* [ ] Histórico
-* [ ] Gráficos
-* [ ] Indicadores da carteira
-* [ ] Alertas
-* [ ] Insights gerados pela IA
-
----
-
 # 🛠️ Stack
 
 ## Front-end
-
-* **Next.js**
-* **React**
+* **Next.js 16 (App Router)**
+* **React 19**
 * **TypeScript**
-* **JavaScript**
-* **Tailwind CSS**
-* **HTML5**
-* **CSS3**
+* **Tailwind CSS v4**
+* **Lucide Icons**
 
-## Back-end
-
+## Back-end & IA (Planejados)
 * **Python**
-* **APIs REST**
-* **Webhooks**
-* **Next.js API**
-* Integração com serviços externos
-
-## Inteligência Artificial
-
-* **Python**
-* APIs de modelos de IA
-* Processamento de linguagem natural
-* Extração e estruturação de dados
-* Análise de padrões
-
-## Integrações
-
-* **WhatsApp Business Platform / API**
-* APIs externas
-* Webhooks
+* **APIs REST / Webhooks**
+* APIs de modelos de IA (Processamento de linguagem natural & extração de dados)
 
 ---
 
-# 🏗️ Arquitetura planejada
-
-```text
-                         ┌─────────────────┐
-                         │      ALUNO      │
-                         └────────┬────────┘
-                                  │
-                              WhatsApp
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │  WhatsApp API   │
-                         └────────┬────────┘
-                                  │
-                               Webhook
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │    BACKEND      │
-                         │  Python / API   │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │       IA        │
-                         │     Python      │
-                         └────────┬────────┘
-                                  │
-                    ┌─────────────┴─────────────┐
-                    ▼                           ▼
-             Dados estruturados            Insights
-                    │                           │
-                    └─────────────┬─────────────┘
-                                  ▼
-                         ┌─────────────────┐
-                         │    DATABASE     │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │    COACHPASS    │
-                         │    NEXT.JS      │
-                         └────────┬────────┘
-                                  │
-                                  ▼
-                         ┌─────────────────┐
-                         │     PERSONAL    │
-                         └─────────────────┘
-```
-
----
-
-# 📁 Estrutura planejada
-
-```text
-CoachPass/
-│
-├── frontend/
-│   ├── app/
-│   ├── components/
-│   ├── services/
-│   ├── types/
-│   └── public/
-│
-├── backend/
-│   ├── api/
-│   ├── services/
-│   ├── models/
-│   └── controllers/
-│
-├── ai/
-│   ├── processing/
-│   ├── analysis/
-│   └── models/
-│
-├── docs/
-│   ├── arquitetura.md
-│   ├── requisitos.md
-│   └── banco-de-dados.md
-│
-├── .env.example
-├── .gitignore
-├── LICENSE
-└── README.md
-```
-
-> A estrutura poderá ser modificada conforme a arquitetura evoluir durante o desenvolvimento.
-
----
-
-# 🔄 Fluxo principal
-
-```text
-1. Personal cadastra o aluno
-              ↓
-2. Aluno é vinculado ao profissional
-              ↓
-3. Aluno interage pelo WhatsApp
-              ↓
-4. IA interpreta as mensagens
-              ↓
-5. Informações relevantes são extraídas
-              ↓
-6. Dados são estruturados e armazenados
-              ↓
-7. CoachPass atualiza o histórico
-              ↓
-8. Personal acompanha pelo dashboard
-              ↓
-9. IA analisa padrões e gera insights
-              ↓
-10. Personal toma a decisão profissional
-```
-
----
-
-# 🎯 Público-alvo
-
-## Público primário
-
-**Personal trainers autônomos** com aproximadamente 15 a 40 alunos que atualmente utilizam WhatsApp, planilhas e processos manuais para administrar sua carteira.
-
-## Público secundário
-
-**Alunos**, que participam da plataforma principalmente através do vínculo com seu personal trainer.
-
-## Expansão futura
-
-**Nutricionistas**, permitindo conectar posteriormente acompanhamento de treino e alimentação.
-
----
-
-# 📌 MVP
-
-O MVP terá como foco principal o **personal trainer autônomo**.
-
-O objetivo inicial é validar o fluxo:
-
-```text
-Aluno
-  ↓
-WhatsApp
-  ↓
-IA
-  ↓
-Dados
-  ↓
-CoachPass
-  ↓
-Dashboard
-  ↓
-Personal
-```
-
-### MVP inicial
-
-* [ ] Autenticação
-* [ ] Cadastro de personal
-* [ ] Cadastro de alunos
-* [ ] Sistema de convite
-* [ ] Vínculo personal ↔ aluno
-* [ ] Dashboard
-* [ ] Perfil do aluno
-* [ ] Registro de peso
-* [ ] Registro de treinos
-* [ ] Registro de desempenho
-* [ ] Registro de adesão
-* [ ] Histórico
-* [ ] Gráficos
-* [ ] API
-* [ ] Banco de dados
-* [ ] Integração inicial com IA
-* [ ] Integração inicial com WhatsApp
-
----
-
-# 🛣️ Roadmap
-
-### Fase 1 — Fundação
-
-* [ ] Definição da arquitetura
-* [ ] Configuração do Next.js
-* [ ] Configuração do TypeScript
-* [ ] Configuração do Tailwind CSS
-* [ ] Estrutura do backend
-* [ ] Banco de dados
-* [ ] APIs
-
-### Fase 2 — Gestão
-
-* [ ] Autenticação
-* [ ] Cadastro de profissionais
-* [ ] Cadastro de alunos
-* [ ] Sistema de vínculo
-* [ ] Dashboard
-* [ ] Perfil do aluno
-
-### Fase 3 — Acompanhamento
-
-* [ ] Registro de treinos
-* [ ] Peso
-* [ ] Desempenho
-* [ ] Frequência
-* [ ] Adesão
-* [ ] Histórico
-* [ ] Gráficos
-
-### Fase 4 — IA
-
-* [ ] Processamento de mensagens
-* [ ] Extração de informações
-* [ ] Estruturação automática dos dados
-* [ ] Análise de padrões
-* [ ] Insights
-* [ ] Alertas
-
-### Fase 5 — WhatsApp
-
-* [ ] Configuração da API
-* [ ] Webhooks
-* [ ] Recebimento de mensagens
-* [ ] Processamento por IA
-* [ ] Respostas automatizadas
-* [ ] Fluxos de acompanhamento
-
-### Fase 6 — Expansão
-
-* [ ] Relatórios
-* [ ] Notificações
-* [ ] Métricas avançadas
-* [ ] Aplicativo mobile
-* [ ] Integração com nutricionistas
-* [ ] Novas integrações
-
----
-
-# 🔐 Segurança
-
-O projeto deverá considerar:
-
-* Autenticação segura
-* Controle de acesso
-* Validação de dados
-* Proteção das APIs
-* Variáveis de ambiente
-* Proteção de credenciais
-* Segurança dos webhooks
-* Controle de acesso aos dados dos alunos
-* Armazenamento adequado das informações
-
-**Tokens, senhas, chaves de API e credenciais nunca devem ser enviados ao GitHub.**
-
----
-
-# 💻 Instalação
+# 💻 Instalação e Execução
 
 ## Pré-requisitos
+* [Node.js](https://nodejs.org/) (v18+)
+* npm
 
-* [Node.js](https://nodejs.org/)
-* npm ou Yarn
-* [Python 3](https://www.python.org/)
-* [Git](https://git-scm.com/)
-
-## Clone o projeto
-
+## Clone o repositório
 ```bash
 git clone https://github.com/renatobcarv/CoachPass.git
 cd CoachPass
 ```
 
 ## Instale as dependências
-
 ```bash
 npm install
 ```
 
-## Execute o projeto
-
+## Execute o servidor de desenvolvimento
 ```bash
 npm run dev
 ```
 
-A aplicação ficará disponível em:
-
-```text
-http://localhost:3000
-```
-
----
-
-# 🔑 Variáveis de ambiente
-
-Crie um arquivo `.env.local`:
-
-```env
-NEXT_PUBLIC_API_URL= oculto
-
-DATABASE_URL=oculto
-
-AUTH_SECRET=oculto
-
-AI_API_KEY=oculto
-
-WHATSAPP_ACCESS_TOKEN=oculto
-
-WHATSAPP_PHONE_NUMBER_ID=oculto
-
-WHATSAPP_VERIFY_TOKEN=oculto
-```
-
+Abra [http://localhost:3000](http://localhost:3000) no seu navegador.
 
 ---
 
@@ -560,50 +199,6 @@ WHATSAPP_VERIFY_TOKEN=oculto
 | **Desenvolvedor 1**        | Edson Junior Sousa Queiroz       |
 | **Desenvolvedor 2**        | Carlos Eduardo Mendes Farias     |
 | **Desenvolvedor de Apoio** | Gustavo Miranda Moreira da Silva |
-
----
-
-# 📚 Metodologia
-
-O desenvolvimento do CoachPass será organizado utilizando **Scrum**, com:
-
-* Product Backlog
-* Sprints
-* Daily Scrum
-* Sprint Review
-* Sprint Retrospective
-* Priorização de funcionalidades
-* Desenvolvimento incremental
-
----
-
-# 🎓 Projeto acadêmico
-
-O CoachPass está sendo desenvolvido como projeto acadêmico, aplicando conhecimentos de:
-
-* Engenharia de Software
-* Desenvolvimento Web
-* Desenvolvimento de APIs
-* Banco de Dados
-* Inteligência Artificial
-* Desenvolvimento Ágil
-* Scrum
-* UX/UI
-* Arquitetura de Software
-
----
-
-# 🚧 Status
-
-**Em desenvolvimento**
-
-O projeto encontra-se em fase de construção e validação do MVP.
-
----
-
-# 📄 Licença
-
-Este projeto é desenvolvido para fins acadêmicos.
 
 ---
 
