@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link';
 import { Dumbbell, Sparkles, Plus, Search, Bell, UserCheck } from 'lucide-react';
 
 interface HeaderProps {
@@ -107,6 +108,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Action Buttons */}
           <div className="hidden sm:flex items-center gap-2">
+            <Link
+              href="/cadastro"
+              className="px-3 py-2 rounded-xl text-xs font-semibold bg-emerald-950/60 hover:bg-emerald-900/60 text-emerald-400 border border-emerald-500/30 transition-colors flex items-center gap-1.5"
+            >
+              Criar Conta
+            </Link>
             <button
               onClick={onOpenAddStudent}
               className="px-3 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors flex items-center gap-1.5"
