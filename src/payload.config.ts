@@ -12,7 +12,8 @@ import { Media } from './collections/Media'
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
 
-const frontendOrigin = process.env.FITSYNC_FRONTEND_URL || 'http://localhost:5173'
+const publicServerURL = process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'
+const frontendOrigin = process.env.FITSYNC_FRONTEND_URL || publicServerURL
 
 function emailAdapter() {
   const host = process.env.SMTP_HOST
@@ -35,10 +36,8 @@ function emailAdapter() {
 
 export default buildConfig({
   serverURL: process.env.PAYLOAD_PUBLIC_SERVER_URL || '',
-  cors: [frontendOrigin],
-  csrf: [frontendOrigin, process.env.PAYLOAD_PUBLIC_SERVER_URL || 'http://localhost:3000'].filter(
-    (v, i, a) => Boolean(v) && a.indexOf(v) === i,
-  ),
+  cors: [frontendOrigin, publicServerURL].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i),
+  csrf: [frontendOrigin, publicServerURL].filter((v, i, a) => Boolean(v) && a.indexOf(v) === i),
   admin: {
     user: Users.slug,
     importMap: {
