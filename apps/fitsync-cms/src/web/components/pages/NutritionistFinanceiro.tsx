@@ -76,7 +76,7 @@ export function NutritionistFinanceiro() {
   const overdue = transactions.filter(t => t.status === 'overdue').reduce((s, t) => s + t.amount, 0);
 
   const statusConfig = {
-    paid: { label: 'Pago', color: '#10b981', bg: 'bg-emerald-500/10' },
+    paid: { label: 'Pago', color: '#5a64b4', bg: 'bg-[#000326] dark:bg-white/10' },
     pending: { label: 'Pendente', color: '#f59e0b', bg: 'bg-amber-500/10' },
     overdue: { label: 'Vencido', color: '#ef4444', bg: 'bg-red-500/10' },
   };
@@ -108,7 +108,7 @@ export function NutritionistFinanceiro() {
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)' }}>
               <DollarSign className="w-5 h-5 text-white" />
             </div>
             <h1 className="dark:text-white text-slate-900">Sistema Financeiro</h1>
@@ -120,7 +120,7 @@ export function NutritionistFinanceiro() {
         <button
           onClick={() => setShowNewModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
+          style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
         >
           <Plus className="w-4 h-4" />
           Novo Lançamento
@@ -130,7 +130,7 @@ export function NutritionistFinanceiro() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Receita do Mês', value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, icon: TrendingUp, color: '#10b981', trend: '+18%' },
+          { label: 'Receita do Mês', value: `R$ ${totalRevenue.toLocaleString('pt-BR')}`, icon: TrendingUp, color: '#5a64b4', trend: '+18%' },
           { label: 'A Receber', value: `R$ ${pending.toLocaleString('pt-BR')}`, icon: Clock, color: '#f59e0b', trend: null },
           { label: 'Vencido', value: `R$ ${overdue.toLocaleString('pt-BR')}`, icon: TrendingDown, color: '#ef4444', trend: null },
           { label: 'Consultas Mês', value: '24', icon: Calendar, color: '#3b82f6', trend: '+4' },
@@ -166,7 +166,7 @@ export function NutritionistFinanceiro() {
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all ${
               activeTab === id ? 'text-white shadow-lg' : 'dark:text-zinc-400 text-slate-600'
             }`}
-            style={activeTab === id ? { background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 } : {}}
+            style={activeTab === id ? { background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 } : {}}
           >
             <Icon className="w-4 h-4" />
             {label}
@@ -183,8 +183,8 @@ export function NutritionistFinanceiro() {
               <AreaChart data={revenueData}>
                 <defs>
                   <linearGradient id="fin-revenue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#5a64b4" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#5a64b4" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="fin-expenses" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
@@ -197,7 +197,7 @@ export function NutritionistFinanceiro() {
                   contentStyle={{ background: '#18181b', border: '1px solid #3f3f46', borderRadius: 12, color: '#fff', fontSize: 12 }}
                   formatter={(val: number) => [`R$ ${val.toLocaleString('pt-BR')}`, '']}
                 />
-                <Area type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} fill="url(#fin-revenue)" name="Receita" />
+                <Area type="monotone" dataKey="revenue" stroke="#5a64b4" strokeWidth={2} fill="url(#fin-revenue)" name="Receita" />
                 <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fill="url(#fin-expenses)" name="Despesas" />
               </AreaChart>
             </ResponsiveContainer>
@@ -207,7 +207,7 @@ export function NutritionistFinanceiro() {
             <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
               <h4 className="text-sm dark:text-white text-slate-900 mb-4" style={{ fontWeight: 600 }}>Formas de Recebimento</h4>
               {[
-                { method: 'PIX', pct: 45, color: '#10b981' },
+                { method: 'PIX', pct: 45, color: '#5a64b4' },
                 { method: 'Cartão', pct: 32, color: '#3b82f6' },
                 { method: 'Dinheiro', pct: 13, color: '#f59e0b' },
                 { method: 'Boleto', pct: 10, color: '#8b5cf6' },
@@ -224,12 +224,12 @@ export function NutritionistFinanceiro() {
               ))}
             </div>
 
-            <div className="dark:bg-emerald-500/5 bg-emerald-50 rounded-3xl p-5 border dark:border-emerald-500/20 border-emerald-200">
-              <p className="text-xs text-emerald-500 uppercase tracking-wider mb-3" style={{ fontWeight: 700 }}>Meta do Mês</p>
+            <div className="dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 rounded-3xl p-5 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
+              <p className="text-xs text-[#000326] dark:text-white uppercase tracking-wider mb-3" style={{ fontWeight: 700 }}>Meta do Mês</p>
               <p className="text-2xl dark:text-white text-slate-900 mb-1" style={{ fontWeight: 800 }}>R$ 6.500</p>
-              <p className="text-xs dark:text-emerald-400 text-emerald-700">89% da meta atingida</p>
+              <p className="text-xs dark:text-[#5a64b4] dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE]">89% da meta atingida</p>
               <div className="mt-3 h-2 dark:bg-zinc-800 bg-white rounded-full overflow-hidden">
-                <div className="h-full rounded-full bg-emerald-500" style={{ width: '89%' }} />
+                <div className="h-full rounded-full bg-[#000326] dark:bg-white" style={{ width: '89%' }} />
               </div>
             </div>
           </div>
@@ -246,7 +246,7 @@ export function NutritionistFinanceiro() {
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 placeholder="Buscar..."
-                className="pl-9 pr-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 w-56"
+                className="pl-9 pr-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 w-56"
               />
             </div>
           </div>
@@ -289,16 +289,16 @@ export function NutritionistFinanceiro() {
             {transactions.filter(t => t.status === 'paid').map((tx) => (
               <div key={tx.id} className="border dark:border-zinc-700 border-slate-200 rounded-2xl p-4 hover:dark:border-zinc-500 hover:border-slate-300 transition-all">
                 <div className="flex items-start justify-between mb-3">
-                  <div className="w-8 h-8 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                    <FileText className="w-4 h-4 text-emerald-500" />
+                  <div className="w-8 h-8 rounded-xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
+                    <FileText className="w-4 h-4 text-[#000326] dark:text-white" />
                   </div>
-                  <CheckCircle className="w-4 h-4 text-emerald-500" />
+                  <CheckCircle className="w-4 h-4 text-[#000326] dark:text-white" />
                 </div>
                 <p className="text-sm dark:text-white text-slate-900 mb-1" style={{ fontWeight: 600 }}>{tx.patient}</p>
                 <p className="text-xs dark:text-zinc-500 text-slate-400 mb-3">{typeLabels[tx.type]} · {tx.date}</p>
-                <p className="text-lg text-emerald-500 mb-3" style={{ fontWeight: 700 }}>R$ {tx.amount}</p>
+                <p className="text-lg text-[#000326] dark:text-white mb-3" style={{ fontWeight: 700 }}>R$ {tx.amount}</p>
                 <div className="flex gap-2">
-                  <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:border-emerald-400 transition-all">
+                  <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:border-[#5a64b4] transition-all">
                     <Download className="w-3 h-3" /> Baixar
                   </button>
                   <button className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-blue-500 hover:border-blue-400 transition-all">
@@ -316,7 +316,7 @@ export function NutritionistFinanceiro() {
           <div className="flex items-center justify-between mb-5">
             <h3 className="dark:text-white text-slate-900">Tabela de Serviços</h3>
             <button
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:border-emerald-400 transition-all"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:border-[#5a64b4] transition-all"
             >
               <Plus className="w-3 h-3" /> Novo Serviço
             </button>
@@ -328,7 +328,7 @@ export function NutritionistFinanceiro() {
                   <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{s.name}</p>
                   <p className="text-xs dark:text-zinc-500 text-slate-400">{s.duration}</p>
                 </div>
-                <p className="text-lg text-emerald-500" style={{ fontWeight: 700 }}>R$ {s.price}</p>
+                <p className="text-lg text-[#000326] dark:text-white" style={{ fontWeight: 700 }}>R$ {s.price}</p>
               </div>
             ))}
           </div>
@@ -368,7 +368,7 @@ export function NutritionistFinanceiro() {
                       placeholder={placeholder}
                       value={newTx[key as keyof NewTransaction]}
                       onChange={(e) => setNewTx(p => ({ ...p, [key]: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                     />
                   </div>
                 ))}
@@ -381,7 +381,7 @@ export function NutritionistFinanceiro() {
                     <select
                       value={newTx[key as keyof NewTransaction]}
                       onChange={(e) => setNewTx(p => ({ ...p, [key]: e.target.value }))}
-                      className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                      className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                     >
                       {options.map(o => <option key={o} value={o}>{typeLabels[o] || o}</option>)}
                     </select>
@@ -395,7 +395,7 @@ export function NutritionistFinanceiro() {
                 <button
                   onClick={() => setShowNewModal(false)}
                   className="flex-1 py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                 >
                   Lançar
                 </button>

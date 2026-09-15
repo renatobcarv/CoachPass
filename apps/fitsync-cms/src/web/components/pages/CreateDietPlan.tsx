@@ -83,7 +83,7 @@ const categoryColors: Record<string, { bg: string; text: string; icon: React.Rea
   protein: { bg: 'bg-blue-500/10', text: 'text-blue-400', icon: <Beef className="w-3 h-3" /> },
   carb: { bg: 'bg-amber-500/10', text: 'text-amber-400', icon: <Wheat className="w-3 h-3" /> },
   fat: { bg: 'bg-pink-500/10', text: 'text-pink-400', icon: <Droplets className="w-3 h-3" /> },
-  vegetable: { bg: 'bg-emerald-500/10', text: 'text-emerald-400', icon: <Apple className="w-3 h-3" /> },
+  vegetable: { bg: 'bg-[#000326] dark:bg-white/10', text: 'text-[#5a64b4] dark:text-[#C5C5CE]', icon: <Apple className="w-3 h-3" /> },
   fruit: { bg: 'bg-orange-500/10', text: 'text-orange-400', icon: <Apple className="w-3 h-3" /> },
   dairy: { bg: 'bg-purple-500/10', text: 'text-purple-400', icon: <Droplets className="w-3 h-3" /> },
 };
@@ -101,7 +101,7 @@ const categoryGradients: Record<string, string> = {
   protein: 'from-blue-500 to-indigo-600',
   carb: 'from-amber-500 to-orange-500',
   fat: 'from-pink-500 to-rose-500',
-  vegetable: 'from-emerald-500 to-teal-600',
+  vegetable: 'from-[#000326] to-[#000346]',
   fruit: 'from-orange-400 to-amber-500',
   dairy: 'from-violet-500 to-purple-600',
 };
@@ -120,7 +120,7 @@ function getCategoryColors(category: string): [string, string] {
     protein: ['#3b82f6', '#4338ca'],
     carb: ['#f59e0b', '#d97706'],
     fat: ['#ec4899', '#be185d'],
-    vegetable: ['#10b981', '#059669'],
+    vegetable: ['#5a64b4', '#000346'],
     fruit: ['#f97316', '#ea580c'],
     dairy: ['#8b5cf6', '#7c3aed'],
   };
@@ -340,15 +340,15 @@ export function CreateDietPlan() {
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all border ${
                 showShoppingList
                   ? 'text-white border-transparent shadow-lg'
-                  : 'dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:border-emerald-500/50 hover:border-emerald-400'
+                  : 'dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:border-[#000326]/40 dark:border-white/40 hover:border-[#5a64b4]'
               }`}
-              style={showShoppingList ? { background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 } : { fontWeight: 500 }}
+              style={showShoppingList ? { background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 } : { fontWeight: 500 }}
             >
               <ShoppingCart className="w-4 h-4" />
               Lista de Compras
               {totalFoodItems > 0 && (
                 <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full ${showShoppingList ? 'bg-white/25 text-white' : 'bg-emerald-500/15 text-emerald-500'}`}
+                  className={`text-xs px-1.5 py-0.5 rounded-full ${showShoppingList ? 'bg-white/25 text-white' : 'bg-[#000326] dark:bg-white/15 text-[#000326] dark:text-white'}`}
                   style={{ fontWeight: 700 }}
                 >
                   {totalFoodItems}
@@ -588,7 +588,7 @@ export function CreateDietPlan() {
                 <div className="h-full rounded-full transition-all"
                   style={{ width: `${Math.min(100, (totals.calories / targetCalories) * 100)}%`, background: totals.calories > targetCalories * 1.05 ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#f59e0b,#d97706)' }} />
               </div>
-              <p className="text-xs mt-2" style={{ color: totals.calories > targetCalories ? '#ef4444' : '#10b981', fontWeight: 600 }}>
+              <p className="text-xs mt-2" style={{ color: totals.calories > targetCalories ? '#ef4444' : '#5a64b4', fontWeight: 600 }}>
                 {totals.calories > targetCalories ? `+${Math.round(totals.calories - targetCalories)} kcal acima` : `${Math.round(targetCalories - totals.calories)} kcal restantes`}
               </p>
             </div>
@@ -629,11 +629,11 @@ export function CreateDietPlan() {
             {totalFoodItems > 0 && (
               <button
                 onClick={() => { setShowShoppingList(true); setTimeout(() => document.getElementById('shopping-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border dark:border-emerald-500/30 border-emerald-300 dark:bg-emerald-500/5 bg-emerald-50 dark:text-emerald-400 text-emerald-700 hover:dark:bg-emerald-500/10 hover:bg-emerald-100 transition-all"
+                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border dark:border-[#000326]/25 dark:border-white/25 border-[#000326]/30 dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 dark:text-[#5a64b4] dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE] hover:dark:bg-[#000326] dark:bg-white/10 hover:bg-[#000326]/10 transition-all"
               >
                 <ShoppingCart className="w-4 h-4" />
                 <span className="flex-1 text-left">Ver Lista de Compras</span>
-                <span className="text-xs px-1.5 py-0.5 rounded-full bg-emerald-500/20" style={{ fontWeight: 700 }}>{totalFoodItems} itens</span>
+                <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#000326] dark:bg-white/20" style={{ fontWeight: 700 }}>{totalFoodItems} itens</span>
               </button>
             )}
 
@@ -666,7 +666,7 @@ export function CreateDietPlan() {
             <div className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden">
 
               {/* ── Banner ── */}
-              <div className="relative p-6 lg:p-8 overflow-hidden" style={{ background: 'linear-gradient(135deg,#10b981,#059669,#047857)' }}>
+              <div className="relative p-6 lg:p-8 overflow-hidden" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346,#047857)' }}>
                 <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full bg-white/10" />
                 <div className="absolute bottom-0 right-32 w-32 h-32 rounded-full bg-white/5" />
                 <div className="absolute top-4 left-1/2 w-16 h-16 rounded-full bg-white/5" />
@@ -707,7 +707,7 @@ export function CreateDietPlan() {
                       <span className="text-xs text-white/80 mr-1">Período:</span>
                       {[7, 15, 30, 60].map((d) => (
                         <button key={d} onClick={() => setShoppingDays(d)}
-                          className={`px-2.5 py-1 rounded-lg text-xs transition-all ${shoppingDays === d ? 'bg-white text-emerald-700 shadow-sm' : 'text-white/70 hover:bg-white/15'}`}
+                          className={`px-2.5 py-1 rounded-lg text-xs transition-all ${shoppingDays === d ? 'bg-white text-[#000326] dark:text-[#C5C5CE] shadow-sm' : 'text-white/70 hover:bg-white/15'}`}
                           style={{ fontWeight: shoppingDays === d ? 700 : 400 }}>
                           {d === 7 ? '7d' : d === 15 ? '15d' : d === 30 ? '1 mês' : '2 meses'}
                         </button>
@@ -825,7 +825,7 @@ export function CreateDietPlan() {
                   <div className="dark:bg-zinc-800/30 bg-white rounded-2xl border dark:border-zinc-700 border-slate-200 overflow-hidden">
                     {/* Table header */}
                     <div className="flex items-center gap-3 px-6 py-4 border-b dark:border-zinc-700 border-slate-200">
-                      <ShoppingCart className="w-5 h-5 text-emerald-500" />
+                      <ShoppingCart className="w-5 h-5 text-[#000326] dark:text-white" />
                       <div>
                         <h4 className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 700 }}>
                           Lista Completa — {shoppingDays === 7 ? '1 semana' : shoppingDays === 30 ? '1 mês' : shoppingDays === 60 ? '2 meses' : `${shoppingDays} dias`}
@@ -833,11 +833,11 @@ export function CreateDietPlan() {
                         <p className="text-xs dark:text-zinc-500 text-slate-400">Quantidade diária × {shoppingDays} dias</p>
                       </div>
                       <div className="ml-auto flex items-center gap-3">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" style={{ fontWeight: 700 }}>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 700 }}>
                           {totalFoodItems} itens
                         </span>
                         <button onClick={() => toast.success('Lista exportada!')}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:dark:text-emerald-400 transition-all" style={{ fontWeight: 600 }}>
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:dark:text-[#5a64b4] dark:text-[#C5C5CE] transition-all" style={{ fontWeight: 600 }}>
                           <Download className="w-3.5 h-3.5" /> Exportar
                         </button>
                       </div>
@@ -852,7 +852,7 @@ export function CreateDietPlan() {
                             <th className="text-left px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Alimento</th>
                             <th className="text-center px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider hidden md:table-cell" style={{ fontWeight: 600 }}>Categoria</th>
                             <th className="text-right px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Qtd / dia</th>
-                            <th className="text-right px-6 py-3 text-xs text-emerald-500 uppercase tracking-wider" style={{ fontWeight: 700 }}>Total {shoppingDays} dias</th>
+                            <th className="text-right px-6 py-3 text-xs text-[#000326] dark:text-white uppercase tracking-wider" style={{ fontWeight: 700 }}>Total {shoppingDays} dias</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -898,7 +898,7 @@ export function CreateDietPlan() {
                       </p>
                       <div className="flex gap-2">
                         <button onClick={() => toast.success('PDF gerado!')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:dark:text-emerald-400 transition-all" style={{ fontWeight: 600 }}>
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:dark:text-[#5a64b4] dark:text-[#C5C5CE] transition-all" style={{ fontWeight: 600 }}>
                           <Download className="w-3.5 h-3.5" /> PDF
                         </button>
                         <button onClick={() => toast.success('Imprimindo...')}

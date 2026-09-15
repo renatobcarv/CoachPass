@@ -13,7 +13,7 @@ const students = [
 
 const templates = [
   { id: 'parq', title: 'PAR-Q', description: 'Prontidão para Atividade Física', icon: '🩺', color: '#3b82f6', questions: 7 },
-  { id: 'anamnese', title: 'Anamnese Completa', description: 'Histórico de saúde e hábitos', icon: '📋', color: '#10b981', questions: 24 },
+  { id: 'anamnese', title: 'Anamnese Completa', description: 'Histórico de saúde e hábitos', icon: '📋', color: '#5a64b4', questions: 24 },
   { id: 'pretreino', title: 'Pré-Treino', description: 'Check de disposição e recuperação', icon: '⚡', color: '#f59e0b', questions: 8 },
   { id: 'satisfacao', title: 'Satisfação', description: 'Avaliação do serviço', icon: '⭐', color: '#8b5cf6', questions: 10 },
   { id: 'objetivos', title: 'Objetivos e Metas', description: 'Levantamento de expectativas', icon: '🎯', color: '#ef4444', questions: 12 },
@@ -101,7 +101,7 @@ export function PersonalQuestionarios() {
       <div className="grid grid-cols-3 gap-4 mb-6">
         {[
           { label: 'Modelos', value: templates.length, color: '#ec4899' },
-          { label: 'Respondidos', value: answeredCount, color: '#10b981' },
+          { label: 'Respondidos', value: answeredCount, color: '#5a64b4' },
           { label: 'Pendentes', value: pendingCount, color: '#f59e0b' },
         ].map(({ label, value, color }) => (
           <div key={label} className="dark:bg-zinc-900 bg-white rounded-3xl p-5 border dark:border-zinc-800 border-slate-200">
@@ -164,7 +164,7 @@ export function PersonalQuestionarios() {
                 <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{item.templateTitle}</p>
                 <p className="text-xs dark:text-zinc-500 text-slate-400">{item.studentName} · Enviado em {new Date(item.sentAt + 'T12:00').toLocaleDateString('pt-BR')}</p>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${item.status === 'answered' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'}`} style={{ fontWeight: 600 }}>
+              <span className={`text-xs px-2 py-0.5 rounded-full flex-shrink-0 ${item.status === 'answered' ? 'bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE]' : 'bg-amber-500/10 text-amber-400'}`} style={{ fontWeight: 600 }}>
                 {item.status === 'answered' ? '✓ Respondido' : '⏳ Pendente'}
               </span>
               {item.status === 'answered' && (
@@ -259,7 +259,7 @@ export function PersonalQuestionarios() {
                   {Object.entries(viewResponse.answers).map(([q, a]) => (
                     <div key={q} className="flex items-center justify-between py-2 border-b dark:border-zinc-800 border-slate-100 last:border-0">
                       <span className="text-xs dark:text-zinc-500 text-slate-400">Pergunta {q.replace('q', '')}</span>
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${a === 'Sim' ? 'bg-red-500/10 text-red-400' : 'bg-emerald-500/10 text-emerald-400'}`} style={{ fontWeight: 600 }}>{a}</span>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${a === 'Sim' ? 'bg-red-500/10 text-red-400' : 'bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE]'}`} style={{ fontWeight: 600 }}>{a}</span>
                     </div>
                   ))}
                 </div>

@@ -127,13 +127,18 @@ export function Register() {
       const lower = msg.toLowerCase();
       if (
         lower.includes('already') ||
+        lower.includes('registered') ||
         lower.includes('duplicate') ||
         lower.includes('unique') ||
         lower.includes('já existe')
       ) {
         setBackendError('Este e-mail já está cadastrado. Faça o login.');
-      } else if (lower.includes('email')) {
-        setBackendError('E-mail inválido. Use um endereço completo, como nome@email.com.');
+      } else if (
+        lower.includes('valid email') ||
+        lower.includes('e-mail em formato') ||
+        lower.includes('please enter a valid')
+      ) {
+        setBackendError('E-mail inválido. Use o endereço completo, como nome@gmail.com.');
       } else {
         setBackendError(msg || 'Não foi possível completar o cadastro. Verifique os dados fornecidos.');
       }
@@ -158,8 +163,8 @@ export function Register() {
         {/* Cabeçalho */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200 mb-6">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-emerald-500/10 dark:bg-emerald-500/20">
-              <Shield className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#000326] dark:bg-white/10 dark:bg-[#000326] dark:bg-white/20">
+              <Shield className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE] dark:text-[#5a64b4] dark:text-[#C5C5CE]" />
             </div>
             <span className="text-sm dark:text-zinc-300 text-slate-700 tracking-wide font-medium">COACHPASS</span>
           </div>
@@ -179,7 +184,7 @@ export function Register() {
           </div>
           <div className="h-0.5 dark:bg-zinc-800 bg-slate-200 rounded-full w-full overflow-hidden">
             <motion.div
-              className="h-full bg-emerald-500"
+              className="h-full bg-[#000326] dark:bg-white"
               initial={{ width: 0 }}
               animate={{ width: `${progressPct}%` }}
               transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -202,13 +207,13 @@ export function Register() {
               {/* Card - Aluno */}
               <button
                 onClick={() => { handleInputChange('userType', 'student'); setStep(2); }}
-                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#0a0a0a] bg-white transition-all duration-300 hover:border-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/5 overflow-hidden block"
+                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#000137] bg-white transition-all duration-300 hover:border-[#000326]/25 dark:border-white/25 hover:shadow-2xl hover:shadow-[#000326]/10 overflow-hidden block"
               >
                 {/* Linha indicadora superior sutil ao passar o mouse */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                <div className="absolute top-0 left-0 right-0 h-1 bg-[#000326] dark:bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
                 
                 <div className="w-12 h-12 rounded border dark:border-zinc-800 border-slate-100 dark:bg-zinc-900 bg-slate-50 flex items-center justify-center mb-6">
-                  <Heart className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-emerald-500 transition-colors" />
+                  <Heart className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-[#000326] dark:text-white transition-colors" />
                 </div>
                 
                 <h2 className="dark:text-white text-slate-900 mb-3 font-medium text-lg">Acesso Estudante</h2>
@@ -216,7 +221,7 @@ export function Register() {
                   Gerenciamento de dieta e rotina de treinamento orientada, acompanhe seus resultados dinamicamente.
                 </p>
                 
-                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-emerald-600 dark:text-emerald-500 font-semibold group-hover:gap-4 transition-all">
+                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-[#000326] dark:text-[#C5C5CE] dark:text-[#000326] dark:text-white font-semibold group-hover:gap-4 transition-all">
                   <span>Prosseguir</span>
                   <ArrowRight className="w-4 h-4" />
                 </div>
@@ -225,7 +230,7 @@ export function Register() {
               {/* Card - Profissional */}
               <button
                 onClick={() => { handleInputChange('userType', 'professional'); setStep(2); }}
-                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#0a0a0a] bg-white transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden block"
+                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#000137] bg-white transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden block"
               >
                 <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
                 
@@ -262,12 +267,12 @@ export function Register() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="dark:bg-[#0a0a0a] bg-white rounded-2xl p-8 lg:p-10 border dark:border-zinc-800 border-slate-200 shadow-xl"
+              className="dark:bg-[#000137] bg-white rounded-2xl p-8 lg:p-10 border dark:border-zinc-800 border-slate-200 shadow-xl"
             >
               <div className="flex items-center justify-between mb-8 pb-6 border-b dark:border-zinc-800 border-slate-100">
                 <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${formData.userType === 'student' ? 'dark:border-emerald-500/20 border-emerald-100 bg-emerald-50/50 dark:bg-emerald-900/10' : 'dark:border-blue-500/20 border-blue-100 bg-blue-50/50 dark:bg-blue-900/10'}`}>
-                    {formData.userType === 'student' ? <Heart className="w-4 h-4 text-emerald-600" /> : <Briefcase className="w-4 h-4 text-blue-600" />}
+                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${formData.userType === 'student' ? 'dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/10 bg-[#000326]/5/50 dark:bg-white/5' : 'dark:border-blue-500/20 border-blue-100 bg-blue-50/50 dark:bg-blue-900/10'}`}>
+                    {formData.userType === 'student' ? <Heart className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE]" /> : <Briefcase className="w-4 h-4 text-blue-600" />}
                   </div>
                   <div>
                     <h2 className="dark:text-white text-slate-900 font-medium tracking-tight text-lg">Requisitos de Segurança</h2>
@@ -306,7 +311,7 @@ export function Register() {
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
                       placeholder="Identificação formal"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.name ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.name ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
                     />
                   </div>
                   {errors.name && <p className="text-xs text-red-500 mt-2 font-medium">{errors.name}</p>}
@@ -323,8 +328,9 @@ export function Register() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="Endereço de e-mail"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.email ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
+                      placeholder="seu@gmail.com"
+                      autoComplete="email"
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.email ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
                     />
                   </div>
                   {errors.email && <p className="text-xs text-red-500 mt-2 font-medium">{errors.email}</p>}
@@ -342,7 +348,7 @@ export function Register() {
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
                       placeholder="Exigência mínima de 6 caracteres"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-emerald-500 transition-all font-light text-sm`}
+                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
                     />
                   </div>
                   {errors.password && <p className="text-xs text-red-500 mt-2 font-medium">{errors.password}</p>}
@@ -360,7 +366,7 @@ export function Register() {
                   onClick={handleSubmit}
                   disabled={loading}
                   className="w-full py-3.5 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium"
-                  style={{ background: formData.userType === 'student' ? '#059669' : '#1e40af' }}
+                  style={{ background: formData.userType === 'student' ? '#000346' : '#1e40af' }}
                 >
                   {loading ? (
                     <>

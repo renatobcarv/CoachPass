@@ -60,18 +60,19 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
   const { theme, toggleTheme } = useTheme();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isDark = theme === 'dark';
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
-  // Seleciona os itens de navegação baseado no role do usuário
-  const navItems = user?.role === 'personal' 
-    ? personalNavItems 
-    : user?.role === 'nutritionist'
-    ? nutritionistNavItems
-    : studentNavItems;
+  const navItems =
+    user?.role === 'personal'
+      ? personalNavItems
+      : user?.role === 'nutritionist'
+        ? nutritionistNavItems
+        : studentNavItems;
 
   const roleLabels: Record<string, string> = {
     master: 'Master',
@@ -80,62 +81,38 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
     nutritionist: 'Nutricionista',
   };
 
-  const sidebarClasses = `
-    fixed top-0 left-0 h-full w-64 z-40 flex flex-col
-    transition-transform duration-300 ease-in-out
-    ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-    dark:bg-zinc-950 bg-white
-    dark:border-zinc-800 border-slate-200 border-r
-  `;
-
   return (
     <>
-      {/* Mobile overlay */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm"
-          onClick={onMobileClose}
-        />
+        <div className="fixed inset-0 bg-black/60 z-30 lg:hidden backdrop-blur-sm" onClick={onMobileClose} />
       )}
 
-      <aside className={sidebarClasses}>
-        {/* Logo */}
-        <div className="p-6 flex items-center justify-between">
-          <Link to={navItems[0]?.to || '/'} className="flex items-center gap-2.5" onClick={onMobileClose}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-cyan-500 shadow-lg shadow-emerald-500/30">
-              <Zap className="w-5 h-5 text-white" fill="white" />
+      <aside
+        className={`fixed top-0 left-0 h-full w-64 z-40 flex flex-col transition-transform duration-300 ease-in-out border-r border-[#000326]/10 bg-white dark:border-white/10 dark:bg-[#000137] ${
+          mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        }`}
+      >
+        <div className="p-5 flex items-center justify-between">
+          <Link to={navItems[0]?.to || '/'} className="group flex items-center gap-2.5" onClick={onMobileClose}>
+            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#000326] transition-transform duration-300 group-hover:scale-105 dark:bg-white">
+              <Zap className="w-5 h-5 text-white dark:text-[#000326]" fill="currentColor" />
             </div>
             <div>
-              <span
-                className="text-xl tracking-tight"
-                style={{
-                  background: 'linear-gradient(135deg, #10b981, #3b82f6)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                  fontWeight: 700,
-                }}
-              >
-                CoachPass
-              </span>
-              <p className="text-xs dark:text-zinc-500 text-slate-400 -mt-0.5">
-                Treino e nutrição
-              </p>
+              <span className="text-lg font-bold tracking-tight text-[#000326] dark:text-white">CoachPass</span>
+              <p className="text-xs text-[#6a6a7a] -mt-0.5 dark:text-[#C5C5CE]">Treino e nutrição</p>
             </div>
           </Link>
           <button
             onClick={onMobileClose}
-            className="lg:hidden dark:text-zinc-400 text-slate-400 hover:text-slate-600 dark:hover:text-white transition-colors"
+            className="lg:hidden text-[#6a6a7a] transition-colors hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-white"
+            aria-label="Fechar menu"
           >
             <X className="w-5 h-5" />
           </button>
         </div>
 
-        {/* Navigation */}
         <nav className="flex-1 px-3 py-2 space-y-1 overflow-y-auto">
-          <p className="text-xs dark:text-zinc-600 text-slate-400 uppercase tracking-widest px-3 mb-3">
-            Menu
-          </p>
+          <p className="text-xs text-[#8e8e9a] uppercase tracking-widest px-3 mb-3 dark:text-[#C5C5CE]/70">Menu</p>
           {navItems.map(({ to, icon: Icon, label, exact }) => (
             <NavLink
               key={to}
@@ -145,43 +122,42 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
               className={({ isActive }) =>
                 `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative ${
                   isActive
-                    ? 'bg-gradient-to-r from-emerald-500/10 to-blue-500/10 dark:from-emerald-500/15 dark:to-blue-500/15'
-                    : 'dark:hover:bg-zinc-900 hover:bg-slate-50'
+                    ? 'bg-[#000326]/06 dark:bg-[#000346]'
+                    : 'hover:bg-[#000326]/04 dark:hover:bg-white/[0.04]'
                 }`
               }
             >
               {({ isActive }) => (
                 <>
                   {isActive && (
-                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-gradient-to-b from-emerald-500 to-blue-500" />
+                    <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-6 rounded-r-full bg-[#000326] dark:bg-white" />
                   )}
                   <div
                     className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${
                       isActive
-                        ? 'bg-gradient-to-br from-emerald-500 to-blue-500 shadow-md shadow-emerald-500/20'
-                        : 'dark:bg-zinc-800 bg-slate-100 dark:group-hover:bg-zinc-700 group-hover:bg-slate-200'
+                        ? 'bg-[#000326] dark:bg-white'
+                        : 'bg-[#f3f4f9] group-hover:bg-[#e8e9f0] dark:bg-[#000346] dark:group-hover:bg-[#0a0e42]'
                     }`}
                   >
                     <Icon
                       className={`w-4 h-4 ${
                         isActive
-                          ? 'text-white'
-                          : 'dark:text-zinc-400 text-slate-500 group-hover:text-slate-700 dark:group-hover:text-zinc-200'
+                          ? 'text-white dark:text-[#000326]'
+                          : 'text-[#6a6a7a] group-hover:text-[#000326] dark:text-[#C5C5CE] dark:group-hover:text-white'
                       }`}
                     />
                   </div>
                   <span
                     className={`text-sm transition-colors ${
                       isActive
-                        ? 'dark:text-white text-slate-900'
-                        : 'dark:text-zinc-400 text-slate-500 dark:group-hover:text-zinc-100 group-hover:text-slate-700'
+                        ? 'font-semibold text-[#000326] dark:text-white'
+                        : 'text-[#6a6a7a] group-hover:text-[#000326] dark:text-[#C5C5CE] dark:group-hover:text-white'
                     }`}
-                    style={{ fontWeight: isActive ? 600 : 400 }}
                   >
                     {label}
                   </span>
                   {isActive && (
-                    <ChevronRight className="w-3.5 h-3.5 text-emerald-500 ml-auto" />
+                    <ChevronRight className="w-3.5 h-3.5 text-[#8e8e9a] ml-auto dark:text-[#C5C5CE]" />
                   )}
                 </>
               )}
@@ -189,74 +165,68 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           ))}
         </nav>
 
-        {/* Theme Toggle */}
-        <div className="px-4 py-3 mx-3 mb-3 rounded-2xl dark:bg-zinc-900 bg-slate-50 dark:border-zinc-800 border border-slate-200">
+        <div className="px-4 py-3 mx-3 mb-3 rounded-2xl border border-[#000326]/10 bg-[#f3f4f9] dark:border-white/10 dark:bg-[#000346]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <div className="w-8 h-8 rounded-lg flex items-center justify-center dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200">
-                {theme === 'dark' ? (
-                  <Moon className="w-4 h-4 text-indigo-400" />
-                ) : (
-                  <Sun className="w-4 h-4 text-amber-500" />
-                )}
+              <div className="relative w-8 h-8 rounded-lg flex items-center justify-center border border-[#000326]/10 bg-white dark:border-white/10 dark:bg-[#000137]">
+                <Sun
+                  className={`absolute w-4 h-4 text-amber-500 transition-all duration-300 ${
+                    isDark ? 'opacity-0 -rotate-90 scale-50' : 'opacity-100 rotate-0 scale-100'
+                  }`}
+                />
+                <Moon
+                  className={`absolute w-4 h-4 text-[#C5C5CE] transition-all duration-300 ${
+                    isDark ? 'opacity-100 rotate-0 scale-100' : 'opacity-0 rotate-90 scale-50'
+                  }`}
+                />
               </div>
               <div>
-                <p className="text-sm dark:text-zinc-200 text-slate-700" style={{ fontWeight: 500 }}>
-                  {theme === 'dark' ? 'Modo Escuro' : 'Modo Claro'}
+                <p className="text-sm font-medium text-[#000326] dark:text-white">
+                  {isDark ? 'Modo escuro' : 'Modo claro'}
                 </p>
-                <p className="text-xs dark:text-zinc-500 text-slate-400">Tema atual</p>
+                <p className="text-xs text-[#8e8e9a] dark:text-[#C5C5CE]">Tema atual</p>
               </div>
             </div>
-            {/* Toggle Switch */}
             <button
               onClick={toggleTheme}
+              aria-label={isDark ? 'Ativar tema claro' : 'Ativar tema escuro'}
               className={`relative w-12 h-6 rounded-full transition-all duration-300 focus:outline-none ${
-                theme === 'dark'
-                  ? 'bg-gradient-to-r from-indigo-600 to-purple-600'
-                  : 'bg-gradient-to-r from-amber-400 to-orange-400'
+                isDark ? 'bg-white/30' : 'bg-[#000326]/20'
               }`}
             >
               <div
-                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 flex items-center justify-center ${
-                  theme === 'dark' ? 'translate-x-6' : 'translate-x-0.5'
+                className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-md transform transition-transform duration-300 ${
+                  isDark ? 'translate-x-6' : 'translate-x-0.5'
                 }`}
-              >
-                {theme === 'dark' ? (
-                  <Moon className="w-3 h-3 text-indigo-600" />
-                ) : (
-                  <Sun className="w-3 h-3 text-amber-500" />
-                )}
-              </div>
+              />
             </button>
           </div>
         </div>
 
-        {/* User Profile Footer */}
-        <div className="p-4 border-t dark:border-zinc-800 border-slate-200 space-y-2">
-          <div className="flex items-center gap-3 group">
+        <div className="p-4 border-t border-[#000326]/10 space-y-2 dark:border-white/10">
+          <div className="flex items-center gap-3">
             <div className="relative">
-              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-emerald-500/40 transition-all">
+              <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#000326]/15 dark:ring-white/20">
                 <img
-                  src={user?.avatar || 'https://ui-avatars.com/api/?name=User&background=10b981&color=fff'}
+                  src={user?.avatar || 'https://ui-avatars.com/api/?name=User&background=000326&color=fff'}
                   alt={user?.name || 'Usuário'}
                   className="w-full h-full object-cover"
                 />
               </div>
-              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 dark:border-zinc-950 border-white" />
+              <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#C5C5CE] rounded-full border-2 border-white dark:border-[#000137]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm dark:text-zinc-100 text-slate-800 truncate" style={{ fontWeight: 600 }}>
+              <p className="text-sm font-semibold text-[#000326] truncate dark:text-white">
                 {user?.name || 'Usuário'}
               </p>
-              <p className="text-xs dark:text-zinc-500 text-slate-400 truncate">
+              <p className="text-xs text-[#8e8e9a] truncate dark:text-[#C5C5CE]">
                 {user?.role ? roleLabels[user.role] : 'Aluno'}
               </p>
             </div>
           </div>
           <button
             onClick={handleLogout}
-            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl dark:bg-red-500/10 bg-red-50 dark:text-red-400 text-red-600 hover:dark:bg-red-500/20 hover:bg-red-100 transition-all text-sm"
-            style={{ fontWeight: 500 }}
+            className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-red-600 bg-red-50 transition-all hover:bg-red-100 dark:bg-red-500/10 dark:text-red-300 dark:hover:bg-red-500/20"
           >
             <LogOut className="w-4 h-4" />
             Sair da conta

@@ -102,13 +102,13 @@ export function NutritionistProfile() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-emerald-500 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-[#000326] dark:text-white transition-colors">
               <Search className="w-4 h-4" />
               Buscar Paciente
             </button>
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+              style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
             >
               <Plus className="w-4 h-4" />
               Novo Paciente
@@ -119,7 +119,7 @@ export function NutritionistProfile() {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { label: 'Pacientes Ativos', value: patients.filter(p => p.status === 'active').length.toString(), icon: Users, color: 'emerald' },
+            { label: 'Pacientes Ativos', value: patients.filter(p => p.status === 'active').length.toString(), icon: Users, color: 'indigo' },
             { label: 'Consultas Hoje', value: '8', icon: Calendar, color: 'blue' },
             { label: 'Taxa de Adesão', value: '87%', icon: TrendingUp, color: 'purple' },
             { label: 'Prescrições Ativas', value: patients.length.toString(), icon: FileText, color: 'orange' },
@@ -150,8 +150,8 @@ export function NutritionistProfile() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30">
-                <Users className="w-6 h-6 text-emerald-400" />
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#000326]/20 to-[#5a64b4]/20 border border-[#000326]/25 dark:border-white/25">
+                <Users className="w-6 h-6 text-[#5a64b4] dark:text-[#C5C5CE]" />
               </div>
               <div>
                 <h3 className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>
@@ -163,7 +163,7 @@ export function NutritionistProfile() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="px-4 py-2 rounded-lg text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              <button className="px-4 py-2 rounded-lg text-sm bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20">
                 Ativos ({patients.filter(p => p.status === 'active').length})
               </button>
               <button className="px-4 py-2 rounded-lg text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600">
@@ -178,13 +178,13 @@ export function NutritionistProfile() {
                 key={patient.id}
                 whileHover={{ scale: 1.02 }}
                 onClick={() => setSelectedPatient(patient.id)}
-                className={`dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-5 border dark:border-zinc-700 border-slate-200 cursor-pointer hover:border-emerald-500/50 transition-all ${
+                className={`dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-5 border dark:border-zinc-700 border-slate-200 cursor-pointer hover:border-[#000326]/40 dark:border-white/40 transition-all ${
                   patient.status === 'inactive' ? 'opacity-60' : ''
                 }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white text-lg" style={{ fontWeight: 700 }}>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#000326] to-[#5a64b4] flex items-center justify-center text-white text-lg" style={{ fontWeight: 700 }}>
                       {patient.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -194,7 +194,7 @@ export function NutritionistProfile() {
                       <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           patient.status === 'active' 
-                            ? 'bg-emerald-500/10 text-emerald-500' 
+                            ? 'bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white' 
                             : patient.status === 'pending'
                             ? 'bg-yellow-500/10 text-yellow-500'
                             : 'bg-red-500/10 text-red-500'
@@ -206,7 +206,7 @@ export function NutritionistProfile() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs dark:text-zinc-400 text-slate-500 mb-1">Adesão</p>
-                    <p className={`text-xl ${patient.adherence >= 80 ? 'text-emerald-500' : 'text-yellow-500'}`} style={{ fontWeight: 700 }}>
+                    <p className={`text-xl ${patient.adherence >= 80 ? 'text-[#000326] dark:text-white' : 'text-yellow-500'}`} style={{ fontWeight: 700 }}>
                       {patient.adherence}%
                     </p>
                   </div>
@@ -259,7 +259,7 @@ export function NutritionistProfile() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setSelectedPatient(null)}
-            className="w-10 h-10 rounded-xl dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 flex items-center justify-center dark:text-zinc-400 text-slate-600 hover:text-emerald-500 transition-colors"
+            className="w-10 h-10 rounded-xl dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 flex items-center justify-center dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -268,18 +268,18 @@ export function NutritionistProfile() {
               {currentPatient?.name}
             </h2>
             <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">
-              {currentPatient?.goal} · Adesão: <span className={currentPatient && currentPatient.adherence >= 80 ? 'text-emerald-500' : 'text-yellow-500'}>{currentPatient?.adherence}%</span>
+              {currentPatient?.goal} · Adesão: <span className={currentPatient && currentPatient.adherence >= 80 ? 'text-[#000326] dark:text-white' : 'text-yellow-500'}>{currentPatient?.adherence}%</span>
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-emerald-500 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-[#000326] dark:text-white transition-colors">
             <Download className="w-4 h-4" />
             Exportar Dados
           </button>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
           >
             <Calendar className="w-4 h-4" />
             Agendar Consulta
@@ -295,8 +295,8 @@ export function NutritionistProfile() {
       >
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30">
-              <ClipboardList className="w-6 h-6 text-emerald-400" />
+            <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#000326]/20 to-[#5a64b4]/20 border border-[#000326]/25 dark:border-white/25">
+              <ClipboardList className="w-6 h-6 text-[#5a64b4] dark:text-[#C5C5CE]" />
             </div>
             <div>
               <h3 className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>
@@ -307,7 +307,7 @@ export function NutritionistProfile() {
               </p>
             </div>
           </div>
-          <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-emerald-500 transition-colors">
+          <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-[#000326] dark:text-white transition-colors">
             <Edit3 className="w-4 h-4" />
           </button>
         </div>
@@ -319,7 +319,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Anamnese Geral
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400">Editar</button>
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE]">Editar</button>
             </div>
             <div className="space-y-2">
               {[
@@ -349,7 +349,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Questionários Aplicados
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400">+ Novo</button>
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE]">+ Novo</button>
             </div>
             <div className="space-y-2">
               {[
@@ -369,7 +369,7 @@ export function NutritionistProfile() {
                     <span
                       className={`text-xs px-2 py-0.5 rounded-full ${
                         quest.status === 'completed'
-                          ? 'bg-emerald-500/10 text-emerald-500'
+                          ? 'bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white'
                           : 'bg-yellow-500/10 text-yellow-500'
                       }`}
                     >
@@ -393,7 +393,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Histórico de Consultas
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400">Ver Tudo</button>
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE]">Ver Tudo</button>
             </div>
             <div className="space-y-2">
               {[
@@ -407,14 +407,14 @@ export function NutritionistProfile() {
                 >
                   {idx === 0 && (
                     <div className="absolute -top-2 -right-2">
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-white" style={{ fontWeight: 700 }}>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white text-white" style={{ fontWeight: 700 }}>
                         Última
                       </span>
                     </div>
                   )}
                   <div className="flex items-center justify-between mb-2">
                     <p className="text-xs dark:text-zinc-400 text-slate-500">{consult.date}</p>
-                    <span className="text-xs dark:text-emerald-400 text-emerald-600" style={{ fontWeight: 600 }}>
+                    <span className="text-xs dark:text-[#5a64b4] dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE]" style={{ fontWeight: 600 }}>
                       {consult.weight}
                     </span>
                   </div>
@@ -471,10 +471,10 @@ export function NutritionistProfile() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-emerald-500 transition-colors">
+            <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-[#000326] dark:text-white transition-colors">
               <Download className="w-4 h-4" />
             </button>
-            <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-emerald-500 transition-colors">
+            <button className="p-2 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-[#000326] dark:text-white transition-colors">
               <Plus className="w-4 h-4" />
             </button>
           </div>
@@ -487,7 +487,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Biomarcadores Sanguíneos
               </p>
-              <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
+              <span className="text-xs px-2 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white">
                 Atualizado em 28/02/2026
               </span>
             </div>
@@ -532,7 +532,7 @@ export function NutritionistProfile() {
                       </td>
                       <td className="px-3 py-3 text-center">
                         {marker.status === 'normal' ? (
-                          <CheckCircle2 className="w-5 h-5 text-emerald-500 mx-auto" />
+                          <CheckCircle2 className="w-5 h-5 text-[#000326] dark:text-white mx-auto" />
                         ) : (
                           <AlertCircle className="w-5 h-5 text-yellow-500 mx-auto" />
                         )}
@@ -550,7 +550,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Avaliação Antropométrica
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE] flex items-center gap-1">
                 <Camera className="w-3 h-3" />
                 Adicionar Foto
               </button>
@@ -559,7 +559,7 @@ export function NutritionistProfile() {
               {[
                 { label: 'Peso', value: anthropometricData.weight, unit: 'kg', color: 'blue' },
                 { label: 'Altura', value: anthropometricData.height, unit: 'm', color: 'purple' },
-                { label: 'IMC', value: anthropometricData.bmi, unit: 'kg/m²', color: 'emerald' },
+                { label: 'IMC', value: anthropometricData.bmi, unit: 'kg/m²', color: 'indigo' },
                 { label: '% Gordura', value: anthropometricData.bodyFat, unit: '%', color: 'orange' },
                 { label: 'Gordura Visceral', value: anthropometricData.visceralFat, unit: 'nível', color: 'red' },
                 { label: 'Massa Muscular', value: anthropometricData.muscleMass, unit: 'kg', color: 'green' },
@@ -646,7 +646,7 @@ export function NutritionistProfile() {
           </div>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
           >
             <FileText className="w-4 h-4" />
             Gerar PDF
@@ -664,7 +664,7 @@ export function NutritionistProfile() {
                 <button className="text-xs px-3 py-1.5 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600">
                   Por Alimentos
                 </button>
-                <button className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/10 text-emerald-500">
+                <button className="text-xs px-3 py-1.5 rounded-lg bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white">
                   Equivalentes
                 </button>
                 <button className="text-xs px-3 py-1.5 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600">
@@ -674,7 +674,7 @@ export function NutritionistProfile() {
             </div>
 
             {/* Macros Overview */}
-            <div className="dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-blue-500/10 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-2xl p-5 border dark:border-emerald-500/20 border-emerald-200 mb-4">
+            <div className="dark:bg-gradient-to-br dark:from-white/10 dark:to-blue-500/10 bg-gradient-to-br from-[#e8e9f2] to-[#f3f4f9] rounded-2xl p-5 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20 mb-4">
               <div className="grid grid-cols-4 gap-4">
                 <div>
                   <p className="text-xs dark:text-zinc-400 text-slate-500 mb-1">Calorias Totais</p>
@@ -685,7 +685,7 @@ export function NutritionistProfile() {
                 </div>
                 <div>
                   <p className="text-xs dark:text-zinc-400 text-slate-500 mb-1">Proteínas</p>
-                  <p className="text-emerald-500 text-2xl" style={{ fontWeight: 800 }}>
+                  <p className="text-[#000326] dark:text-white text-2xl" style={{ fontWeight: 800 }}>
                     {foodPlan.protein}g
                   </p>
                   <p className="text-xs dark:text-zinc-500 text-slate-400">30%</p>
@@ -715,8 +715,8 @@ export function NutritionistProfile() {
                   className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-3 border dark:border-zinc-700 border-slate-200 flex items-center justify-between"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-emerald-500/10">
-                      <span className="text-sm text-emerald-500" style={{ fontWeight: 700 }}>
+                    <div className="w-8 h-8 rounded-lg flex items-center justify-center bg-[#000326] dark:bg-white/10">
+                      <span className="text-sm text-[#000326] dark:text-white" style={{ fontWeight: 700 }}>
                         {idx + 1}
                       </span>
                     </div>
@@ -744,7 +744,7 @@ export function NutritionistProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Suplementação
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400">+ Adicionar</button>
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE]">+ Adicionar</button>
             </div>
             <div className="space-y-3">
               {supplements.map((supp) => (
@@ -862,18 +862,18 @@ export function NutritionistProfile() {
           <div className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-5 border dark:border-zinc-700 border-slate-200">
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
-                <BarChart3 className="w-5 h-5 text-emerald-500" />
+                <BarChart3 className="w-5 h-5 text-[#000326] dark:text-white" />
                 <p className="text-sm dark:text-zinc-300 text-slate-700" style={{ fontWeight: 600 }}>
                   Macronutrientes
                 </p>
               </div>
-              <span className="text-xs px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
+              <span className="text-xs px-2 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white">
                 Hoje
               </span>
             </div>
             <div className="space-y-3">
               {[
-                { name: 'Proteínas', current: 152, target: 165, unit: 'g', color: 'emerald' },
+                { name: 'Proteínas', current: 152, target: 165, unit: 'g', color: 'indigo' },
                 { name: 'Carboidratos', current: 198, target: 220, unit: 'g', color: 'blue' },
                 { name: 'Gorduras', current: 68, target: 73, unit: 'g', color: 'purple' },
               ].map((macro) => {
@@ -923,7 +923,7 @@ export function NutritionistProfile() {
                   <span className="text-xs dark:text-zinc-400 text-slate-500">{day}</span>
                   <div className="flex gap-1">
                     {idx < 5 ? (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                      <CheckCircle2 className="w-4 h-4 text-[#000326] dark:text-white" />
                     ) : (
                       <div className="w-4 h-4 rounded-full dark:bg-zinc-700 bg-slate-200"></div>
                     )}

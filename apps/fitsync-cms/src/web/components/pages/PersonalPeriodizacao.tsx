@@ -44,7 +44,7 @@ const objectiveConfig = {
   hipertrofia: { label: 'Hipertrofia', color: '#3b82f6', icon: '💪' },
   forca: { label: 'Força Máxima', color: '#ef4444', icon: '🏋️' },
   potencia: { label: 'Potência', color: '#f59e0b', icon: '⚡' },
-  resistencia: { label: 'Resistência', color: '#10b981', icon: '🏃' },
+  resistencia: { label: 'Resistência', color: '#5a64b4', icon: '🏃' },
   definicao: { label: 'Definição', color: '#8b5cf6', icon: '🔥' },
 };
 
@@ -55,7 +55,7 @@ const levelConfig = {
   very_high: { label: 'Muito Alto', w: '100%' },
 };
 
-const blockColors = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899'];
+const blockColors = ['#3b82f6', '#5a64b4', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4', '#f97316', '#ec4899'];
 
 const mockPlans: Plan[] = [
   {
@@ -65,7 +65,7 @@ const mockPlans: Plan[] = [
       { id: 'b1', name: 'Fase 1 – Adaptação', objective: 'adaptacao', weeks: 3, sessionsPerWeek: 3, volumeLevel: 'low', intensityLevel: 'low', restDays: 4, notes: 'Aprender os padrões de movimento', color: '#06b6d4' },
       { id: 'b2', name: 'Fase 2 – Hipertrofia Base', objective: 'hipertrofia', weeks: 6, sessionsPerWeek: 4, volumeLevel: 'high', intensityLevel: 'medium', restDays: 3, notes: 'Volume elevado para estímulo hipertrófico', color: '#3b82f6' },
       { id: 'b3', name: 'Fase 3 – Força', objective: 'forca', weeks: 4, sessionsPerWeek: 4, volumeLevel: 'medium', intensityLevel: 'very_high', restDays: 3, notes: 'Intensidade máxima, menos volume', color: '#ef4444' },
-      { id: 'b4', name: 'Deload', objective: 'adaptacao', weeks: 1, sessionsPerWeek: 3, volumeLevel: 'low', intensityLevel: 'low', restDays: 4, notes: 'Recuperação ativa', color: '#10b981' },
+      { id: 'b4', name: 'Deload', objective: 'adaptacao', weeks: 1, sessionsPerWeek: 3, volumeLevel: 'low', intensityLevel: 'low', restDays: 4, notes: 'Recuperação ativa', color: '#5a64b4' },
     ],
   },
 ];
@@ -155,7 +155,7 @@ export function PersonalPeriodizacao() {
                 style={selectedPlan?.id === plan.id ? { background: 'linear-gradient(135deg,rgba(249,115,22,0.1),rgba(234,88,12,0.06))' } : {}}>
                 <div className="flex items-start justify-between gap-2 mb-2">
                   <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{plan.name}</p>
-                  <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${plan.status === 'active' ? 'bg-emerald-500/10 text-emerald-400' : plan.status === 'draft' ? 'bg-zinc-500/10 text-zinc-400' : 'bg-blue-500/10 text-blue-400'}`} style={{ fontWeight: 600 }}>
+                  <span className={`text-xs px-1.5 py-0.5 rounded-md flex-shrink-0 ${plan.status === 'active' ? 'bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE]' : plan.status === 'draft' ? 'bg-zinc-500/10 text-zinc-400' : 'bg-blue-500/10 text-blue-400'}`} style={{ fontWeight: 600 }}>
                     {plan.status === 'active' ? 'Ativo' : plan.status === 'draft' ? 'Rascunho' : 'Concluído'}
                   </span>
                 </div>

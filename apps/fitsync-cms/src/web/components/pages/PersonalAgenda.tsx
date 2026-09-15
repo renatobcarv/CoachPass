@@ -55,13 +55,13 @@ function getMonthDays(year: number, month: number) {
 
 const statusConfig = {
   scheduled: { label: 'Agendado', color: '#3b82f6', bg: 'bg-blue-500/10', text: 'text-blue-400', icon: Clock },
-  done: { label: 'Concluído', color: '#10b981', bg: 'bg-emerald-500/10', text: 'text-emerald-400', icon: CheckCircle },
+  done: { label: 'Concluído', color: '#5a64b4', bg: 'bg-[#000326] dark:bg-white/10', text: 'text-[#5a64b4] dark:text-[#C5C5CE]', icon: CheckCircle },
   cancelled: { label: 'Cancelado', color: '#ef4444', bg: 'bg-red-500/10', text: 'text-red-400', icon: XCircle },
   missed: { label: 'Faltou', color: '#f59e0b', bg: 'bg-amber-500/10', text: 'text-amber-400', icon: AlertCircle },
 };
 
 const typeConfig = {
-  presencial: { label: 'Presencial', icon: MapPin, color: '#10b981' },
+  presencial: { label: 'Presencial', icon: MapPin, color: '#5a64b4' },
   online: { label: 'Online', icon: Video, color: '#3b82f6' },
   avaliacao: { label: 'Avaliação', icon: Users, color: '#8b5cf6' },
 };
@@ -158,7 +158,7 @@ export function PersonalAgenda() {
         {[
           { label: 'Sessões Hoje', value: sessionsByDate(fmt(today)).length, color: '#3b82f6' },
           { label: 'Agendadas', value: sessions.filter(s => s.status === 'scheduled').length, color: '#8b5cf6' },
-          { label: 'Concluídas Mês', value: sessions.filter(s => s.status === 'done').length, color: '#10b981' },
+          { label: 'Concluídas Mês', value: sessions.filter(s => s.status === 'done').length, color: '#5a64b4' },
           { label: 'Taxa Presença', value: `${Math.round((sessions.filter(s => s.status === 'done').length / Math.max(1, sessions.filter(s => s.status !== 'scheduled').length)) * 100)}%`, color: '#f59e0b' },
         ].map(({ label, value, color }) => (
           <div key={label} className="dark:bg-zinc-900 bg-white rounded-2xl p-4 border dark:border-zinc-800 border-slate-200">
@@ -206,7 +206,7 @@ export function PersonalAgenda() {
                     {daySessions.map(s => {
                       const TypeIcon = typeConfig[s.type].icon;
                       return (
-                        <div key={s.id} className={`p-2 rounded-xl text-xs ${statusConfig[s.status].bg} border ${s.status === 'done' ? 'border-emerald-500/20' : s.status === 'scheduled' ? 'border-blue-500/20' : 'border-zinc-700'}`}>
+                        <div key={s.id} className={`p-2 rounded-xl text-xs ${statusConfig[s.status].bg} border ${s.status === 'done' ? 'border-[#000326]/20 dark:border-white/20' : s.status === 'scheduled' ? 'border-blue-500/20' : 'border-zinc-700'}`}>
                           <div className="flex items-center gap-1 mb-0.5">
                             <TypeIcon className="w-2.5 h-2.5" style={{ color: typeConfig[s.type].color }} />
                             <span style={{ fontWeight: 700, color: statusConfig[s.status].color }}>{s.time}</span>
@@ -318,7 +318,7 @@ export function PersonalAgenda() {
                   {s.status === 'scheduled' && (
                     <div className="flex gap-2 flex-shrink-0">
                       <button onClick={() => updateStatus(s.id, 'done')}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border dark:border-emerald-500/30 border-emerald-300 dark:text-emerald-400 text-emerald-600 hover:dark:bg-emerald-500/10 transition-all" style={{ fontWeight: 600 }}>
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border dark:border-[#000326]/25 dark:border-white/25 border-[#000326]/30 dark:text-[#5a64b4] dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE] hover:dark:bg-[#000326] dark:bg-white/10 transition-all" style={{ fontWeight: 600 }}>
                         <Check className="w-3 h-3" /> Concluir
                       </button>
                       <button onClick={() => updateStatus(s.id, 'missed')}

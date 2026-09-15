@@ -40,7 +40,7 @@ export function ProfessionalOnboarding() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="dark:bg-[#0a0a0a] bg-white rounded-2xl p-8 border dark:border-zinc-800 border-slate-200 shadow-xl"
+          className="dark:bg-[#000137] bg-white rounded-2xl p-8 border dark:border-zinc-800 border-slate-200 shadow-xl"
         >
           <div className="space-y-8">
             {/* Escolha do tipo */}

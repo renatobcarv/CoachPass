@@ -8,7 +8,7 @@ const categories = ['Todos', 'Treinos', 'Motivação', 'Cardápio', 'Progresso',
 
 const templates = [
   { id: '1', title: 'Ficha de Treino Minimalista', category: 'Treinos', preview: '#3b82f6', icon: '🏋️', premium: false, downloads: 1240, uses: 384 },
-  { id: '2', title: 'Card de Evolução Física', category: 'Progresso', preview: '#10b981', icon: '📈', premium: false, downloads: 892, uses: 257 },
+  { id: '2', title: 'Card de Evolução Física', category: 'Progresso', preview: '#5a64b4', icon: '📈', premium: false, downloads: 892, uses: 257 },
   { id: '3', title: 'Story de Motivação Dark', category: 'Motivação', preview: '#111827', icon: '⚡', premium: false, downloads: 2100, uses: 748 },
   { id: '4', title: 'Post Antes & Depois', category: 'Progresso', preview: '#8b5cf6', icon: '🔄', premium: true, downloads: 3400, uses: 1200 },
   { id: '5', title: 'Planilha Semanal de Treinos', category: 'Treinos', preview: '#f59e0b', icon: '📋', premium: false, downloads: 1560, uses: 520 },
@@ -19,7 +19,7 @@ const templates = [
 
 const myCreations = [
   { id: 'c1', title: 'Treino Lucas – Março', type: 'Ficha', createdAt: '2025-03-10', color: '#3b82f6' },
-  { id: 'c2', title: 'Evolução Maria Santos', type: 'Progresso', createdAt: '2025-03-08', color: '#10b981' },
+  { id: 'c2', title: 'Evolução Maria Santos', type: 'Progresso', createdAt: '2025-03-08', color: '#5a64b4' },
   { id: 'c3', title: 'Post Resultados – Semana 8', type: 'Motivação', createdAt: '2025-03-05', color: '#8b5cf6' },
 ];
 
@@ -38,7 +38,7 @@ export function PersonalCanvas() {
 
   const gradients: Record<string, string> = {
     '#3b82f6': 'from-blue-500 to-indigo-600',
-    '#10b981': 'from-emerald-500 to-teal-600',
+    '#5a64b4': 'from-[#000326] to-[#000346]',
     '#111827': 'from-zinc-800 to-zinc-950',
     '#8b5cf6': 'from-violet-500 to-purple-600',
     '#f59e0b': 'from-amber-400 to-orange-500',

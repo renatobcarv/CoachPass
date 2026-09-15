@@ -195,7 +195,7 @@ export function Evolution() {
               }`}
               style={
                 activeRange === r
-                  ? { background: 'linear-gradient(135deg, #10b981, #3b82f6)', fontWeight: 600 }
+                  ? { background: 'linear-gradient(135deg, #5a64b4, #3b82f6)', fontWeight: 600 }
                   : { fontWeight: 400 }
               }
             >
@@ -208,7 +208,7 @@ export function Evolution() {
       {/* Top Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Peso perdido', value: stats.weightLost, trend: '↓', color: 'text-emerald-400', bg: 'bg-emerald-500/10', icon: Scale },
+          { label: 'Peso perdido', value: stats.weightLost, trend: '↓', color: 'text-[#5a64b4] dark:text-[#C5C5CE]', bg: 'bg-[#000326] dark:bg-white/10', icon: Scale },
           { label: 'Gordura reduzida', value: stats.fatLost, trend: '↓', color: 'text-blue-400', bg: 'bg-blue-500/10', icon: Activity },
           { label: 'Treinos feitos', value: String(stats.workouts), trend: '↑', color: 'text-purple-400', bg: 'bg-purple-500/10', icon: BarChart2 },
           { label: 'Metas batidas', value: stats.goalRate, trend: '↑', color: 'text-orange-400', bg: 'bg-orange-500/10', icon: Target },
@@ -235,7 +235,7 @@ export function Evolution() {
                 Tendência de redução — Meta: 75 kg
               </p>
             </div>
-            <div className="flex items-center gap-1.5 text-emerald-400">
+            <div className="flex items-center gap-1.5 text-[#5a64b4] dark:text-[#C5C5CE]">
               <TrendingDown className="w-4 h-4" />
               <span className="text-sm" style={{ fontWeight: 600 }}>-{stats.weightLost}</span>
             </div>
@@ -247,8 +247,8 @@ export function Evolution() {
             >
               <defs>
                 <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#5a64b4" stopOpacity={0.3} />
+                  <stop offset="95%" stopColor="#5a64b4" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <XAxis
@@ -268,7 +268,7 @@ export function Evolution() {
               <Area
                 type="monotone"
                 dataKey="weight"
-                stroke="#10b981"
+                stroke="#5a64b4"
                 strokeWidth={2.5}
                 fill="url(#weightGrad)"
                 dot={false}
@@ -387,8 +387,8 @@ export function Evolution() {
               <Radar
                 name="Volume"
                 dataKey="volume"
-                stroke="#10b981"
-                fill="#10b981"
+                stroke="#5a64b4"
+                fill="#5a64b4"
                 fillOpacity={0.2}
                 strokeWidth={2}
                 isAnimationActive={false}
@@ -416,7 +416,7 @@ export function Evolution() {
                 <div className="flex items-center gap-3">
                   <span className="text-xs dark:text-zinc-600 text-slate-400">{m.start}</span>
                   <div className="flex items-center gap-1">
-                    <TrendingUp className={`w-3 h-3 ${m.positive ? 'text-emerald-400' : 'text-red-400'}`} />
+                    <TrendingUp className={`w-3 h-3 ${m.positive ? 'text-[#5a64b4] dark:text-[#C5C5CE]' : 'text-red-400'}`} />
                   </div>
                   <span className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
                     {m.current}
@@ -424,7 +424,7 @@ export function Evolution() {
                   <span
                     className={`text-xs px-2 py-0.5 rounded-full ${
                       m.positive
-                        ? 'text-emerald-400 bg-emerald-500/10'
+                        ? 'text-[#5a64b4] dark:text-[#C5C5CE] bg-[#000326] dark:bg-white/10'
                         : 'text-red-400 bg-red-500/10'
                     }`}
                     style={{ fontWeight: 600 }}

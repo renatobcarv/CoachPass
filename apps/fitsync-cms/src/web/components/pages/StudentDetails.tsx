@@ -108,7 +108,7 @@ export function StudentDetails() {
             <img
               src={studentData.avatar}
               alt={studentData.name}
-              className="w-16 h-16 rounded-2xl ring-4 ring-emerald-500/20"
+              className="w-16 h-16 rounded-2xl ring-4 ring-[#000326] dark:ring-white/20"
             />
             <div>
               <h1 className="dark:text-white text-slate-900 mb-1">{studentData.name}</h1>
@@ -117,7 +117,7 @@ export function StudentDetails() {
                 <span>•</span>
                 <span>{studentData.height}cm</span>
                 <span>•</span>
-                <span className="text-emerald-500">{studentData.goal}</span>
+                <span className="text-[#000326] dark:text-white">{studentData.goal}</span>
               </div>
             </div>
           </div>
@@ -133,7 +133,7 @@ export function StudentDetails() {
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Treinos na Semana', value: studentData.workoutsThisWeek, icon: Dumbbell, color: '#10b981' },
+          { label: 'Treinos na Semana', value: studentData.workoutsThisWeek, icon: Dumbbell, color: '#5a64b4' },
           { label: 'Total de Treinos', value: studentData.totalWorkouts, icon: Award, color: '#3b82f6' },
           { label: 'Taxa de Adesão', value: `${studentData.adherence}%`, icon: TrendingUp, color: '#8b5cf6' },
           { label: 'Peso Atual', value: `${bioimpedanceData.weight}kg`, icon: Weight, color: '#f59e0b' },
@@ -165,7 +165,7 @@ export function StudentDetails() {
               onClick={() => setActiveTab(tab.id as any)}
               className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all ${
                 activeTab === tab.id
-                  ? 'bg-gradient-to-r from-emerald-500 to-blue-500 text-white shadow-lg'
+                  ? 'bg-gradient-to-r from-[#000326] to-[#5a64b4] text-white shadow-lg'
                   : 'dark:text-zinc-400 text-slate-600 hover:dark:text-white hover:text-slate-900'
               }`}
               style={{ fontWeight: activeTab === tab.id ? 600 : 400 }}
@@ -237,7 +237,7 @@ export function StudentDetails() {
 
               <div className="grid grid-cols-2 gap-4">
                 {[
-                  { label: 'Peso', value: `${bioimpedanceData.weight} kg`, icon: Weight, color: '#10b981' },
+                  { label: 'Peso', value: `${bioimpedanceData.weight} kg`, icon: Weight, color: '#5a64b4' },
                   { label: 'Gordura Corporal', value: `${bioimpedanceData.bodyFat}%`, icon: Droplet, color: '#f59e0b' },
                   { label: 'Massa Muscular', value: `${bioimpedanceData.muscleMass} kg`, icon: Dumbbell, color: '#3b82f6' },
                   { label: 'Gordura Visceral', value: bioimpedanceData.visceralFat, icon: Target, color: '#ef4444' },
@@ -287,8 +287,8 @@ export function StudentDetails() {
                    >
                     <defs>
                       <linearGradient id="sd-weight-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#10b981" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#5a64b4" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#5a64b4" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis 
@@ -316,7 +316,7 @@ export function StudentDetails() {
                     <Area 
                       type="monotone" 
                       dataKey="weight" 
-                      stroke="#10b981" 
+                      stroke="#5a64b4" 
                       fillOpacity={1} 
                       fill="url(#sd-weight-grad)" 
                       strokeWidth={3} 
@@ -390,7 +390,7 @@ export function StudentDetails() {
                     key={workout.id}
                     className="flex items-center gap-4 p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200"
                   >
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center">
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#000326] to-[#5a64b4] flex items-center justify-center">
                       <Dumbbell className="w-6 h-6 text-white" />
                     </div>
                     <div className="flex-1">
@@ -402,7 +402,7 @@ export function StudentDetails() {
                       </p>
                     </div>
                     {workout.completed && (
-                      <div className="flex items-center gap-1 text-emerald-500 text-xs">
+                      <div className="flex items-center gap-1 text-[#000326] dark:text-white text-xs">
                         <Activity className="w-3 h-3" />
                         Concluído
                       </div>
@@ -421,7 +421,7 @@ export function StudentDetails() {
             <h4 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 600 }}>Ações Rápidas</h4>
             <div className="space-y-2">
               {[
-                { label: 'Criar Novo Treino', icon: Plus, color: '#10b981', action: () => navigate('/personal/criar-treino') },
+                { label: 'Criar Novo Treino', icon: Plus, color: '#5a64b4', action: () => navigate('/personal/criar-treino') },
                 { label: 'Registrar Medição', icon: Activity, color: '#3b82f6', action: () => navigate(`/personal/aluno/${id}/medicao`) },
                 { label: 'Adicionar Restrição', icon: AlertCircle, color: '#f59e0b', action: () => navigate(`/personal/aluno/${id}/restricao`) },
                 { label: 'Ver Relatório', icon: BarChart3, color: '#8b5cf6', action: () => navigate(`/personal/aluno/${id}/relatorio`) },
@@ -440,8 +440,8 @@ export function StudentDetails() {
             </div>
           </div>
 
-          <div className="dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-blue-500/10 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-3xl p-5 border dark:border-emerald-500/20 border-emerald-200">
-            <Zap className="w-8 h-8 text-emerald-500 mb-3" />
+          <div className="dark:bg-gradient-to-br dark:from-white/10 dark:to-blue-500/10 bg-gradient-to-br from-[#e8e9f2] to-[#f3f4f9] rounded-3xl p-5 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
+            <Zap className="w-8 h-8 text-[#000326] dark:text-white mb-3" />
             <p className="text-sm dark:text-white text-slate-900 mb-2" style={{ fontWeight: 600 }}>
               Aluno Consistente
             </p>

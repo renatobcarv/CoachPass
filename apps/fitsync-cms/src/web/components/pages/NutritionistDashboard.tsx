@@ -71,7 +71,7 @@ export function NutritionistDashboard() {
           </button>
           <button
             onClick={() => navigate('/nutritionist/consulta/1')}
-            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-slate-900 dark:bg-emerald-600"
+            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-slate-900 dark:bg-[#000326] dark:bg-white"
           >
             <Stethoscope className="w-4 h-4 inline mr-1.5" />
             Consulta
@@ -91,7 +91,7 @@ export function NutritionistDashboard() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-emerald-600"
+          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#000326] dark:bg-white"
         >
           <UserPlus className="w-4 h-4 inline mr-1.5" />
           Convidar

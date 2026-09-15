@@ -112,7 +112,7 @@ export function StudentMeasurement() {
     const diff = current - prev;
     const isGood = invert ? diff < 0 : diff > 0;
     return (
-      <span className={`text-xs px-1.5 py-0.5 rounded-md ${isGood ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`} style={{ fontWeight: 600 }}>
+      <span className={`text-xs px-1.5 py-0.5 rounded-md ${isGood ? 'text-[#5a64b4] dark:text-[#C5C5CE] bg-[#000326] dark:bg-white/10' : 'text-red-400 bg-red-500/10'}`} style={{ fontWeight: 600 }}>
         {diff > 0 ? '+' : ''}{diff.toFixed(1)}{unit}
       </span>
     );
@@ -122,8 +122,8 @@ export function StudentMeasurement() {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-          <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-emerald-500" />
+          <div className="w-24 h-24 rounded-full bg-[#000326] dark:bg-white/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-12 h-12 text-[#000326] dark:text-white" />
           </div>
           <h2 className="dark:text-white text-slate-900 mb-2">Medição Registrada!</h2>
           <p className="dark:text-zinc-400 text-slate-500 text-sm">Redirecionando para o perfil do aluno...</p>
@@ -142,7 +142,7 @@ export function StudentMeasurement() {
           Voltar ao Perfil do Aluno
         </button>
         <div className="flex items-center gap-4">
-          <img src={studentData.avatar} alt={studentData.name} className="w-14 h-14 rounded-2xl ring-4 ring-emerald-500/20" />
+          <img src={studentData.avatar} alt={studentData.name} className="w-14 h-14 rounded-2xl ring-4 ring-[#000326] dark:ring-white/20" />
           <div>
             <h1 className="dark:text-white text-slate-900">Registrar Medição</h1>
             <p className="text-sm dark:text-zinc-400 text-slate-500 mt-0.5">
@@ -157,13 +157,13 @@ export function StudentMeasurement() {
         {/* Data */}
         <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <Calendar className="w-4 h-4 text-emerald-500" />
+            <div className="w-7 h-7 rounded-lg bg-[#000326] dark:bg-white/10 flex items-center justify-center">
+              <Calendar className="w-4 h-4 text-[#000326] dark:text-white" />
             </div>
             <h3 className="dark:text-white text-slate-900 text-base" style={{ fontWeight: 600 }}>Data da Medição</h3>
           </div>
           <input type="date" {...register('date')}
-            className="px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm" />
+            className="px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 text-sm" />
         </div>
 
         {/* Bioimpedância */}
@@ -183,7 +183,7 @@ export function StudentMeasurement() {
               { name: 'bmr' as const, label: 'TMB (kcal)', prev: prev.bmr, icon: Zap, color: '#8b5cf6', unit: '', invert: false },
               { name: 'hydration' as const, label: 'Hidratação (%)', prev: prev.hydration, icon: Droplets, color: '#06b6d4', unit: '%', invert: false },
               { name: 'boneMass' as const, label: 'Massa Óssea (kg)', prev: prev.boneMass, icon: Ruler, color: '#6b7280', unit: 'kg', invert: false },
-              { name: 'bmi' as const, label: 'IMC', prev: prev.bmi, icon: Heart, color: '#10b981', unit: '', invert: false },
+              { name: 'bmi' as const, label: 'IMC', prev: prev.bmi, icon: Heart, color: '#5a64b4', unit: '', invert: false },
             ].map(({ name, label, prev: prevVal, icon: Icon, color, unit, invert }) => (
               <div key={name} className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-4 border dark:border-zinc-700 border-slate-200">
                 <div className="flex items-center justify-between mb-2">
@@ -196,7 +196,7 @@ export function StudentMeasurement() {
                   type="number" step="0.1"
                   {...register(name, { min: 0 })}
                   placeholder={String(prevVal)}
-                  className="w-full px-2 py-1.5 rounded-lg text-sm dark:bg-zinc-700 bg-white border dark:border-zinc-600 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-center"
+                  className="w-full px-2 py-1.5 rounded-lg text-sm dark:bg-zinc-700 bg-white border dark:border-zinc-600 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 text-center"
                 />
                 <div className="flex items-center justify-between mt-2">
                   <span className="text-xs dark:text-zinc-600 text-slate-400">Ant: {prevVal}{unit}</span>
@@ -233,7 +233,7 @@ export function StudentMeasurement() {
                   type="number" step="0.1"
                   {...register(name)}
                   placeholder={String(prevVal)}
-                  className="w-full px-3 py-2.5 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 text-sm text-center"
+                  className="w-full px-3 py-2.5 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 text-sm text-center"
                 />
                 <p className="text-xs dark:text-zinc-600 text-slate-400 text-center mt-1">Ant: {prevVal}cm</p>
               </div>
@@ -248,7 +248,7 @@ export function StudentMeasurement() {
             {...register('notes')}
             rows={4}
             placeholder="Observações sobre a medição, evolução percebida, recomendações para o próximo período..."
-            className="w-full px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none text-sm"
+            className="w-full px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 resize-none text-sm"
           />
         </div>
 
@@ -260,7 +260,7 @@ export function StudentMeasurement() {
           </button>
           <button type="submit" disabled={step === 'loading'}
             className="flex-[2] py-4 rounded-2xl text-white transition-all hover:opacity-90 disabled:opacity-70 flex items-center justify-center gap-2 text-sm"
-            style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', boxShadow: '0 8px 24px rgba(16,185,129,0.35)', fontWeight: 600 }}>
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)', boxShadow: '0 8px 24px rgba(16,185,129,0.35)', fontWeight: 600 }}>
             {step === 'loading'
               ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />Salvando...</>
               : <><Save className="w-5 h-5" />Salvar Medição</>}

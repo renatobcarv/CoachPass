@@ -49,7 +49,7 @@ const planOptions = [
 ];
 
 const statusConfig = {
-  paid: { label: 'Pago', icon: CheckCircle, color: '#10b981', bg: 'bg-emerald-500/10', text: 'text-emerald-400' },
+  paid: { label: 'Pago', icon: CheckCircle, color: '#5a64b4', bg: 'bg-[#000326] dark:bg-white/10', text: 'text-[#5a64b4] dark:text-[#C5C5CE]' },
   pending: { label: 'Pendente', icon: Clock, color: '#f59e0b', bg: 'bg-amber-500/10', text: 'text-amber-400' },
   overdue: { label: 'Atrasado', icon: AlertCircle, color: '#ef4444', bg: 'bg-red-500/10', text: 'text-red-400' },
 };
@@ -119,7 +119,7 @@ export function PersonalFinanceiro() {
           </div>
           <button onClick={() => setActiveTab('new')}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+            style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
             <Plus className="w-4 h-4" /> Novo Lançamento
           </button>
         </div>
@@ -130,7 +130,7 @@ export function PersonalFinanceiro() {
         {[{ id: 'overview', label: 'Visão Geral' }, { id: 'transactions', label: 'Lançamentos' }, { id: 'new', label: 'Novo Lançamento' }].map(({ id, label }) => (
           <button key={id} onClick={() => setActiveTab(id as any)}
             className={`px-4 py-2.5 rounded-xl text-sm transition-all ${activeTab === id ? 'text-white shadow-lg' : 'dark:text-zinc-400 text-slate-600 hover:dark:text-white'}`}
-            style={activeTab === id ? { background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 } : {}}>
+            style={activeTab === id ? { background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 } : {}}>
             {label}
           </button>
         ))}
@@ -142,7 +142,7 @@ export function PersonalFinanceiro() {
           {/* KPIs */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              { label: 'Receita do Mês', value: `R$ ${income.toLocaleString('pt-BR')}`, icon: TrendingUp, color: '#10b981' },
+              { label: 'Receita do Mês', value: `R$ ${income.toLocaleString('pt-BR')}`, icon: TrendingUp, color: '#5a64b4' },
               { label: 'A Receber', value: `R$ ${pending.toLocaleString('pt-BR')}`, icon: Clock, color: '#f59e0b' },
               { label: 'Despesas', value: `R$ ${expenses.toLocaleString('pt-BR')}`, icon: TrendingDown, color: '#ef4444' },
               { label: 'Lucro Líquido', value: `R$ ${(income - expenses).toLocaleString('pt-BR')}`, icon: DollarSign, color: '#3b82f6' },
@@ -166,7 +166,7 @@ export function PersonalFinanceiro() {
                   <XAxis key="pf-bar-xaxis" dataKey="month" stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} />
                   <YAxis key="pf-bar-yaxis" stroke="#52525b" fontSize={11} tickLine={false} axisLine={false} />
                   <Tooltip key="pf-bar-tooltip" contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: 12, fontSize: 11 }} formatter={(v: any) => [`R$ ${v}`, '']} />
-                  <Bar key="pf-bar-receita" dataKey="receita" fill="#10b981" radius={[6, 6, 0, 0]} name="Receita" maxBarSize={32} />
+                  <Bar key="pf-bar-receita" dataKey="receita" fill="#5a64b4" radius={[6, 6, 0, 0]} name="Receita" maxBarSize={32} />
                   <Bar key="pf-bar-despesa" dataKey="despesa" fill="#ef4444" radius={[6, 6, 0, 0]} name="Despesa" maxBarSize={32} />
                 </BarChart>
               </ResponsiveContainer>
@@ -187,14 +187,14 @@ export function PersonalFinanceiro() {
                         <p className="text-xs dark:text-zinc-500 text-slate-400">{t.description}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm" style={{ fontWeight: 700, color: t.type === 'income' ? '#10b981' : '#ef4444' }}>
+                        <p className="text-sm" style={{ fontWeight: 700, color: t.type === 'income' ? '#5a64b4' : '#ef4444' }}>
                           R$ {t.amount}
                         </p>
                         <span className={`text-xs px-1.5 py-0.5 rounded-md ${st.bg} ${st.text}`} style={{ fontWeight: 600 }}>{st.label}</span>
                       </div>
                       {t.status === 'pending' || t.status === 'overdue' ? (
                         <button onClick={() => markAsPaid(t.id)}
-                          className="px-2 py-1 rounded-lg text-xs bg-emerald-500/10 text-emerald-400 border dark:border-emerald-500/20 hover:bg-emerald-500/20 transition-all" style={{ fontWeight: 600 }}>
+                          className="px-2 py-1 rounded-lg text-xs bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border dark:border-[#000326]/20 dark:border-white/20 hover:bg-[#000137] dark:hover:bg-[#C5C5CE]/20 transition-all" style={{ fontWeight: 600 }}>
                           Pagar
                         </button>
                       ) : null}
@@ -226,7 +226,7 @@ export function PersonalFinanceiro() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {planOptions.map(({ label, value }) => (
                 <div key={label} className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-4 border dark:border-zinc-700 border-slate-200">
-                  <p className="text-xl text-emerald-500 mb-1" style={{ fontWeight: 800 }}>R$ {value}</p>
+                  <p className="text-xl text-[#000326] dark:text-white mb-1" style={{ fontWeight: 800 }}>R$ {value}</p>
                   <p className="text-xs dark:text-zinc-400 text-slate-600" style={{ fontWeight: 500 }}>{label}</p>
                 </div>
               ))}
@@ -242,7 +242,7 @@ export function PersonalFinanceiro() {
             <div className="relative">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
               <input type="text" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} placeholder="Buscar..."
-                className="pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-900 bg-white border dark:border-zinc-700 border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 w-56" />
+                className="pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-900 bg-white border dark:border-zinc-700 border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 w-56" />
             </div>
             <select value={filterStatus} onChange={e => setFilterStatus(e.target.value)}
               className="px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-900 bg-white border dark:border-zinc-700 border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none">
@@ -281,7 +281,7 @@ export function PersonalFinanceiro() {
                         {new Date(t.dueDate + 'T12:00').toLocaleDateString('pt-BR')}
                       </td>
                       <td className="px-5 py-3">
-                        <span className="text-sm tabular-nums" style={{ fontWeight: 700, color: t.type === 'income' ? '#10b981' : '#ef4444' }}>
+                        <span className="text-sm tabular-nums" style={{ fontWeight: 700, color: t.type === 'income' ? '#5a64b4' : '#ef4444' }}>
                           {t.type === 'expense' ? '- ' : '+ '}R$ {t.amount}
                         </span>
                       </td>
@@ -293,7 +293,7 @@ export function PersonalFinanceiro() {
                         <div className="flex gap-1">
                           {(t.status === 'pending' || t.status === 'overdue') && (
                             <button onClick={() => markAsPaid(t.id)}
-                              className="px-2 py-1 rounded-lg text-xs bg-emerald-500/10 text-emerald-400 border dark:border-emerald-500/20 hover:bg-emerald-500/20 transition-all" style={{ fontWeight: 600 }}>
+                              className="px-2 py-1 rounded-lg text-xs bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border dark:border-[#000326]/20 dark:border-white/20 hover:bg-[#000137] dark:hover:bg-[#C5C5CE]/20 transition-all" style={{ fontWeight: 600 }}>
                               Receber
                             </button>
                           )}
@@ -324,7 +324,7 @@ export function PersonalFinanceiro() {
               {(['income', 'expense'] as const).map(tp => (
                 <button key={tp} onClick={() => setForm(f => ({ ...f, type: tp }))}
                   className={`flex-1 py-3 rounded-xl text-sm border transition-all ${form.type === tp ? 'text-white border-transparent' : 'dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600'}`}
-                  style={form.type === tp ? { background: tp === 'income' ? 'linear-gradient(135deg,#10b981,#059669)' : 'linear-gradient(135deg,#ef4444,#dc2626)', fontWeight: 600 } : {}}>
+                  style={form.type === tp ? { background: tp === 'income' ? 'linear-gradient(135deg,#5a64b4,#000346)' : 'linear-gradient(135deg,#ef4444,#dc2626)', fontWeight: 600 } : {}}>
                   {tp === 'income' ? '+ Receita' : '- Despesa'}
                 </button>
               ))}
@@ -334,7 +334,7 @@ export function PersonalFinanceiro() {
               <div>
                 <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Aluno</label>
                 <input type="text" value={form.student} onChange={e => setForm(f => ({ ...f, student: e.target.value }))} placeholder="Nome do aluno"
-                  className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                  className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30" />
               </div>
               <div>
                 <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Categoria</label>
@@ -350,7 +350,7 @@ export function PersonalFinanceiro() {
               <div>
                 <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Valor (R$) *</label>
                 <input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="350,00" step={0.01}
-                  className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                  className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30" />
               </div>
               <div>
                 <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Vencimento *</label>
@@ -374,7 +374,7 @@ export function PersonalFinanceiro() {
 
             <button onClick={handleSave}
               className="w-full py-3 rounded-xl text-white text-sm flex items-center justify-center gap-2"
-              style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+              style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
               <Save className="w-4 h-4" /> Salvar Lançamento
             </button>
           </div>
@@ -415,7 +415,7 @@ export function PersonalFinanceiro() {
                 </button>
                 <button onClick={() => { toast.success('Enviando por email...'); setShowReceipt(null); }}
                   className="flex-1 py-2.5 rounded-xl text-white text-sm flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
                   Enviar Email
                 </button>
               </div>

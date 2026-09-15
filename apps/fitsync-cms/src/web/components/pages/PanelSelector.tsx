@@ -92,7 +92,7 @@ export function PanelSelector() {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 onClick={() => navigate(panel.path)}
-                className="group relative p-8 rounded-2xl dark:bg-[#0a0a0a] bg-white border dark:border-zinc-800 border-slate-200 text-left overflow-hidden transition-all duration-300 hover:shadow-2xl flex flex-col h-full"
+                className="group relative p-8 rounded-2xl dark:bg-[#000137] bg-white border dark:border-zinc-800 border-slate-200 text-left overflow-hidden transition-all duration-300 hover:shadow-2xl flex flex-col h-full"
                 style={{
                   boxShadow: `0 0 0 transparent`,
                 }}

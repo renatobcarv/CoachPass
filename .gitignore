@@ -1,0 +1,16 @@
+.claude/
+node_modules/
+.env
+.env*.local
+.DS_Store
+*.pem
+.next/
+out/
+build/
+coverage/
+test-results/
+playwright-report/
+blob-report/
+playwright/.cache/
+*.tsbuildinfo
+next-env.d.ts

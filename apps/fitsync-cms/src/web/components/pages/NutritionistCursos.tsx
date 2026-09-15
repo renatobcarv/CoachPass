@@ -53,7 +53,7 @@ const courses: Course[] = [
   {
     id: 'c2', title: 'Avaliação Nutricional Completa',
     instructor: 'Dra. Ana Ribeiro', category: 'avaliacao', duration: '18h', lessons: 24,
-    rating: 4.8, students: 1920, icon: BarChart3, color: '#10b981', gradient: 'from-emerald-500 to-teal-600',
+    rating: 4.8, students: 1920, icon: BarChart3, color: '#5a64b4', gradient: 'from-[#000326] to-[#000346]',
     progress: 100, level: 'Intermediário', tags: ['Avaliação', 'Composição Corporal'],
   },
   {
@@ -156,7 +156,7 @@ export function NutritionistCursos() {
         {[
           { label: 'Cursos Disponíveis', value: courses.length, icon: BookOpen, color: '#3b82f6' },
           { label: 'Em Andamento', value: inProgress, icon: Play, color: '#f59e0b' },
-          { label: 'Concluídos', value: completed, icon: CheckCircle, color: '#10b981' },
+          { label: 'Concluídos', value: completed, icon: CheckCircle, color: '#5a64b4' },
           { label: 'Horas de Conteúdo', value: `+${totalHours}h`, icon: Clock, color: '#8b5cf6' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
@@ -301,7 +301,7 @@ export function NutritionistCursos() {
                     {course.level}
                   </span>
                   {course.progress === 100 && (
-                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                    <CheckCircle className="w-3.5 h-3.5 text-[#000326] dark:text-white" />
                   )}
                 </div>
 

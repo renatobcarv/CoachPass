@@ -81,7 +81,7 @@ const initialMeals: Meal[] = [
     icon: Sun,
     time: '12:30',
     totalCal: 680,
-    color: '#10b981',
+    color: '#5a64b4',
     expanded: true,
     items: [
       { id: 'f4', name: 'Frango grelhado', qty: '200g', cal: 280, protein: 52, carbs: 0, fat: 6, done: true },
@@ -265,7 +265,7 @@ export function Diet() {
             <div className="space-y-3">
               {[
                 { label: 'Proteína', value: totalProtein, unit: 'g', color: '#3b82f6', goal: 200 },
-                { label: 'Carboidratos', value: totalCarbs, unit: 'g', color: '#10b981', goal: 300 },
+                { label: 'Carboidratos', value: totalCarbs, unit: 'g', color: '#5a64b4', goal: 300 },
                 { label: 'Gordura', value: totalFat, unit: 'g', color: '#f97316', goal: 80 },
               ].map(({ label, value, unit, color, goal }) => (
                 <div key={label}>
@@ -364,7 +364,7 @@ export function Diet() {
                   </div>
                   <div className="flex items-center gap-3">
                     {doneFoods === meal.items.length && meal.items.length > 0 && (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                      <CheckCircle2 className="w-5 h-5 text-[#000326] dark:text-white" />
                     )}
                     {meal.expanded
                       ? <ChevronDown className="w-4 h-4 dark:text-zinc-500 text-slate-400" />
@@ -392,15 +392,15 @@ export function Diet() {
                         key={food.id}
                         className={`flex items-center gap-3 p-3 rounded-2xl transition-all group ${
                           food.done
-                            ? 'dark:bg-emerald-500/5 bg-emerald-50 dark:border-emerald-500/20 border border-emerald-200'
+                            ? 'dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 dark:border-[#000326]/20 dark:border-white/20 border border-[#000326]/20'
                             : 'dark:bg-zinc-800/50 bg-slate-50'
                         }`}
                       >
                         <button onClick={() => toggleFood(meal.id, foodIdx)} className="flex-shrink-0">
                           {food.done ? (
-                            <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                            <CheckCircle2 className="w-5 h-5 text-[#000326] dark:text-white" />
                           ) : (
-                            <Circle className="w-5 h-5 dark:text-zinc-600 text-slate-300 hover:text-emerald-500 transition-colors" />
+                            <Circle className="w-5 h-5 dark:text-zinc-600 text-slate-300 hover:text-[#000326] dark:text-white transition-colors" />
                           )}
                         </button>
                         <div className="flex-1 min-w-0">
@@ -409,7 +409,7 @@ export function Diet() {
                             className={`text-sm text-left group flex items-center gap-1 hover:underline transition-colors ${
                               food.done
                                 ? 'line-through dark:text-zinc-500 text-slate-400'
-                                : 'dark:text-zinc-200 text-slate-700 dark:hover:text-emerald-400 hover:text-emerald-600'
+                                : 'dark:text-zinc-200 text-slate-700 dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] hover:text-[#000326] dark:text-[#C5C5CE]'
                             }`}
                             style={{ fontWeight: 500 }}
                           >

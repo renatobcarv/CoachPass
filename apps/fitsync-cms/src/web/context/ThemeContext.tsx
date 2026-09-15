@@ -7,6 +7,8 @@ interface ThemeContextType {
   toggleTheme: () => void;
 }
 
+const STORAGE_KEY = 'coachpass-theme';
+
 const ThemeContext = createContext<ThemeContextType>({
   theme: 'dark',
   toggleTheme: () => {},
@@ -14,8 +16,8 @@ const ThemeContext = createContext<ThemeContextType>({
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setTheme] = useState<Theme>(() => {
-    const saved = localStorage.getItem('fitai-theme');
-    return (saved as Theme) || 'dark';
+    const saved = localStorage.getItem(STORAGE_KEY);
+    return saved === 'dark' || saved === 'light' ? saved : 'dark';
   });
 
   useEffect(() => {
@@ -25,7 +27,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     } else {
       root.classList.remove('dark');
     }
-    localStorage.setItem('fitai-theme', theme);
+    localStorage.setItem(STORAGE_KEY, theme);
   }, [theme]);
 
   const toggleTheme = () =>

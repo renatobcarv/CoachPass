@@ -29,10 +29,10 @@ const weekDays = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'];
 const todayIndex = 1; // Tuesday
 
 const weekPlan = [
-  { day: 'Seg', label: 'Push A', muscles: 'Peito · Ombro · Tríceps', done: true, color: '#10b981' },
+  { day: 'Seg', label: 'Push A', muscles: 'Peito · Ombro · Tríceps', done: true, color: '#5a64b4' },
   { day: 'Ter', label: 'Pull A', muscles: 'Costas · Bíceps', done: false, current: true, color: '#3b82f6' },
   { day: 'Qua', label: 'Legs A', muscles: 'Quadríceps · Posterior', done: false, color: '#8b5cf6' },
-  { day: 'Qui', label: 'Push B', muscles: 'Peito · Ombro · Tríceps', done: false, color: '#10b981' },
+  { day: 'Qui', label: 'Push B', muscles: 'Peito · Ombro · Tríceps', done: false, color: '#5a64b4' },
   { day: 'Sex', label: 'Pull B', muscles: 'Costas · Bíceps', done: false, color: '#3b82f6' },
   { day: 'Sáb', label: 'Descanso', muscles: 'Recuperação ativa', done: false, rest: true, color: '#6b7280' },
   { day: 'Dom', label: 'Descanso', muscles: 'Recuperação completa', done: false, rest: true, color: '#6b7280' },
@@ -60,7 +60,7 @@ const todayExercises: ExerciseItem[] = [
 ];
 
 const muscleColors: Record<string, string> = {
-  Costas: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20',
+  Costas: 'text-[#5a64b4] dark:text-[#C5C5CE] bg-[#000326] dark:bg-white/10 border-[#000326]/20 dark:border-white/20',
   Bíceps: 'text-pink-400 bg-pink-500/10 border-pink-500/20',
   Peito: 'text-blue-400 bg-blue-500/10 border-blue-500/20',
   Ombro: 'text-purple-400 bg-purple-500/10 border-purple-500/20',
@@ -151,8 +151,8 @@ export function Workouts() {
             onClick={() => setShowFilter((v) => !v)}
             className={`flex items-center gap-2 px-4 py-2 rounded-xl dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 text-sm transition-colors ${
               showFilter || filterMuscle !== 'Todos'
-                ? 'text-emerald-500 dark:border-emerald-500/40 border-emerald-300'
-                : 'dark:text-zinc-400 text-slate-600 hover:text-emerald-500 dark:hover:text-emerald-400'
+                ? 'text-[#000326] dark:text-white dark:border-[#000326]/30 dark:border-white/30 border-[#000326]/30'
+                : 'dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white dark:hover:text-[#5a64b4] dark:text-[#C5C5CE]'
             }`}
           >
             <Filter className="w-4 h-4" />
@@ -161,7 +161,7 @@ export function Workouts() {
           <button
             onClick={() => { setGenerating(true); setTimeout(() => setGenerating(false), 2500); }}
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
           >
             {generating ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Zap className="w-4 h-4" />}
             {generating ? 'Gerando...' : 'Gerar com IA'}
@@ -181,7 +181,7 @@ export function Workouts() {
                   ? 'text-white'
                   : 'dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:dark:bg-zinc-700'
               }`}
-              style={filterMuscle === m ? { background: 'linear-gradient(135deg, #10b981, #3b82f6)', fontWeight: 600 } : {}}
+              style={filterMuscle === m ? { background: 'linear-gradient(135deg, #5a64b4, #3b82f6)', fontWeight: 600 } : {}}
             >
               {m}
             </button>
@@ -205,21 +205,21 @@ export function Workouts() {
                   onClick={() => setActiveDay(i)}
                   className={`w-full flex items-center gap-3 p-3 rounded-2xl transition-all text-left ${
                     activeDay === i
-                      ? 'ring-2 ring-emerald-500/30 dark:bg-emerald-500/10 bg-emerald-50'
+                      ? 'ring-2 ring-[#000326]/30 dark:ring-white/30 dark:bg-[#000326] dark:bg-white/10 bg-[#000326]/5'
                       : 'dark:hover:bg-zinc-800 hover:bg-slate-50'
                   }`}
                 >
                   <div
                     className={`w-9 h-9 rounded-xl flex flex-col items-center justify-center flex-shrink-0 ${
                       day.done
-                        ? 'bg-emerald-500'
+                        ? 'bg-[#000326] dark:bg-white'
                         : day.current
                         ? ''
                         : day.rest
                         ? 'dark:bg-zinc-800 bg-slate-100'
                         : 'dark:bg-zinc-800 bg-slate-100'
                     }`}
-                    style={day.current ? { background: 'linear-gradient(135deg, #10b981, #3b82f6)' } : {}}
+                    style={day.current ? { background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' } : {}}
                   >
                     {day.done ? (
                       <CheckCircle2 className="w-4 h-4 text-white" />
@@ -238,7 +238,7 @@ export function Workouts() {
                     <p className="text-xs dark:text-zinc-600 text-slate-400 truncate">{day.muscles}</p>
                   </div>
                   {day.current && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 flex-shrink-0" style={{ fontWeight: 600 }}>
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/20 text-[#5a64b4] dark:text-[#C5C5CE] flex-shrink-0" style={{ fontWeight: 600 }}>
                       Hoje
                     </span>
                   )}
@@ -255,7 +255,7 @@ export function Workouts() {
                 { label: 'Volume total', value: '~8.5t', icon: Dumbbell, color: 'text-blue-400', bg: 'bg-blue-500/10' },
                 { label: 'Duração', value: '~60min', icon: Clock, color: 'text-purple-400', bg: 'bg-purple-500/10' },
                 { label: 'Calorias', value: '~420', icon: Flame, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-                { label: 'Exercícios', value: `${completed}/${exercises.length}`, icon: CheckCircle2, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+                { label: 'Exercícios', value: `${completed}/${exercises.length}`, icon: CheckCircle2, color: 'text-[#5a64b4] dark:text-[#C5C5CE]', bg: 'bg-[#000326] dark:bg-white/10' },
               ].map(({ label, value, icon: Icon, color, bg }) => (
                 <div key={label} className={`${bg} rounded-2xl p-3`}>
                   <Icon className={`w-4 h-4 ${color} mb-2`} />
@@ -319,7 +319,7 @@ export function Workouts() {
             <div className="flex items-center gap-3 mb-6 p-3 rounded-2xl dark:bg-zinc-800/50 bg-slate-50">
               <div className="flex-1">
                 <div className="flex justify-between text-xs mb-1.5 dark:text-zinc-400 text-slate-500">
-                  <span>Progresso do treino · <span className="text-emerald-500" style={{ fontWeight: 500 }}>Clique no nome para ver execução</span></span>
+                  <span>Progresso do treino · <span className="text-[#000326] dark:text-white" style={{ fontWeight: 500 }}>Clique no nome para ver execução</span></span>
                   <span style={{ fontWeight: 600 }}>{completed}/{exercises.length}</span>
                 </div>
                 <div className="h-2 rounded-full dark:bg-zinc-700 bg-slate-200 overflow-hidden">
@@ -327,12 +327,12 @@ export function Workouts() {
                     className="h-full rounded-full transition-all duration-500"
                     style={{
                       width: `${(completed / exercises.length) * 100}%`,
-                      background: 'linear-gradient(90deg, #10b981, #3b82f6)',
+                      background: 'linear-gradient(90deg, #5a64b4, #3b82f6)',
                     }}
                   />
                 </div>
               </div>
-              <div className="text-sm" style={{ fontWeight: 700, color: '#10b981' }}>
+              <div className="text-sm" style={{ fontWeight: 700, color: '#5a64b4' }}>
                 {Math.round((completed / exercises.length) * 100)}%
               </div>
             </div>
@@ -347,16 +347,16 @@ export function Workouts() {
                   transition={{ delay: i * 0.05 }}
                   className={`rounded-2xl border p-4 transition-all ${
                     ex.completed
-                      ? 'dark:bg-emerald-500/5 bg-emerald-50 dark:border-emerald-500/20 border-emerald-200'
+                      ? 'dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20'
                       : 'dark:bg-zinc-800/50 bg-slate-50 dark:border-zinc-700 border-slate-200'
                   }`}
                 >
                   <div className="flex items-start gap-3">
                     <button onClick={() => toggleDone(ex.id)} className="mt-0.5 flex-shrink-0">
                       {ex.completed ? (
-                        <CheckCircle2 className="w-5 h-5 text-emerald-500" />
+                        <CheckCircle2 className="w-5 h-5 text-[#000326] dark:text-white" />
                       ) : (
-                        <Circle className="w-5 h-5 dark:text-zinc-600 text-slate-300 hover:text-emerald-500 transition-colors" />
+                        <Circle className="w-5 h-5 dark:text-zinc-600 text-slate-300 hover:text-[#000326] dark:text-white transition-colors" />
                       )}
                     </button>
                     <div className="flex-1 min-w-0">
@@ -366,7 +366,7 @@ export function Workouts() {
                           className={`text-sm text-left group flex items-center gap-1 hover:underline transition-colors ${
                             ex.completed
                               ? 'line-through dark:text-zinc-500 text-slate-400'
-                              : 'dark:text-white text-slate-900 dark:hover:text-emerald-400 hover:text-emerald-600'
+                              : 'dark:text-white text-slate-900 dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] hover:text-[#000326] dark:text-[#C5C5CE]'
                           }`}
                           style={{ fontWeight: 500 }}
                         >
@@ -405,7 +405,7 @@ export function Workouts() {
                       style={{
                         background: 'linear-gradient(135deg, rgba(16,185,129,0.1), rgba(59,130,246,0.1))',
                         borderColor: 'rgba(16,185,129,0.3)',
-                        color: '#10b981',
+                        color: '#5a64b4',
                         fontWeight: 600,
                       }}
                     >
@@ -436,7 +436,7 @@ export function Workouts() {
                   onChange={(e) => setNewExName(e.target.value)}
                   placeholder="Nome do exercício"
                   autoFocus
-                  className="w-full px-3 py-2 rounded-xl text-sm dark:bg-zinc-700 bg-white border dark:border-zinc-600 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                  className="w-full px-3 py-2 rounded-xl text-sm dark:bg-zinc-700 bg-white border dark:border-zinc-600 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                 />
                 <div className="grid grid-cols-3 gap-2">
                   <div>
@@ -460,7 +460,7 @@ export function Workouts() {
                   onClick={addExercise}
                   disabled={!newExName.trim()}
                   className="w-full py-2 rounded-xl text-sm text-white disabled:opacity-50 transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', fontWeight: 600 }}
+                  style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)', fontWeight: 600 }}
                 >
                   Adicionar
                 </button>
@@ -468,7 +468,7 @@ export function Workouts() {
             ) : (
               <button
                 onClick={() => setShowAddForm(true)}
-                className="mt-4 w-full py-3 rounded-2xl border-2 border-dashed dark:border-zinc-700 border-slate-300 dark:text-zinc-500 text-slate-400 hover:border-emerald-500 hover:text-emerald-500 transition-colors flex items-center justify-center gap-2 text-sm"
+                className="mt-4 w-full py-3 rounded-2xl border-2 border-dashed dark:border-zinc-700 border-slate-300 dark:text-zinc-500 text-slate-400 hover:border-[#000326] dark:hover:border-white hover:text-[#000326] dark:text-white transition-colors flex items-center justify-center gap-2 text-sm"
               >
                 <Plus className="w-4 h-4" />
                 Adicionar exercício

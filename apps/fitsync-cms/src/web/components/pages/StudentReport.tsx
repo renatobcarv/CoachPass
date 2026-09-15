@@ -80,7 +80,7 @@ const measurements = [
 ];
 
 const highlights = [
-  { label: 'Total de Treinos', value: '35', icon: Dumbbell, color: '#10b981' },
+  { label: 'Total de Treinos', value: '35', icon: Dumbbell, color: '#5a64b4' },
   { label: 'Taxa de Adesão', value: '87%', icon: Target, color: '#3b82f6' },
   { label: 'Maior Sequência', value: '18 dias', icon: Flame, color: '#f59e0b' },
   { label: 'Metas Atingidas', value: '4/5', icon: Award, color: '#8b5cf6' },
@@ -174,7 +174,7 @@ export function StudentReport() {
                 <h3 className="dark:text-white text-slate-900">Evolução Corporal</h3>
                 <p className="text-xs dark:text-zinc-500 text-slate-400 mt-0.5">Peso, Massa Muscular e Gordura</p>
               </div>
-              <div className="flex items-center gap-1 text-emerald-400">
+              <div className="flex items-center gap-1 text-[#5a64b4] dark:text-[#C5C5CE]">
                 <TrendingUp className="w-4 h-4" />
                 <span className="text-sm" style={{ fontWeight: 600 }}>+3.5 kg músculo</span>
               </div>
@@ -199,7 +199,7 @@ export function StudentReport() {
                 <h3 className="dark:text-white text-slate-900">Frequência Semanal</h3>
                 <p className="text-xs dark:text-zinc-500 text-slate-400 mt-0.5">Treinos realizados × meta</p>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" style={{ fontWeight: 600 }}>
+              <span className="text-xs px-2.5 py-1 rounded-lg bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 600 }}>
                 Média: 4.4/5
               </span>
             </div>
@@ -209,7 +209,7 @@ export function StudentReport() {
                 <YAxis stroke="#71717a" fontSize={12} domain={[0, 5]} axisLine={{ stroke: '#27272a' }} tickLine={false} />
                 <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '12px' }} />
                 <Bar dataKey="target" fill="#3f3f46" radius={[4, 4, 0, 0]} name="Meta" isAnimationActive={false} />
-                <Bar dataKey="done" fill="#10b981" radius={[4, 4, 0, 0]} name="Feito" isAnimationActive={false} />
+                <Bar dataKey="done" fill="#5a64b4" radius={[4, 4, 0, 0]} name="Feito" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -229,7 +229,7 @@ export function StudentReport() {
                         <span className="text-xs dark:text-zinc-500 text-slate-400">{start}{unit}</span>
                         <ChevronRight className="w-3 h-3 dark:text-zinc-600 text-slate-400" />
                         <span className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 700 }}>{current}{unit}</span>
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" style={{ fontWeight: 600 }}>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 600 }}>
                           +{gain}{unit} {pct > 0 ? `(${pct}%)` : ''}
                         </span>
                       </div>
@@ -237,7 +237,7 @@ export function StudentReport() {
                     <div className="h-2 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
                       <div
                         className="h-full rounded-full"
-                        style={{ width: `${Math.min(100, (current / (current * 1.2)) * 100)}%`, background: 'linear-gradient(90deg, #10b981, #3b82f6)' }}
+                        style={{ width: `${Math.min(100, (current / (current * 1.2)) * 100)}%`, background: 'linear-gradient(90deg, #5a64b4, #3b82f6)' }}
                       />
                     </div>
                   </div>
@@ -269,7 +269,7 @@ export function StudentReport() {
                       <td className="py-3 text-right dark:text-zinc-500 text-slate-400">{m.start}</td>
                       <td className="py-3 text-right dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{m.current}</td>
                       <td className="py-3 text-right">
-                        <span className={`text-xs px-2 py-1 rounded-full ${m.positive ? 'text-emerald-400 bg-emerald-500/10' : 'text-red-400 bg-red-500/10'}`} style={{ fontWeight: 600 }}>
+                        <span className={`text-xs px-2 py-1 rounded-full ${m.positive ? 'text-[#5a64b4] dark:text-[#C5C5CE] bg-[#000326] dark:bg-white/10' : 'text-red-400 bg-red-500/10'}`} style={{ fontWeight: 600 }}>
                           {m.change}
                         </span>
                       </td>
@@ -307,13 +307,13 @@ export function StudentReport() {
               {aiAnalysis.map((item, i) => (
                 <div key={i} className={`flex items-start gap-3 p-3 rounded-xl ${
                   item.type === 'positive'
-                    ? 'dark:bg-emerald-500/5 bg-emerald-50 dark:border-emerald-500/20 border border-emerald-200'
+                    ? 'dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 dark:border-[#000326]/20 dark:border-white/20 border border-[#000326]/20'
                     : 'dark:bg-amber-500/5 bg-amber-50 dark:border-amber-500/20 border border-amber-200'
                 }`}>
                   {item.type === 'positive'
-                    ? <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    ? <CheckCircle2 className="w-4 h-4 text-[#000326] dark:text-white flex-shrink-0 mt-0.5" />
                     : <AlertCircle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />}
-                  <p className={`text-xs leading-relaxed ${item.type === 'positive' ? 'dark:text-emerald-300 text-emerald-700' : 'dark:text-amber-300 text-amber-700'}`}>
+                  <p className={`text-xs leading-relaxed ${item.type === 'positive' ? 'dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE]' : 'dark:text-amber-300 text-amber-700'}`}>
                     {item.text}
                   </p>
                 </div>
