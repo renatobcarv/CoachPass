@@ -46,7 +46,7 @@ export function PersonalCursos() {
         {[
           { label: 'Disponíveis', value: courses.length, color: '#06b6d4' },
           { label: 'Em Progresso', value: inProgress, color: '#3b82f6' },
-          { label: 'Concluídos', value: completed, color: '#10b981' },
+          { label: 'Concluídos', value: completed, color: '#5a64b4' },
         ].map(({ label, value, color }) => (
           <div key={label} className="dark:bg-zinc-900 bg-white rounded-3xl p-5 border dark:border-zinc-800 border-slate-200">
             <p className="text-2xl mb-0.5" style={{ fontWeight: 800, color }}>{value}</p>
@@ -85,7 +85,7 @@ export function PersonalCursos() {
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
               {course.badge && (
                 <div className="absolute top-3 left-3">
-                  <span className={`text-xs px-2 py-0.5 rounded-lg text-white ${course.badge === 'Concluído' ? 'bg-emerald-500' : course.badge === 'Pro' ? 'bg-violet-600' : course.badge === 'Novo' ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ fontWeight: 700 }}>
+                  <span className={`text-xs px-2 py-0.5 rounded-lg text-white ${course.badge === 'Concluído' ? 'bg-[#000326] dark:bg-white' : course.badge === 'Pro' ? 'bg-violet-600' : course.badge === 'Novo' ? 'bg-blue-500' : 'bg-amber-500'}`} style={{ fontWeight: 700 }}>
                     {course.badge}
                   </span>
                 </div>
@@ -104,7 +104,7 @@ export function PersonalCursos() {
               )}
               {course.progress === 100 && (
                 <div className="absolute bottom-3 right-3">
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-full bg-[#000326] dark:bg-white flex items-center justify-center">
                     <CheckCircle className="w-4 h-4 text-white" />
                   </div>
                 </div>
@@ -137,7 +137,7 @@ export function PersonalCursos() {
               )}
 
               <button onClick={(e) => { e.stopPropagation(); !course.locked ? toast.success(`Continuando: ${course.title}`) : toast.error('Faça upgrade para acessar este curso'); }}
-                className={`w-full py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all ${course.locked ? 'border dark:border-violet-500/30 dark:text-violet-400 dark:bg-violet-500/5 border-violet-200 text-violet-600' : course.progress === 100 ? 'bg-emerald-500/10 text-emerald-400 border dark:border-emerald-500/20' : 'text-white'}`}
+                className={`w-full py-2.5 rounded-xl text-xs flex items-center justify-center gap-2 transition-all ${course.locked ? 'border dark:border-violet-500/30 dark:text-violet-400 dark:bg-violet-500/5 border-violet-200 text-violet-600' : course.progress === 100 ? 'bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border dark:border-[#000326]/20 dark:border-white/20' : 'text-white'}`}
                 style={(!course.locked && course.progress !== 100) ? { background: 'linear-gradient(135deg,#06b6d4,#0891b2)', fontWeight: 600 } : { fontWeight: 600 }}>
                 {course.locked ? <><Lock className="w-3.5 h-3.5" /> Plano Pro</> : course.progress === 100 ? <><Award className="w-3.5 h-3.5" /> Revisar</> : course.progress > 0 ? <><Play className="w-3.5 h-3.5" /> Continuar ({course.progress}%)</> : <><Play className="w-3.5 h-3.5" /> Começar</>}
               </button>

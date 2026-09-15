@@ -145,8 +145,8 @@ export function NutritionConsultation() {
           animate={{ scale: 1, opacity: 1 }}
           className="text-center"
         >
-          <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-emerald-500" />
+          <div className="w-24 h-24 rounded-full bg-[#000326] dark:bg-white/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-12 h-12 text-[#000326] dark:text-white" />
           </div>
           <h2 className="dark:text-white text-slate-900 mb-2">Consulta Registrada!</h2>
           <p className="dark:text-zinc-400 text-slate-500 text-sm">
@@ -300,8 +300,8 @@ export function NutritionConsultation() {
         {/* ─── Circunferências ─── */}
         <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
           <div className="flex items-center gap-2 mb-5">
-            <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center">
-              <Ruler className="w-4 h-4 text-emerald-500" />
+            <div className="w-7 h-7 rounded-lg bg-[#000326] dark:bg-white/10 flex items-center justify-center">
+              <Ruler className="w-4 h-4 text-[#000326] dark:text-white" />
             </div>
             <h3 className="dark:text-white text-slate-900 text-base" style={{ fontWeight: 600 }}>
               Circunferências (cm)
@@ -401,7 +401,7 @@ export function NutritionConsultation() {
                   value={field.value}
                   onChange={field.onChange}
                   label="Adesão ao Plano Alimentar"
-                  color="#10b981"
+                  color="#5a64b4"
                 />
               )}
             />
@@ -433,7 +433,7 @@ export function NutritionConsultation() {
             {/* Summary chips */}
             <div className="flex flex-wrap gap-3 pt-2 border-t dark:border-zinc-800 border-slate-100">
               {[
-                { label: `Adesão: ${watchedAdherence}/10`, color: '#10b981' },
+                { label: `Adesão: ${watchedAdherence}/10`, color: '#5a64b4' },
                 { label: `Energia: ${watchedEnergy}/10`, color: '#f59e0b' },
                 { label: `Sono: ${watchedSleep}/10`, color: '#8b5cf6' },
               ].map(({ label, color }) => (

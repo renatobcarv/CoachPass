@@ -52,7 +52,7 @@ function MacroCircle({ label, value, unit, color, icon: Icon }: {
 }
 
 const scoreConfig = {
-  A: { label: 'Excelente', bg: '#10b981', text: 'white' },
+  A: { label: 'Excelente', bg: '#5a64b4', text: 'white' },
   B: { label: 'Bom', bg: '#84cc16', text: 'white' },
   C: { label: 'Regular', bg: '#f59e0b', text: 'white' },
   D: { label: 'Ruim', bg: '#f97316', text: 'white' },
@@ -171,7 +171,7 @@ export function FoodModal({ food, onClose }: FoodModalProps) {
                   <div className="flex items-stretch gap-2 justify-around">
                     <MacroCircle label="Proteína" value={food.protein} unit="g" color="#3b82f6" icon={Beef} />
                     <div className="w-px dark:bg-zinc-700 bg-slate-200" />
-                    <MacroCircle label="Carboidratos" value={food.carbs} unit="g" color="#10b981" icon={Wheat} />
+                    <MacroCircle label="Carboidratos" value={food.carbs} unit="g" color="#5a64b4" icon={Wheat} />
                     <div className="w-px dark:bg-zinc-700 bg-slate-200" />
                     <MacroCircle label="Gordura" value={food.fat} unit="g" color="#f97316" icon={Droplet} />
                     <div className="w-px dark:bg-zinc-700 bg-slate-200" />
@@ -188,7 +188,7 @@ export function FoodModal({ food, onClose }: FoodModalProps) {
                     {[
                       { label: 'Açúcar', value: food.sugar, unit: 'g', color: '#f59e0b', note: food.sugar > 10 ? '⚠ Alto' : undefined },
                       { label: 'Gordura saturada', value: food.saturatedFat, unit: 'g', color: '#ef4444', note: food.saturatedFat > 5 ? '⚠ Moderar' : undefined },
-                      { label: 'Gordura insaturada', value: food.unsaturatedFat, unit: 'g', color: '#10b981' },
+                      { label: 'Gordura insaturada', value: food.unsaturatedFat, unit: 'g', color: '#5a64b4' },
                       { label: 'Colesterol', value: food.cholesterol, unit: 'mg', color: '#f97316', max: 300, note: food.cholesterol > 200 ? '⚠ Alto' : undefined },
                       { label: 'Sódio', value: food.sodium, unit: 'mg', color: '#8b5cf6', max: 2300 },
                     ].map(({ label, value, unit, color, note, max = 30 }) => (
@@ -223,21 +223,21 @@ export function FoodModal({ food, onClose }: FoodModalProps) {
                         <div key={v.label} className="flex items-center gap-2.5">
                           <div
                             className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-white"
-                            style={{ backgroundColor: v.dv >= 100 ? '#10b981' : v.dv >= 50 ? '#3b82f6' : v.dv >= 20 ? '#8b5cf6' : '#6b7280', fontSize: '9px', fontWeight: 800 }}
+                            style={{ backgroundColor: v.dv >= 100 ? '#5a64b4' : v.dv >= 50 ? '#3b82f6' : v.dv >= 20 ? '#8b5cf6' : '#6b7280', fontSize: '9px', fontWeight: 800 }}
                           >
                             {v.shortLabel}
                           </div>
                           <div className="flex-1 min-w-0">
                             <div className="flex justify-between text-xs mb-1">
                               <span className="dark:text-zinc-400 text-slate-500 truncate">{v.label}</span>
-                              <span style={{ fontWeight: 700, color: v.dv >= 100 ? '#10b981' : v.dv >= 50 ? '#3b82f6' : 'inherit' }}
+                              <span style={{ fontWeight: 700, color: v.dv >= 100 ? '#5a64b4' : v.dv >= 50 ? '#3b82f6' : 'inherit' }}
                                 className="dark:text-zinc-300 text-slate-700 flex-shrink-0 ml-1">
                                 {v.dv}%
                               </span>
                             </div>
                             <MiniBar
                               value={v.dv}
-                              color={v.dv >= 100 ? '#10b981' : v.dv >= 50 ? '#3b82f6' : v.dv >= 20 ? '#8b5cf6' : '#6b7280'}
+                              color={v.dv >= 100 ? '#5a64b4' : v.dv >= 50 ? '#3b82f6' : v.dv >= 20 ? '#8b5cf6' : '#6b7280'}
                               max={150}
                             />
                           </div>
@@ -296,7 +296,7 @@ export function FoodModal({ food, onClose }: FoodModalProps) {
                 <button
                   onClick={onClose}
                   className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)', fontWeight: 500 }}
+                  style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)', fontWeight: 500 }}
                 >
                   Entendido
                   <ChevronRight className="w-4 h-4" />

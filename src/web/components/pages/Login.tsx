@@ -13,6 +13,9 @@ function pathForRole(role: UserRole) {
   return '/selecionar-painel';
 }
 
+const inputCls =
+  'w-full pl-10 pr-4 py-3 rounded-lg bg-[#f3f4f9] border border-[#000326]/10 text-[#000326] placeholder:text-[#8e8e9a] focus:outline-none focus:ring-1 focus:ring-[#000346] dark:bg-white/5 dark:border-white/10 dark:text-white dark:placeholder:text-[#C5C5CE]';
+
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -66,7 +69,7 @@ export function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-slate-50">
+    <div className="min-h-screen flex items-center justify-center p-4 bg-[#f3f4f9] dark:bg-[#000326]">
       <AnimatePresence>
         {showForgotPassword && (
           <motion.div
@@ -81,16 +84,18 @@ export function Login() {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md bg-white rounded-2xl p-8 border border-slate-200 shadow-xl"
+              className="w-full max-w-md bg-white rounded-2xl p-8 border border-[#000326]/10 shadow-xl dark:bg-[#000137] dark:border-white/10"
             >
               <div className="flex items-center justify-between mb-6">
                 <div>
-                  <h3 className="text-slate-900 text-lg font-medium">Recuperar senha</h3>
-                  <p className="text-sm text-slate-500 mt-1">Enviaremos um link para seu e-mail</p>
+                  <h3 className="text-[#000326] text-lg font-medium dark:text-white">Recuperar senha</h3>
+                  <p className="text-sm text-[#6a6a7a] mt-1 dark:text-[#C5C5CE]">
+                    Enviaremos um link para seu e-mail
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowForgotPassword(false)}
-                  className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-500"
+                  className="w-8 h-8 rounded-lg bg-[#f3f4f9] flex items-center justify-center text-[#6a6a7a] dark:bg-white/5 dark:text-[#C5C5CE]"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -98,30 +103,31 @@ export function Login() {
               {!forgotSent ? (
                 <form onSubmit={handleForgotPassword} className="space-y-4">
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e9a]" />
                     <input
                       type="email"
                       value={forgotEmail}
                       onChange={(e) => setForgotEmail(e.target.value)}
                       placeholder="seu@email.com"
+                      autoComplete="email"
                       autoFocus
-                      className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                      className={inputCls}
                       required
                     />
                   </div>
                   <button
                     type="submit"
                     disabled={!forgotEmail || forgotLoading}
-                    className="w-full py-3 rounded-lg text-white bg-slate-900 disabled:opacity-50"
+                    className="w-full py-3 rounded-lg text-white bg-[#000326] hover:bg-[#000137] disabled:opacity-50 dark:bg-white dark:text-[#000326] dark:hover:bg-[#C5C5CE]"
                   >
                     {forgotLoading ? 'Enviando…' : 'Enviar link de recuperação'}
                   </button>
                 </form>
               ) : (
                 <div className="text-center py-4">
-                  <CheckCircle className="w-8 h-8 text-emerald-500 mx-auto mb-3" />
-                  <p className="text-slate-900 font-medium">Link enviado</p>
-                  <p className="text-sm text-slate-500 mt-1">Verifique {forgotEmail}</p>
+                  <CheckCircle className="w-8 h-8 text-[#000326] mx-auto mb-3 dark:text-white" />
+                  <p className="text-[#000326] font-medium dark:text-white">Link enviado</p>
+                  <p className="text-sm text-[#6a6a7a] mt-1 dark:text-[#C5C5CE]">Verifique {forgotEmail}</p>
                 </div>
               )}
             </motion.div>
@@ -132,51 +138,56 @@ export function Login() {
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-emerald-500 to-cyan-500">
-              <Zap className="w-5 h-5 text-white" fill="white" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#000326] to-[#000346] dark:from-white dark:to-[#C5C5CE]">
+              <Zap className="w-5 h-5 text-white dark:text-[#000326]" fill="currentColor" />
             </div>
-            <span className="text-xl font-bold">CoachPass</span>
+            <span className="text-xl font-bold tracking-tight text-[#000326] dark:text-white">CoachPass</span>
           </Link>
-          <h1 className="mt-6 text-2xl font-bold">Entrar</h1>
-          <p className="mt-2 text-sm text-slate-500">
+          <h1 className="mt-6 text-2xl font-bold text-[#000326] dark:text-white">Entrar</h1>
+          <p className="mt-2 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
             Use o e-mail da sua conta. O painel abre conforme o seu perfil.
           </p>
           {isAuthenticated && user && (
             <button
               type="button"
               onClick={() => navigate(pathForRole(user.role))}
-              className="mt-4 text-sm font-semibold text-slate-900 underline"
+              className="mt-4 text-sm font-semibold text-[#000326] underline dark:text-white"
             >
               Ir para o painel
             </button>
           )}
         </div>
 
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl p-6 border border-slate-200 space-y-4">
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white rounded-2xl p-6 border border-[#000326]/10 space-y-4 dark:bg-[#000137] dark:border-white/10"
+        >
           <div>
-            <label className="block text-sm text-slate-700 mb-2">E-mail</label>
+            <label className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">E-mail</label>
             <div className="relative">
-              <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e9a]" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                autoComplete="email"
+                className={inputCls}
                 required
               />
             </div>
           </div>
           <div>
-            <label className="block text-sm text-slate-700 mb-2">Senha</label>
+            <label className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">Senha</label>
             <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e9a]" />
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Sua senha"
-                className="w-full pl-10 pr-4 py-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-900 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                autoComplete="current-password"
+                className={inputCls}
                 required
               />
             </div>
@@ -188,7 +199,7 @@ export function Login() {
                 setShowForgotPassword(true);
                 setForgotEmail(email);
               }}
-              className="text-sm text-slate-500 hover:text-slate-900"
+              className="text-sm text-[#6a6a7a] hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-white"
             >
               Esqueci a senha
             </button>
@@ -196,14 +207,17 @@ export function Login() {
           <button
             type="submit"
             disabled={loading || !email || !password}
-            className="w-full py-3 rounded-xl text-white bg-slate-900 disabled:opacity-50 flex items-center justify-center gap-2"
+            className="w-full py-3 rounded-xl text-white bg-[#000326] hover:bg-[#000137] disabled:opacity-50 flex items-center justify-center gap-2 dark:bg-white dark:text-[#000326] dark:hover:bg-[#C5C5CE]"
           >
             {loading ? 'Entrando...' : 'Entrar'}
             {!loading && <ChevronRight className="w-4 h-4" />}
           </button>
-          <p className="text-sm text-center text-slate-500">
+          <p className="text-sm text-center text-[#6a6a7a] dark:text-[#C5C5CE]">
             Ainda não tem conta?{' '}
-            <Link to="/cadastro" className="font-semibold text-slate-900 hover:underline">
+            <Link
+              to="/cadastro"
+              className="font-semibold text-[#000326] hover:underline dark:text-white"
+            >
               Criar conta
             </Link>
           </p>

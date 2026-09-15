@@ -54,7 +54,7 @@ const weekDays = [
 ];
 
 const muscleGroups = [
-  { name: 'Peito', color: '#10b981' },
+  { name: 'Peito', color: '#5a64b4' },
   { name: 'Costas', color: '#3b82f6' },
   { name: 'Ombro', color: '#8b5cf6' },
   { name: 'Bíceps', color: '#ec4899' },
@@ -263,7 +263,7 @@ export function CreateWorkout() {
 
             <div className="flex items-center justify-between">
               <p className="text-sm dark:text-zinc-400 text-slate-500">
-                {filteredExercises.length} exercício{filteredExercises.length !== 1 ? 's' : ''} em <span className="text-emerald-500" style={{ fontWeight: 600 }}>{selectedMuscle}</span>
+                {filteredExercises.length} exercício{filteredExercises.length !== 1 ? 's' : ''} em <span className="text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>{selectedMuscle}</span>
               </p>
             </div>
           </div>
@@ -291,7 +291,7 @@ export function CreateWorkout() {
                       <motion.div
                         key={exercise.name}
                         whileHover={{ scale: 1.02 }}
-                        className="flex items-start gap-3 p-3 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200 hover:dark:border-emerald-500/50 hover:border-emerald-400/50 transition-all cursor-pointer group"
+                        className="flex items-start gap-3 p-3 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200 hover:dark:border-[#000326]/40 dark:border-white/40 hover:border-[#5a64b4]/50 transition-all cursor-pointer group"
                         onClick={() => handleAddExercise(exercise)}
                       >
                         <div className={`w-10 h-10 rounded-xl ${colors.bg} flex items-center justify-center flex-shrink-0`}>
@@ -315,8 +315,8 @@ export function CreateWorkout() {
                           >
                             <Info className="w-3 h-3 dark:text-zinc-400 text-slate-500" />
                           </button>
-                          <div className="w-7 h-7 rounded-lg bg-emerald-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Plus className="w-4 h-4 text-emerald-500" />
+                          <div className="w-7 h-7 rounded-lg bg-[#000326] dark:bg-white/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Plus className="w-4 h-4 text-[#000326] dark:text-white" />
                           </div>
                         </div>
                       </motion.div>
@@ -363,7 +363,7 @@ export function CreateWorkout() {
               <h3 className="dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
                 Exercícios
               </h3>
-              <span className="text-xs px-2.5 py-1 rounded-lg dark:bg-emerald-500/10 bg-emerald-50 text-emerald-500 border dark:border-emerald-500/20 border-emerald-200" style={{ fontWeight: 600 }}>
+              <span className="text-xs px-2.5 py-1 rounded-lg dark:bg-[#000326] dark:bg-white/10 bg-[#000326]/5 text-[#000326] dark:text-white border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20" style={{ fontWeight: 600 }}>
                 {selectedExercises.length}
               </span>
             </div>
@@ -389,7 +389,7 @@ export function CreateWorkout() {
                       animate={{ opacity: 1, x: 0 }}
                       className="flex items-start gap-2 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200 group"
                     >
-                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white text-xs flex-shrink-0" style={{ fontWeight: 700 }}>
+                      <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-[#000326] to-[#5a64b4] flex items-center justify-center text-white text-xs flex-shrink-0" style={{ fontWeight: 700 }}>
                         {index + 1}
                       </div>
                       <div className="flex-1 min-w-0">
@@ -421,7 +421,7 @@ export function CreateWorkout() {
                 onClick={handleSaveWorkout}
                 disabled={saving || !workoutName || !selectedDay || !selectedStudent || selectedExercises.length === 0}
                 className="w-full py-3 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                style={{ background: 'linear-gradient(135deg, #10b981, #059669)', fontWeight: 600 }}
+                style={{ background: 'linear-gradient(135deg, #5a64b4, #000346)', fontWeight: 600 }}
               >
                 {saving ? (
                   <>

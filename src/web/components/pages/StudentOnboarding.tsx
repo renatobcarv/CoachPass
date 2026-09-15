@@ -40,7 +40,7 @@ export function StudentOnboarding() {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="dark:bg-[#0a0a0a] bg-white rounded-2xl p-8 border dark:border-zinc-800 border-slate-200 shadow-xl"
+          className="dark:bg-[#000137] bg-white rounded-2xl p-8 border dark:border-zinc-800 border-slate-200 shadow-xl"
         >
           {step === 1 && (
             <div className="space-y-6">
@@ -54,7 +54,7 @@ export function StudentOnboarding() {
                       value={data.weight}
                       onChange={e => setData({ ...data, weight: e.target.value })}
                       placeholder="Ex: 75.5"
-                      className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-emerald-500 font-light"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-[#000346] dark:focus:border-[#C5C5CE] font-light"
                     />
                   </div>
                 </div>
@@ -67,7 +67,7 @@ export function StudentOnboarding() {
                       value={data.height}
                       onChange={e => setData({ ...data, height: e.target.value })}
                       placeholder="Ex: 175"
-                      className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-emerald-500 font-light"
+                      className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-[#000346] dark:focus:border-[#C5C5CE] font-light"
                     />
                   </div>
                 </div>
@@ -82,7 +82,7 @@ export function StudentOnboarding() {
                     value={data.age}
                     onChange={e => setData({ ...data, age: e.target.value })}
                     placeholder="Sua idade atual"
-                    className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-emerald-500 font-light"
+                    className="w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:border-[#000346] dark:focus:border-[#C5C5CE] font-light"
                   />
                 </div>
               </div>
@@ -91,7 +91,7 @@ export function StudentOnboarding() {
                 <button
                   onClick={() => setStep(2)}
                   disabled={!data.weight || !data.height || !data.age}
-                  className="w-full py-3.5 bg-emerald-600 rounded-lg text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  className="w-full py-3.5 bg-[#000326] dark:bg-white rounded-lg text-white font-medium hover:bg-[#000137] dark:hover:bg-[#C5C5CE] disabled:opacity-50 transition-colors flex items-center justify-center gap-2 text-sm"
                 >
                   Continuar Setup
                   <ArrowRight className="w-4 h-4" />
@@ -113,14 +113,14 @@ export function StudentOnboarding() {
                       onClick={() => setData({ ...data, goal })}
                       className={`p-4 rounded-xl border text-left flex items-center justify-between transition-all ${
                         data.goal === goal 
-                          ? 'dark:bg-emerald-500/10 bg-emerald-50 border-emerald-500/50' 
+                          ? 'dark:bg-[#000326] dark:bg-white/10 bg-[#000326]/5 border-[#000326]/40 dark:border-white/40' 
                           : 'dark:bg-zinc-900/50 bg-slate-50/50 dark:border-zinc-800 border-slate-200'
                       }`}
                     >
-                      <span className={`text-sm font-medium ${data.goal === goal ? 'text-emerald-600 dark:text-emerald-400' : 'dark:text-zinc-400 text-slate-600'}`}>
+                      <span className={`text-sm font-medium ${data.goal === goal ? 'text-[#000326] dark:text-[#C5C5CE] dark:text-[#5a64b4] dark:text-[#C5C5CE]' : 'dark:text-zinc-400 text-slate-600'}`}>
                         {goal}
                       </span>
-                      {data.goal === goal && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+                      {data.goal === goal && <CheckCircle className="w-4 h-4 text-[#000326] dark:text-white" />}
                     </button>
                   ))}
                 </div>
@@ -136,7 +136,7 @@ export function StudentOnboarding() {
                 <button
                   onClick={handleComplete}
                   disabled={!data.goal || loading}
-                  className="flex-1 py-3.5 bg-emerald-600 rounded-lg text-white font-medium hover:bg-emerald-700 disabled:opacity-50 transition-colors flex items-center justify-center gap-2 text-sm"
+                  className="flex-1 py-3.5 bg-[#000326] dark:bg-white rounded-lg text-white font-medium hover:bg-[#000137] dark:hover:bg-[#C5C5CE] disabled:opacity-50 transition-colors flex items-center justify-center gap-2 text-sm"
                 >
                   {loading ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />

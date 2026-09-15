@@ -207,7 +207,7 @@ export function Settings() {
                   alt={user?.name}
                   className="w-10 h-10 rounded-xl object-cover"
                 />
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-500 border-2 dark:border-zinc-900 border-white" />
+                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#000326] dark:bg-white border-2 dark:border-zinc-900 border-white" />
               </div>
               <div className="min-w-0">
                 <p className="text-sm dark:text-white text-slate-900 truncate" style={{ fontWeight: 600 }}>
@@ -232,7 +232,7 @@ export function Settings() {
               >
                 <Icon className="w-4 h-4 flex-shrink-0" />
                 {label}
-                {activeTab === id && <ChevronRight className="w-3.5 h-3.5 ml-auto text-emerald-500" />}
+                {activeTab === id && <ChevronRight className="w-3.5 h-3.5 ml-auto text-[#000326] dark:text-white" />}
               </button>
             ))}
 
@@ -278,7 +278,7 @@ export function Settings() {
                         />
                         <button
                           onClick={() => toast.info('Upload de foto em breve')}
-                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-emerald-500 flex items-center justify-center shadow-lg"
+                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#000326] dark:bg-white flex items-center justify-center shadow-lg"
                         >
                           <Camera className="w-3.5 h-3.5 text-white" />
                         </button>
@@ -286,7 +286,7 @@ export function Settings() {
                       <div>
                         <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{user?.name}</p>
                         <p className="text-xs dark:text-zinc-500 text-slate-400 mb-2">{user?.email}</p>
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-500" style={{ fontWeight: 600 }}>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>
                           {user?.role ? roleLabel[user.role] : 'Aluno'}
                         </span>
                       </div>
@@ -295,7 +295,7 @@ export function Settings() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {[
                         { label: 'Nome Completo', field: 'name', icon: User, placeholder: 'Seu nome' },
-                        { label: 'E-mail', field: 'email', icon: Mail, placeholder: 'seu@email.com', disabled: true },
+                        { label: 'E-mail', field: 'email', icon: Mail, placeholder: 'seu@gmail.com', disabled: true },
                         { label: 'WhatsApp', field: 'whatsapp', icon: Phone, placeholder: '(00) 00000-0000' },
                         ...(user?.role !== 'student' ? [{ label: user?.role === 'personal' ? 'CREF' : 'CRN', field: 'professionalId', icon: Activity, placeholder: user?.role === 'personal' ? 'CREF 123456-G/SP' : 'CRN-3 12345' }] : []),
                         { label: 'Cidade', field: 'city', icon: Globe, placeholder: 'São Paulo, SP' },
@@ -313,7 +313,7 @@ export function Settings() {
                               onChange={e => setProfileForm(p => ({ ...p, [field]: e.target.value }))}
                               placeholder={placeholder}
                               disabled={disabled}
-                              className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 disabled:opacity-50 transition-all"
+                              className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 disabled:opacity-50 transition-all"
                             />
                           </div>
                         </div>
@@ -328,7 +328,7 @@ export function Settings() {
                           onChange={e => setProfileForm(p => ({ ...p, bio: e.target.value }))}
                           placeholder="Conte um pouco sobre você..."
                           rows={3}
-                          className="w-full px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none transition-all"
+                          className="w-full px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 resize-none transition-all"
                         />
                       </div>
                     </div>
@@ -338,7 +338,7 @@ export function Settings() {
                         onClick={saveProfile}
                         disabled={saving}
                         className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-                        style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+                        style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                       >
                         {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                         Salvar Perfil
@@ -379,7 +379,7 @@ export function Settings() {
                             </div>
                             <button
                               onClick={() => setNotifications(p => ({ ...p, [key]: !p[key as keyof NotificationSettings] }))}
-                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-emerald-500' : 'dark:bg-zinc-700 bg-slate-200'}`}
+                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
                             >
                               <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${(notifications as any)[key] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
                                 style={{ transform: (notifications as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
@@ -412,7 +412,7 @@ export function Settings() {
                             </div>
                             <button
                               onClick={() => setNotifications(p => ({ ...p, [key]: !(p as any)[key] }))}
-                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-emerald-500' : 'dark:bg-zinc-700 bg-slate-200'}`}
+                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
                             >
                               <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
                                 style={{ transform: (notifications as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
@@ -426,7 +426,7 @@ export function Settings() {
                       onClick={() => saveSettings('notifications', notifications)}
                       disabled={saving}
                       className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+                      style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                     >
                       {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
                       Salvar Preferências
@@ -461,7 +461,7 @@ export function Settings() {
                         </div>
                         <button
                           onClick={() => setPrivacy(p => ({ ...p, [key]: !(p as any)[key] }))}
-                          className={`relative w-11 h-6 rounded-full transition-all ${(privacy as any)[key] ? 'bg-emerald-500' : 'dark:bg-zinc-700 bg-slate-200'}`}
+                          className={`relative w-11 h-6 rounded-full transition-all ${(privacy as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
                         >
                           <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
                             style={{ transform: (privacy as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
@@ -511,8 +511,8 @@ export function Settings() {
                       {/* 2FA */}
                       <div className="flex items-center justify-between p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                            <Smartphone className="w-5 h-5 text-emerald-400" />
+                          <div className="w-10 h-10 rounded-xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
+                            <Smartphone className="w-5 h-5 text-[#5a64b4] dark:text-[#C5C5CE]" />
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
@@ -547,7 +547,7 @@ export function Settings() {
                                 <p className="text-xs dark:text-zinc-500 text-slate-400">{s.location} · {s.time}</p>
                               </div>
                               {s.current
-                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500" style={{ fontWeight: 600 }}>Atual</span>
+                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>Atual</span>
                                 : <button onClick={() => toast.success('Sessão encerrada')} className="text-xs text-red-400 hover:underline">Encerrar</button>}
                             </div>
                           ))}
@@ -601,16 +601,16 @@ export function Settings() {
                             onClick={() => { if ((id === 'dark' && theme === 'light') || (id === 'light' && theme === 'dark')) toggleTheme(); }}
                             className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
                               active
-                                ? 'dark:bg-zinc-800 bg-slate-100 border-emerald-500/50'
+                                ? 'dark:bg-zinc-800 bg-slate-100 border-[#000326]/40 dark:border-white/40'
                                 : 'dark:bg-zinc-800/30 bg-slate-50 dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600'
                             }`}
                           >
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? 'bg-emerald-500/10' : 'dark:bg-zinc-700 bg-slate-200'}`}>
-                              <Icon className={`w-5 h-5 ${active ? 'text-emerald-400' : 'dark:text-zinc-400 text-slate-500'}`} />
+                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? 'bg-[#000326] dark:bg-white/10' : 'dark:bg-zinc-700 bg-slate-200'}`}>
+                              <Icon className={`w-5 h-5 ${active ? 'text-[#5a64b4] dark:text-[#C5C5CE]' : 'dark:text-zinc-400 text-slate-500'}`} />
                             </div>
                             <p className="text-xs dark:text-white text-slate-900" style={{ fontWeight: active ? 600 : 400 }}>{label}</p>
                             <p className="text-xs dark:text-zinc-500 text-slate-400 text-center leading-tight">{desc}</p>
-                            {active && <CheckCircle className="w-4 h-4 text-emerald-500" />}
+                            {active && <CheckCircle className="w-4 h-4 text-[#000326] dark:text-white" />}
                           </button>
                         ))}
                       </div>
@@ -658,7 +658,7 @@ export function Settings() {
                       </p>
                       <div className="flex gap-3">
                         {[
-                          { color: '#10b981', label: 'Esmeralda', active: true },
+                          { color: '#5a64b4', label: 'Marinho', active: true },
                           { color: '#3b82f6', label: 'Azul' },
                           { color: '#8b5cf6', label: 'Violeta' },
                           { color: '#f59e0b', label: 'Âmbar' },
@@ -685,23 +685,23 @@ export function Settings() {
                   {/* Current Plan */}
                   <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
                     <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>Plano Atual</h3>
-                    <div className="p-5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5">
+                    <div className="p-5 rounded-2xl border border-[#000326]/25 dark:border-white/25 bg-[#000326] dark:bg-white/5">
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-emerald-400 text-xs uppercase tracking-widest" style={{ fontWeight: 600 }}>
+                          <p className="text-[#5a64b4] dark:text-[#C5C5CE] text-xs uppercase tracking-widest" style={{ fontWeight: 600 }}>
                             {user?.plan === 'annual' ? 'Plano Anual' : user?.plan === 'semester' ? 'Plano Semestral' : 'Plano Mensal'}
                           </p>
                           <p className="dark:text-white text-slate-900 text-2xl" style={{ fontWeight: 800 }}>
                             {user?.plan === 'annual' ? 'R$ 50/mês' : user?.plan === 'semester' ? 'R$ 60/mês' : 'R$ 70/mês'}
                           </p>
                         </div>
-                        <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 flex items-center justify-center">
-                          <Zap className="w-6 h-6 text-emerald-400" />
+                        <div className="w-12 h-12 rounded-2xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
+                          <Zap className="w-6 h-6 text-[#5a64b4] dark:text-[#C5C5CE]" />
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs">
                         <span className="dark:text-zinc-400 text-slate-500">Próxima cobrança: 15/04/2026</span>
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400" style={{ fontWeight: 600 }}>Ativo</span>
+                        <span className="px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE]" style={{ fontWeight: 600 }}>Ativo</span>
                       </div>
                     </div>
 
@@ -712,7 +712,7 @@ export function Settings() {
                         { label: 'Suporte', value: 'Prioritário', icon: Star },
                       ].map(({ label, value, icon: Icon }) => (
                         <div key={label} className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50">
-                          <Icon className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                          <Icon className="w-4 h-4 text-[#5a64b4] dark:text-[#C5C5CE] flex-shrink-0" />
                           <div>
                             <p className="text-xs dark:text-zinc-500 text-slate-400">{label}</p>
                             <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{value}</p>
@@ -774,7 +774,7 @@ export function Settings() {
                       },
                       {
                         title: 'Histórico de treinos', desc: 'Exporte seu histórico completo de treinos em CSV',
-                        icon: Activity, color: '#10b981', action: () => toast.info('Exportação de treinos em breve')
+                        icon: Activity, color: '#5a64b4', action: () => toast.info('Exportação de treinos em breve')
                       },
                       {
                         title: 'Histórico alimentar', desc: 'Baixe todos os registros do seu plano alimentar',
@@ -857,7 +857,7 @@ export function Settings() {
                         type={show ? 'text' : 'password'}
                         value={(passwordForm as any)[key]}
                         onChange={e => setPasswordForm(p => ({ ...p, [key]: e.target.value }))}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full pl-10 pr-10 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                         placeholder="••••••••"
                       />
                       <button type="button" onClick={toggle} className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400">
@@ -869,7 +869,7 @@ export function Settings() {
                 <button
                   onClick={handlePasswordChange}
                   className="w-full py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                 >
                   Salvar Nova Senha
                 </button>

@@ -100,8 +100,8 @@ export function StudentRestriction() {
     return (
       <div className="p-8 flex items-center justify-center min-h-[60vh]">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center">
-          <div className="w-24 h-24 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-12 h-12 text-emerald-500" />
+          <div className="w-24 h-24 rounded-full bg-[#000326] dark:bg-white/10 flex items-center justify-center mx-auto mb-6">
+            <CheckCircle className="w-12 h-12 text-[#000326] dark:text-white" />
           </div>
           <h2 className="dark:text-white text-slate-900 mb-2">Restrição Adicionada!</h2>
           <p className="dark:text-zinc-400 text-slate-500 text-sm">Retornando à lista...</p>
@@ -189,7 +189,7 @@ export function StudentRestriction() {
                 })}
                 {restrictions.filter((r) => r.active).length === 0 && (
                   <div className="text-center py-8 dark:text-zinc-600 text-slate-400">
-                    <CheckCircle className="w-10 h-10 mx-auto mb-2 text-emerald-500/40" />
+                    <CheckCircle className="w-10 h-10 mx-auto mb-2 text-[#000326] dark:text-white/40" />
                     <p className="text-sm">Nenhuma restrição ativa</p>
                   </div>
                 )}
@@ -203,7 +203,7 @@ export function StudentRestriction() {
                 <div className="space-y-2">
                   {restrictions.filter((r) => !r.active).map((r) => (
                     <div key={r.id} className="flex items-center gap-3 p-3 rounded-2xl dark:bg-zinc-800/30 bg-slate-50 opacity-60">
-                      <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                      <CheckCircle className="w-4 h-4 text-[#000326] dark:text-white flex-shrink-0" />
                       <p className="text-sm dark:text-zinc-400 text-slate-500 line-through">{r.title}</p>
                       <span className="ml-auto text-xs dark:text-zinc-600 text-slate-400">Desde {r.date}</span>
                     </div>

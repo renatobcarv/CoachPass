@@ -292,7 +292,7 @@ export function NutritionistMaternoInfantil() {
                               <div className="space-y-2">
                                 {patient.supplementation.map(s => (
                                   <div key={s} className="flex items-center gap-2">
-                                    <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                                    <CheckCircle className="w-3.5 h-3.5 text-[#000326] dark:text-white flex-shrink-0" />
                                     <p className="text-sm dark:text-zinc-300 text-slate-700">{s}</p>
                                   </div>
                                 ))}
@@ -441,7 +441,7 @@ export function NutritionistMaternoInfantil() {
             {
               title: 'Amamentação – Necessidades Nutricionais',
               content: 'Adicional de 500 kcal/dia. Proteína: +25g/dia. DHA: 200–300mg/dia. Vitamina D: 600UI/dia. Manter hidratação adequada (≥2L água/dia). Evitar dietas restritivas.',
-              color: '#10b981', icon: Droplets,
+              color: '#5a64b4', icon: Droplets,
             },
           ].map(({ title, content, color, icon: Icon }) => (
             <div key={title} className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">

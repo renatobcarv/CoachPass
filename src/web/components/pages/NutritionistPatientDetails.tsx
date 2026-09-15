@@ -250,7 +250,7 @@ export function NutritionistPatientDetails() {
           <button
             onClick={() => navigate(`/nutritionist/criar-plano/${id}`)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
           >
             <Edit className="w-4 h-4" />
             Editar Plano
@@ -262,7 +262,7 @@ export function NutritionistPatientDetails() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Peso Atual', value: `${patientData.currentWeight} kg`, icon: Scale, color: '#f59e0b' },
-          { label: 'Meta de Peso', value: `${patientData.goalWeight} kg`, icon: Target, color: '#10b981' },
+          { label: 'Meta de Peso', value: `${patientData.goalWeight} kg`, icon: Target, color: '#5a64b4' },
           { label: 'Gordura Corp.', value: `${patientData.bodyFat}%`, icon: Activity, color: '#8b5cf6' },
           { label: 'IMC', value: patientData.bmi, icon: Heart, color: '#ef4444' },
         ].map(({ label, value, icon: Icon, color }) => (
@@ -371,11 +371,11 @@ export function NutritionistPatientDetails() {
               {/* Objetivos */}
               <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
                 <h3 className="dark:text-white text-slate-900 mb-5 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-emerald-500" />
+                  <Target className="w-5 h-5 text-[#000326] dark:text-white" />
                   Objetivos do Tratamento
                 </h3>
-                <div className="dark:bg-emerald-500/5 bg-emerald-50 rounded-2xl p-4 border dark:border-emerald-500/20 border-emerald-200">
-                  <p className="text-sm dark:text-emerald-300 text-emerald-700 mb-2" style={{ fontWeight: 600 }}>
+                <div className="dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 rounded-2xl p-4 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
+                  <p className="text-sm dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE] mb-2" style={{ fontWeight: 600 }}>
                     {patientData.goal}
                   </p>
                   <p className="text-xs dark:text-zinc-400 text-slate-500">
@@ -519,7 +519,7 @@ export function NutritionistPatientDetails() {
                           <FileText className={`w-5 h-5 ${idx === 0 ? 'text-white' : 'text-blue-400'}`} />
                         </div>
                         {idx === 0 && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-emerald-500 flex items-center justify-center">
+                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#000326] dark:bg-white flex items-center justify-center">
                             <CheckCircle className="w-2.5 h-2.5 text-white" />
                           </div>
                         )}
@@ -542,7 +542,7 @@ export function NutritionistPatientDetails() {
                             Cintura: {c.waist} cm
                           </span>
                           {c.adherence > 0 && (
-                            <span className="text-emerald-500" style={{ fontWeight: 600 }}>
+                            <span className="text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>
                               Adesão: {c.adherence}%
                             </span>
                           )}
@@ -601,7 +601,7 @@ export function NutritionistPatientDetails() {
               <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
                 <div className="flex items-center justify-between mb-5">
                   <h3 className="dark:text-white text-slate-900">Evolução de Peso</h3>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 text-emerald-500 border border-emerald-500/20" style={{ fontWeight: 600 }}>
+                  <span className="text-xs px-2.5 py-1 rounded-lg bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 600 }}>
                     ↓ {(72 - patientData.currentWeight).toFixed(1)} kg perdidos
                   </span>
                 </div>
@@ -663,13 +663,13 @@ export function NutritionistPatientDetails() {
                               className="h-full rounded-full transition-all"
                               style={{
                                 width: `${(current / initial) * 100}%`,
-                                backgroundColor: isPositive ? '#10b981' : '#ef4444',
+                                backgroundColor: isPositive ? '#5a64b4' : '#ef4444',
                               }}
                             />
                           </div>
                           <span className="text-xs dark:text-white text-slate-900 w-16" style={{ fontWeight: 700 }}>{current}{unit}</span>
                         </div>
-                        <span className={`text-xs w-12 text-right ${isPositive ? 'text-emerald-500' : 'text-red-400'}`} style={{ fontWeight: 600 }}>
+                        <span className={`text-xs w-12 text-right ${isPositive ? 'text-[#000326] dark:text-white' : 'text-red-400'}`} style={{ fontWeight: 600 }}>
                           {diff > 0 ? '+' : ''}{diff.toFixed(1)}
                         </span>
                       </div>
@@ -689,7 +689,7 @@ export function NutritionistPatientDetails() {
             <div className="space-y-2">
               {[
                 { label: 'Nova Consulta', icon: Plus, color: '#f59e0b', action: () => navigate(`/nutritionist/consulta/${id}`) },
-                { label: 'Editar Plano Alimentar', icon: Edit, color: '#10b981', action: () => navigate(`/nutritionist/criar-plano/${id}`) },
+                { label: 'Editar Plano Alimentar', icon: Edit, color: '#5a64b4', action: () => navigate(`/nutritionist/criar-plano/${id}`) },
                 { label: 'Ver Progresso', icon: BarChart3, color: '#3b82f6', action: () => setActiveTab('progress') },
                 { label: 'Histórico de Consultas', icon: FileText, color: '#8b5cf6', action: () => setActiveTab('consultations') },
               ].map(({ label, icon: Icon, color, action }) => (

@@ -228,7 +228,7 @@ export function PersonalAvaliacao() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs dark:text-zinc-500 text-slate-400">% Gordura</span>
-                  <span className="text-sm" style={{ fontWeight: 600, color: Number(formData.bodyFat) > 25 ? '#f59e0b' : '#10b981' }}>{formData.bodyFat || '—'}%</span>
+                  <span className="text-sm" style={{ fontWeight: 600, color: Number(formData.bodyFat) > 25 ? '#f59e0b' : '#5a64b4' }}>{formData.bodyFat || '—'}%</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-xs dark:text-zinc-500 text-slate-400">Massa Muscular</span>
@@ -310,7 +310,7 @@ export function PersonalAvaliacao() {
                     </div>
                     <div className="text-center">
                       <p className="text-xs dark:text-zinc-500 text-slate-400">Gordura</p>
-                      <p className="text-sm" style={{ fontWeight: 700, color: m.bodyFat > 25 ? '#f59e0b' : '#10b981' }}>{m.bodyFat}%</p>
+                      <p className="text-sm" style={{ fontWeight: 700, color: m.bodyFat > 25 ? '#f59e0b' : '#5a64b4' }}>{m.bodyFat}%</p>
                     </div>
                   </div>
                   {expandedId === m.id ? <ChevronUp className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0" /> : <ChevronDown className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0" />}
@@ -328,7 +328,7 @@ export function PersonalAvaliacao() {
                             { label: 'FC Repouso', value: `${m.restingHR}bpm`, color: '#ec4899' },
                             { label: 'Peitoral', value: `${m.chest}cm`, color: '#8b5cf6' },
                             { label: 'Cintura', value: `${m.waist}cm`, color: '#f59e0b' },
-                            { label: 'Quadril', value: `${m.hip}cm`, color: '#10b981' },
+                            { label: 'Quadril', value: `${m.hip}cm`, color: '#5a64b4' },
                             { label: 'Pressão', value: m.bloodPressure, color: '#6b7280' },
                           ].map(({ label, value, color }) => (
                             <div key={label} className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-3 border dark:border-zinc-700 border-slate-200">
@@ -396,7 +396,7 @@ export function PersonalAvaliacao() {
                       Sim
                     </button>
                     <button onClick={() => setParqAnswers(prev => prev.map((a, i) => i === idx ? { ...a, answer: false } : a))}
-                      className={`flex-1 py-2 rounded-xl text-sm border transition-all ${qa.answer === false ? 'bg-emerald-500 text-white border-emerald-500' : 'dark:border-zinc-600 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:border-emerald-400'}`} style={{ fontWeight: 600 }}>
+                      className={`flex-1 py-2 rounded-xl text-sm border transition-all ${qa.answer === false ? 'bg-[#000326] dark:bg-white text-white border-[#000326] dark:border-white' : 'dark:border-zinc-600 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:border-[#5a64b4]'}`} style={{ fontWeight: 600 }}>
                       Não
                     </button>
                   </div>
@@ -405,11 +405,11 @@ export function PersonalAvaliacao() {
             </div>
 
             {parqComplete && (
-              <div className={`mt-5 p-4 rounded-2xl border ${parqRisk ? 'dark:bg-red-500/10 dark:border-red-500/30 bg-red-50 border-red-200' : 'dark:bg-emerald-500/10 dark:border-emerald-500/30 bg-emerald-50 border-emerald-200'}`}>
+              <div className={`mt-5 p-4 rounded-2xl border ${parqRisk ? 'dark:bg-red-500/10 dark:border-red-500/30 bg-red-50 border-red-200' : 'dark:bg-[#000326] dark:bg-white/10 dark:border-[#000326]/25 dark:border-white/25 bg-[#000326]/5 border-[#000326]/20'}`}>
                 <div className="flex items-start gap-3">
-                  {parqRisk ? <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" /> : <CheckCircle className="w-5 h-5 text-emerald-400 mt-0.5" />}
+                  {parqRisk ? <AlertCircle className="w-5 h-5 text-red-400 mt-0.5" /> : <CheckCircle className="w-5 h-5 text-[#5a64b4] dark:text-[#C5C5CE] mt-0.5" />}
                   <div>
-                    <p className="text-sm" style={{ fontWeight: 700, color: parqRisk ? '#f87171' : '#34d399' }}>
+                    <p className="text-sm" style={{ fontWeight: 700, color: parqRisk ? '#f87171' : '#8e8e9a' }}>
                       {parqRisk ? 'Atenção: Consulta Médica Recomendada' : 'Aprovado para Treinamento'}
                     </p>
                     <p className="text-xs mt-1 dark:text-zinc-400 text-slate-500">

@@ -40,14 +40,14 @@ interface Template {
 }
 
 const templates: Template[] = [
-  { id: 't1', name: 'Cardápio Semanal Moderno', category: 'cardapio', color: '#10b981', gradient: 'from-emerald-500 to-teal-600', icon: Utensils, tags: ['Cardápio', 'Semanal'], likes: 342 },
+  { id: 't1', name: 'Cardápio Semanal Moderno', category: 'cardapio', color: '#5a64b4', gradient: 'from-[#000326] to-[#000346]', icon: Utensils, tags: ['Cardápio', 'Semanal'], likes: 342 },
   { id: 't2', name: 'Story – Dica Nutricional', category: 'social', color: '#f59e0b', gradient: 'from-amber-500 to-orange-500', icon: Sparkles, tags: ['Instagram', 'Dica'], likes: 518 },
   { id: 't3', name: 'Post – Prato Saudável', category: 'social', color: '#3b82f6', gradient: 'from-blue-500 to-indigo-600', icon: Apple, tags: ['Post', 'Receita'], likes: 229 },
   { id: 't4', name: 'Plano Alimentar PDF', category: 'documento', color: '#8b5cf6', gradient: 'from-violet-500 to-purple-600', icon: BookOpen, tags: ['PDF', 'Plano'], likes: 401, premium: true },
   { id: 't5', name: 'Receita Illustrada', category: 'receita', color: '#ec4899', gradient: 'from-pink-500 to-rose-500', icon: Image, tags: ['Receita', 'Arte'], likes: 287 },
   { id: 't6', name: 'Tabela de Macros', category: 'documento', color: '#06b6d4', gradient: 'from-cyan-500 to-sky-600', icon: Grid3X3, tags: ['Tabela', 'Macros'], likes: 195 },
   { id: 't7', name: 'Story – Alimento do Dia', category: 'social', color: '#f97316', gradient: 'from-orange-500 to-red-500', icon: Flame, tags: ['Instagram', 'Alimento'], likes: 633, premium: true },
-  { id: 't8', name: 'Guia de Substituições', category: 'documento', color: '#14b8a6', gradient: 'from-teal-500 to-emerald-600', icon: Layers, tags: ['Guia', 'Substituições'], likes: 312 },
+  { id: 't8', name: 'Guia de Substituições', category: 'documento', color: '#14b8a6', gradient: 'from-[#000346] to-[#5a64b4]', icon: Layers, tags: ['Guia', 'Substituições'], likes: 312 },
   { id: 't9', name: 'Evolução do Paciente', category: 'relatorio', color: '#6366f1', gradient: 'from-indigo-500 to-violet-600', icon: Activity, tags: ['Gráfico', 'Evolução'], likes: 178, premium: true },
   { id: 't10', name: 'Post – Mito vs Verdade', category: 'social', color: '#d946ef', gradient: 'from-fuchsia-500 to-pink-600', icon: Type, tags: ['Post', 'Conteúdo'], likes: 445 },
   { id: 't11', name: 'Cardápio Minimalista', category: 'cardapio', color: '#64748b', gradient: 'from-slate-500 to-zinc-600', icon: Layout, tags: ['Cardápio', 'Clean'], likes: 256 },

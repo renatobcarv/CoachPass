@@ -160,8 +160,8 @@ export function AddPatientModal({
               <div className="flex-1 overflow-y-auto p-6">
                 {step === 'success' && (
                   <div className="text-center py-12">
-                    <div className="w-20 h-20 rounded-full bg-emerald-500/10 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="w-10 h-10 text-emerald-500" />
+                    <div className="w-20 h-20 rounded-full bg-[#000326] dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
+                      <CheckCircle className="w-10 h-10 text-[#000326] dark:text-white" />
                     </div>
                     <h4 className="dark:text-white text-slate-900 text-lg mb-2" style={{ fontWeight: 600 }}>
                       Convite Enviado com Sucesso!

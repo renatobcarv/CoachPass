@@ -21,14 +21,14 @@ interface ExerciseModalProps {
 }
 
 const difficultyColors = {
-  Iniciante: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
+  Iniciante: 'text-[#5a64b4] dark:text-[#C5C5CE] bg-[#000326] dark:bg-white/10 border-[#000326]/25 dark:border-white/25',
   Intermediário: 'text-yellow-400 bg-yellow-500/10 border-yellow-500/30',
   Avançado: 'text-red-400 bg-red-500/10 border-red-500/30',
 };
 
 const muscleColors: Record<string, string> = {
   Peito: '#3b82f6',
-  Costas: '#10b981',
+  Costas: '#5a64b4',
   Ombro: '#8b5cf6',
   Bíceps: '#f59e0b',
   Tríceps: '#f97316',
@@ -55,7 +55,7 @@ export function ExerciseModal({ exercise, onClose }: ExerciseModalProps) {
     return () => window.removeEventListener('keydown', handler);
   }, [onClose]);
 
-  const accentColor = exercise ? (muscleColors[exercise.muscle] || '#10b981') : '#10b981';
+  const accentColor = exercise ? (muscleColors[exercise.muscle] || '#5a64b4') : '#5a64b4';
 
   return (
     <AnimatePresence>

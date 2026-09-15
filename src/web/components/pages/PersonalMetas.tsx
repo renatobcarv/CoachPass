@@ -35,7 +35,7 @@ const students = [
 const catConfig = {
   composicao: { label: 'Composição Corporal', icon: '⚖️', color: '#3b82f6' },
   desempenho: { label: 'Desempenho', icon: '🏆', color: '#f59e0b' },
-  habito: { label: 'Hábito', icon: '🎯', color: '#10b981' },
+  habito: { label: 'Hábito', icon: '🎯', color: '#5a64b4' },
   forca: { label: 'Força', icon: '💪', color: '#ef4444' },
   resistencia: { label: 'Resistência', icon: '🏃', color: '#8b5cf6' },
 };
@@ -148,7 +148,7 @@ export function PersonalMetas() {
           </div>
           <button onClick={() => setShowModal(true)}
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+            style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
             <Plus className="w-4 h-4" /> Nova Meta
           </button>
         </div>
@@ -157,7 +157,7 @@ export function PersonalMetas() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Metas Ativas', value: activeCount, color: '#10b981', icon: Target },
+          { label: 'Metas Ativas', value: activeCount, color: '#5a64b4', icon: Target },
           { label: 'Concluídas', value: completedCount, color: '#3b82f6', icon: Award },
           { label: 'Progresso Médio', value: `${Math.round(avgProgress)}%`, color: '#f59e0b', icon: TrendingUp },
           { label: 'Total de Alunos', value: new Set(goals.map(g => g.studentId)).size, color: '#8b5cf6', icon: Users },
@@ -203,7 +203,7 @@ export function PersonalMetas() {
                     <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${cat.color}15`, color: cat.color, fontWeight: 600 }}>{cat.label}</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    {goal.status === 'completed' && <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                    {goal.status === 'completed' && <CheckCircle className="w-4 h-4 text-[#5a64b4] dark:text-[#C5C5CE]" />}
                     <button onClick={() => deleteGoal(goal.id)} className="w-6 h-6 rounded-lg flex items-center justify-center dark:text-zinc-600 text-slate-400 hover:text-red-400 transition-colors">
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -232,12 +232,12 @@ export function PersonalMetas() {
                       {goal.current} <span className="text-xs dark:text-zinc-500 text-slate-400">/ {goal.target} {goal.unit}</span>
                     </p>
                   </div>
-                  <p className="text-2xl" style={{ fontWeight: 800, color: goal.progress >= 100 ? '#10b981' : cat.color }}>{goal.progress}%</p>
+                  <p className="text-2xl" style={{ fontWeight: 800, color: goal.progress >= 100 ? '#5a64b4' : cat.color }}>{goal.progress}%</p>
                 </div>
 
                 <div className="w-full h-2.5 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden mb-4">
                   <motion.div className="h-full rounded-full" initial={{ width: 0 }} animate={{ width: `${goal.progress}%` }} transition={{ duration: 0.8 }}
-                    style={{ background: goal.progress >= 100 ? 'linear-gradient(90deg,#10b981,#059669)' : `linear-gradient(90deg,${cat.color},${cat.color}cc)` }} />
+                    style={{ background: goal.progress >= 100 ? 'linear-gradient(90deg,#5a64b4,#000346)' : `linear-gradient(90deg,${cat.color},${cat.color}cc)` }} />
                 </div>
 
                 {/* Recent check-ins */}
@@ -265,9 +265,9 @@ export function PersonalMetas() {
                 )}
 
                 {goal.status === 'completed' && (
-                  <div className="flex items-center justify-center gap-2 py-2 rounded-xl dark:bg-emerald-500/10 bg-emerald-50 border dark:border-emerald-500/20 border-emerald-200">
-                    <Award className="w-4 h-4 text-emerald-400" />
-                    <span className="text-xs text-emerald-500" style={{ fontWeight: 700 }}>Meta Concluída!</span>
+                  <div className="flex items-center justify-center gap-2 py-2 rounded-xl dark:bg-[#000326] dark:bg-white/10 bg-[#000326]/5 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
+                    <Award className="w-4 h-4 text-[#5a64b4] dark:text-[#C5C5CE]" />
+                    <span className="text-xs text-[#000326] dark:text-white" style={{ fontWeight: 700 }}>Meta Concluída!</span>
                   </div>
                 )}
               </div>
@@ -308,7 +308,7 @@ export function PersonalMetas() {
                 <div>
                   <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Título da meta *</label>
                   <input type="text" value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Ex: Agachamento 120kg"
-                    className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                    className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30" />
                 </div>
                 <div>
                   <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Categoria</label>
@@ -348,7 +348,7 @@ export function PersonalMetas() {
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setShowModal(false)} className="flex-1 py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 text-sm">Cancelar</button>
                 <button onClick={handleAdd} className="flex-1 py-3 rounded-xl text-white text-sm flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
                   <Plus className="w-4 h-4" /> Criar Meta
                 </button>
               </div>
@@ -378,7 +378,7 @@ export function PersonalMetas() {
                 <div>
                   <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Valor atual ({checkInGoal.unit})</label>
                   <input type="text" value={checkInValue} onChange={e => setCheckInValue(e.target.value)} placeholder={`Ex: ${checkInGoal.current}`}
-                    className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500/30" />
+                    className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30" />
                 </div>
                 <div>
                   <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-1.5">Observação</label>
@@ -389,7 +389,7 @@ export function PersonalMetas() {
               <div className="flex gap-3 mt-5">
                 <button onClick={() => setCheckInGoal(null)} className="flex-1 py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 text-sm">Cancelar</button>
                 <button onClick={handleCheckIn} className="flex-1 py-3 rounded-xl text-white text-sm flex items-center justify-center gap-2"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}>
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}>
                   <CheckCircle className="w-4 h-4" /> Confirmar
                 </button>
               </div>

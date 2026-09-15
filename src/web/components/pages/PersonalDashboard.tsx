@@ -54,7 +54,7 @@ export function PersonalDashboard() {
           </button>
           <button
             onClick={() => navigate('/personal/avaliacao')}
-            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-slate-900 dark:bg-emerald-600"
+            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-slate-900 dark:bg-[#000326] dark:bg-white"
           >
             <ClipboardList className="w-4 h-4 inline mr-1.5" />
             Avaliação
@@ -65,7 +65,7 @@ export function PersonalDashboard() {
       <section className="rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-zinc-900 bg-white p-4">
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-semibold dark:text-white text-slate-900">Sessões de hoje</h2>
-          <button onClick={() => navigate('/personal/agenda')} className="text-sm text-emerald-500">
+          <button onClick={() => navigate('/personal/agenda')} className="text-sm text-[#000326] dark:text-white">
             Agenda
           </button>
         </div>
@@ -91,7 +91,7 @@ export function PersonalDashboard() {
         </div>
         <button
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-emerald-600"
+          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#000326] dark:bg-white"
         >
           <UserPlus className="w-4 h-4 inline mr-1.5" />
           Convidar

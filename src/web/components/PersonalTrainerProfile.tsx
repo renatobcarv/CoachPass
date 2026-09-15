@@ -164,13 +164,13 @@ export function PersonalTrainerProfile() {
             </p>
           </div>
           <div className="flex gap-2">
-            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-emerald-500 transition-colors">
+            <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-[#000326] dark:text-white transition-colors">
               <LinkIcon className="w-4 h-4" />
               Link da Bio
             </button>
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+              style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
             >
               <UserPlus className="w-4 h-4" />
               Novo Aluno
@@ -181,7 +181,7 @@ export function PersonalTrainerProfile() {
         {/* Quick Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { label: 'Alunos Ativos', value: students.filter(s => s.status === 'active').length.toString(), icon: Users, color: 'emerald' },
+            { label: 'Alunos Ativos', value: students.filter(s => s.status === 'active').length.toString(), icon: Users, color: 'indigo' },
             { label: 'Treinos Hoje', value: '12', icon: Dumbbell, color: 'blue' },
             { label: 'Taxa de Frequência', value: '89%', icon: TrendingUp, color: 'purple' },
             { label: 'Receita Mensal', value: 'R$ 12.6k', icon: DollarSign, color: 'orange' },
@@ -212,8 +212,8 @@ export function PersonalTrainerProfile() {
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-emerald-500/20 to-blue-500/20 border border-emerald-500/30">
-                <Users className="w-6 h-6 text-emerald-400" />
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[#000326]/20 to-[#5a64b4]/20 border border-[#000326]/25 dark:border-white/25">
+                <Users className="w-6 h-6 text-[#5a64b4] dark:text-[#C5C5CE]" />
               </div>
               <div>
                 <h3 className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>
@@ -225,7 +225,7 @@ export function PersonalTrainerProfile() {
               </div>
             </div>
             <div className="flex gap-2">
-              <button className="px-4 py-2 rounded-lg text-sm bg-emerald-500/10 text-emerald-500 border border-emerald-500/20">
+              <button className="px-4 py-2 rounded-lg text-sm bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20">
                 Ativos ({students.filter(s => s.status === 'active').length})
               </button>
               <button className="px-4 py-2 rounded-lg text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600">
@@ -258,7 +258,7 @@ export function PersonalTrainerProfile() {
                   <p className="text-xs dark:text-zinc-400 text-slate-500">Cliques</p>
                 </div>
                 <div className="dark:bg-zinc-800/50 bg-white rounded-xl p-3 border dark:border-zinc-700 border-slate-200 text-center">
-                  <p className="text-emerald-500 text-xl" style={{ fontWeight: 700 }}>12.8%</p>
+                  <p className="text-[#000326] dark:text-white text-xl" style={{ fontWeight: 700 }}>12.8%</p>
                   <p className="text-xs dark:text-zinc-400 text-slate-500">Conversão</p>
                 </div>
               </div>
@@ -271,13 +271,13 @@ export function PersonalTrainerProfile() {
                 key={student.id}
                 whileHover={{ scale: 1.02 }}
                 onClick={() => setSelectedStudent(student.id)}
-                className={`dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-5 border dark:border-zinc-700 border-slate-200 cursor-pointer hover:border-emerald-500/50 transition-all ${
+                className={`dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-5 border dark:border-zinc-700 border-slate-200 cursor-pointer hover:border-[#000326]/40 dark:border-white/40 transition-all ${
                   student.status === 'inactive' ? 'opacity-60' : ''
                 }`}
               >
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-blue-500 flex items-center justify-center text-white text-lg" style={{ fontWeight: 700 }}>
+                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#000326] to-[#5a64b4] flex items-center justify-center text-white text-lg" style={{ fontWeight: 700 }}>
                       {student.name.split(' ').map(n => n[0]).join('')}
                     </div>
                     <div>
@@ -287,7 +287,7 @@ export function PersonalTrainerProfile() {
                       <div className="flex items-center gap-2">
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
                           student.status === 'active' 
-                            ? 'bg-emerald-500/10 text-emerald-500' 
+                            ? 'bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white' 
                             : 'bg-red-500/10 text-red-500'
                         }`}>
                           {student.status === 'active' ? 'Ativo' : 'Inativo'}
@@ -298,7 +298,7 @@ export function PersonalTrainerProfile() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs dark:text-zinc-400 text-slate-500 mb-1">Adesão</p>
-                    <p className={`text-xl ${student.adherence >= 80 ? 'text-emerald-500' : 'text-yellow-500'}`} style={{ fontWeight: 700 }}>
+                    <p className={`text-xl ${student.adherence >= 80 ? 'text-[#000326] dark:text-white' : 'text-yellow-500'}`} style={{ fontWeight: 700 }}>
                       {student.adherence}%
                     </p>
                   </div>
@@ -351,7 +351,7 @@ export function PersonalTrainerProfile() {
         <div className="flex items-center gap-4">
           <button
             onClick={() => setSelectedStudent(null)}
-            className="w-10 h-10 rounded-xl dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 flex items-center justify-center dark:text-zinc-400 text-slate-600 hover:text-emerald-500 transition-colors"
+            className="w-10 h-10 rounded-xl dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 flex items-center justify-center dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white transition-colors"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
@@ -360,18 +360,18 @@ export function PersonalTrainerProfile() {
               {currentStudent?.name}
             </h2>
             <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">
-              {currentStudent?.plan} · Adesão: <span className={currentStudent && currentStudent.adherence >= 80 ? 'text-emerald-500' : 'text-yellow-500'}>{currentStudent?.adherence}%</span>
+              {currentStudent?.plan} · Adesão: <span className={currentStudent && currentStudent.adherence >= 80 ? 'text-[#000326] dark:text-white' : 'text-yellow-500'}>{currentStudent?.adherence}%</span>
             </p>
           </div>
         </div>
         <div className="flex gap-2">
-          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-emerald-500 transition-colors">
+          <button className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-white dark:border-zinc-700 border border-slate-200 dark:text-zinc-300 text-slate-700 hover:text-[#000326] dark:text-white transition-colors">
             <Download className="w-4 h-4" />
             Exportar Treinos
           </button>
           <button
             className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-            style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+            style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
           >
             <Send className="w-4 h-4" />
             Enviar Mensagem
@@ -400,12 +400,12 @@ export function PersonalTrainerProfile() {
             </div>
           </div>
           <div className="flex gap-2">
-            <button className="px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:text-emerald-500">
+            <button className="px-4 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white">
               Importar Treino
             </button>
             <button
               className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm text-white"
-              style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+              style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
             >
               <Plus className="w-4 h-4" />
               Novo Exercício
@@ -493,7 +493,7 @@ export function PersonalTrainerProfile() {
                           <button className="p-1.5 rounded-lg dark:bg-zinc-700 bg-slate-200 dark:text-zinc-400 text-slate-600 hover:text-blue-500">
                             <Edit3 className="w-4 h-4" />
                           </button>
-                          <button className="p-1.5 rounded-lg dark:bg-zinc-700 bg-slate-200 dark:text-zinc-400 text-slate-600 hover:text-emerald-500">
+                          <button className="p-1.5 rounded-lg dark:bg-zinc-700 bg-slate-200 dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white">
                             <Plus className="w-4 h-4" />
                           </button>
                         </div>
@@ -511,17 +511,17 @@ export function PersonalTrainerProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Rotinas Periodizadas
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400">+ Nova</button>
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE]">+ Nova</button>
             </div>
             <div className="space-y-3">
               {workoutRoutines.map((routine) => (
                 <div
                   key={routine.name}
-                  className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-4 border dark:border-zinc-700 border-slate-200 hover:border-emerald-500/30 transition-colors cursor-pointer"
+                  className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-4 border dark:border-zinc-700 border-slate-200 hover:border-[#000326]/25 dark:border-white/25 transition-colors cursor-pointer"
                 >
                   <div className="flex items-start justify-between mb-3">
-                    <Dumbbell className="w-5 h-5 text-emerald-500" />
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-500">
+                    <Dumbbell className="w-5 h-5 text-[#000326] dark:text-white" />
+                    <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white">
                       {routine.focus}
                     </span>
                   </div>
@@ -609,7 +609,7 @@ export function PersonalTrainerProfile() {
               <p className="text-sm dark:text-zinc-300 text-slate-700 uppercase tracking-wider" style={{ fontWeight: 600 }}>
                 Progressão de Carga - Últimas 4 Semanas
               </p>
-              <button className="text-xs text-emerald-500 hover:text-emerald-400 flex items-center gap-1">
+              <button className="text-xs text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE] flex items-center gap-1">
                 <Download className="w-3 h-3" />
                 Exportar
               </button>
@@ -674,7 +674,7 @@ export function PersonalTrainerProfile() {
                           </p>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 text-emerald-500">
+                          <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white">
                             <TrendingUp className="w-3 h-3" />
                             <span className="text-xs" style={{ fontWeight: 700 }}>
                               +{evolution.toFixed(1)}%

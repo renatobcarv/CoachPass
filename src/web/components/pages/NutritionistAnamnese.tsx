@@ -90,7 +90,7 @@ const sections: Section[] = [
     id: 'physical',
     title: 'Atividade Física',
     icon: Activity,
-    color: '#10b981',
+    color: '#5a64b4',
     fields: [
       { id: 'exercises', label: 'Pratica Exercícios?', type: 'radio', options: ['Não', 'Sim – Aeróbico', 'Sim – Musculação', 'Sim – Ambos'] },
       { id: 'exercise_frequency', label: 'Frequência Semanal', type: 'select', options: ['Não pratica', '1-2x', '3-4x', '5-6x', 'Todos os dias'] },
@@ -128,7 +128,7 @@ const sections: Section[] = [
 ];
 
 const templates = [
-  { id: 'webdiet', name: 'Modelo WebDiet Completo', sections: 6, color: '#10b981' },
+  { id: 'webdiet', name: 'Modelo WebDiet Completo', sections: 6, color: '#5a64b4' },
   { id: 'emagrecimento', name: 'Foco em Emagrecimento', sections: 4, color: '#f59e0b' },
   { id: 'esportista', name: 'Atletas e Esportistas', sections: 5, color: '#3b82f6' },
   { id: 'patologia', name: 'Controle de Patologias', sections: 5, color: '#ef4444' },
@@ -172,7 +172,7 @@ export function NutritionistAnamnese() {
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)' }}>
               <ClipboardList className="w-5 h-5 text-white" />
             </div>
             <h1 className="dark:text-white text-slate-900">Anamnese Completa</h1>
@@ -191,7 +191,7 @@ export function NutritionistAnamnese() {
           </button>
           <button
             className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+            style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
           >
             <Sparkles className="w-4 h-4" />
             Preencher com IA
@@ -218,7 +218,7 @@ export function NutritionistAnamnese() {
                   onClick={() => { setSelectedTemplate(t.id); setShowTemplates(false); }}
                   className={`p-4 rounded-2xl border text-left transition-all ${
                     selectedTemplate === t.id
-                      ? 'border-emerald-500/50 dark:bg-emerald-500/5 bg-emerald-50'
+                      ? 'border-[#000326]/40 dark:border-white/40 dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5'
                       : 'dark:border-zinc-700 border-slate-200 dark:hover:border-zinc-500 hover:border-slate-300'
                   }`}
                 >
@@ -240,12 +240,12 @@ export function NutritionistAnamnese() {
           <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
             Progresso da Anamnese
           </p>
-          <span className="text-sm text-emerald-500" style={{ fontWeight: 700 }}>{completionPct}%</span>
+          <span className="text-sm text-[#000326] dark:text-white" style={{ fontWeight: 700 }}>{completionPct}%</span>
         </div>
         <div className="w-full h-2 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
           <motion.div
             className="h-full rounded-full"
-            style={{ background: 'linear-gradient(90deg,#10b981,#059669)' }}
+            style={{ background: 'linear-gradient(90deg,#5a64b4,#000346)' }}
             initial={{ width: 0 }}
             animate={{ width: `${completionPct}%` }}
             transition={{ duration: 0.5 }}
@@ -255,7 +255,7 @@ export function NutritionistAnamnese() {
           {sections.map((s) => (
             <div key={s.id} className="flex items-center gap-1.5">
               {savedSections.includes(s.id) ? (
-                <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                <CheckCircle className="w-3.5 h-3.5 text-[#000326] dark:text-white" />
               ) : (
                 <Circle className="w-3.5 h-3.5 dark:text-zinc-600 text-slate-300" />
               )}
@@ -289,7 +289,7 @@ export function NutritionistAnamnese() {
                   <p className="text-xs dark:text-zinc-500 text-slate-400">{section.fields.length} campos</p>
                 </div>
                 {isSaved && (
-                  <span className="flex items-center gap-1 text-xs text-emerald-500 mr-2" style={{ fontWeight: 600 }}>
+                  <span className="flex items-center gap-1 text-xs text-[#000326] dark:text-white mr-2" style={{ fontWeight: 600 }}>
                     <CheckCircle className="w-3.5 h-3.5" /> Salvo
                   </span>
                 )}
@@ -324,13 +324,13 @@ export function NutritionistAnamnese() {
                                 onChange={(e) => handleChange(field.id, e.target.value)}
                                 placeholder={field.placeholder}
                                 rows={3}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 resize-none"
                               />
                             ) : field.type === 'select' ? (
                               <select
                                 value={formData[field.id] || ''}
                                 onChange={(e) => handleChange(field.id, e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 appearance-none"
+                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 appearance-none"
                               >
                                 <option value="">Selecione...</option>
                                 {field.options?.map((opt) => (
@@ -361,7 +361,7 @@ export function NutritionistAnamnese() {
                                 value={formData[field.id] || ''}
                                 onChange={(e) => handleChange(field.id, e.target.value)}
                                 placeholder={field.placeholder}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                               />
                             )}
                           </div>
@@ -398,7 +398,7 @@ export function NutritionistAnamnese() {
         <button
           onClick={() => { setSavedSections(sections.map(s => s.id)); }}
           className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
+          style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
         >
           <Save className="w-4 h-4" />
           Salvar Anamnese Completa

@@ -14,15 +14,30 @@ export class PayloadApiError extends Error {
   }
 }
 
+function firstFieldErrorMessage(errors: unknown): string {
+  if (!Array.isArray(errors) || errors.length === 0) return ''
+  for (const item of errors) {
+    if (!item || typeof item !== 'object') continue
+    const err = item as Record<string, unknown>
+    if (typeof err.message === 'string' && err.message.trim()) {
+      // Prefer nested field errors from Payload ValidationError
+      const nested = err.data
+      if (nested && typeof nested === 'object') {
+        const nestedMsg = firstFieldErrorMessage((nested as Record<string, unknown>).errors)
+        if (nestedMsg) return nestedMsg
+      }
+      return err.message
+    }
+  }
+  return ''
+}
+
 export function extractPayloadMessage(data: unknown): string {
   if (!data || typeof data !== 'object') return ''
   const d = data as Record<string, unknown>
+  const fromErrors = firstFieldErrorMessage(d.errors)
+  if (fromErrors) return fromErrors
   if (typeof d.message === 'string') return d.message
-  const errors = d.errors
-  if (Array.isArray(errors) && errors.length > 0) {
-    const first = errors[0] as Record<string, unknown>
-    if (typeof first.message === 'string') return first.message
-  }
   return ''
 }
 

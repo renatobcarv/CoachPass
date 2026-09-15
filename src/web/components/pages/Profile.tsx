@@ -56,7 +56,7 @@ const initialRestrictions = [
 
 const badges = [
   { label: '12 dias seguidos', icon: Star, color: 'text-yellow-400', bg: 'bg-yellow-500/10' },
-  { label: 'Meta semanal', icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  { label: 'Meta semanal', icon: Target, color: 'text-[#5a64b4] dark:text-[#C5C5CE]', bg: 'bg-[#000326] dark:bg-white/10' },
   { label: '35 treinos', icon: Award, color: 'text-blue-400', bg: 'bg-blue-500/10' },
   { label: 'Consistência', icon: CheckCircle2, color: 'text-purple-400', bg: 'bg-purple-500/10' },
 ];
@@ -116,7 +116,7 @@ export function Profile() {
     { label: 'Peso atual', value: '79.5', unit: 'kg', icon: Scale, color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Altura', value: '1.82', unit: 'm', icon: Ruler, color: 'text-purple-400', bg: 'bg-purple-500/10' },
     { label: '% Gordura', value: '17.8', unit: '%', icon: Activity, color: 'text-orange-400', bg: 'bg-orange-500/10' },
-    { label: 'IMC', value: '24.0', unit: 'kg/m²', icon: Target, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+    { label: 'IMC', value: '24.0', unit: 'kg/m²', icon: Target, color: 'text-[#5a64b4] dark:text-[#C5C5CE]', bg: 'bg-[#000326] dark:bg-white/10' },
   ];
 
   const roleLabels: Record<string, string> = {
@@ -155,7 +155,7 @@ export function Profile() {
               const settingsPath = user?.role === 'personal' ? '/personal/configuracoes' : user?.role === 'nutritionist' ? '/nutritionist/configuracoes' : '/app/configuracoes';
               navigate(settingsPath);
             }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600 hover:text-emerald-500 dark:hover:text-emerald-400 transition-all"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] transition-all"
           >
             <Settings className="w-4 h-4" />
             Configurações
@@ -166,9 +166,9 @@ export function Profile() {
               className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm transition-all ${
                 editing
                   ? 'text-white'
-                  : 'dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600 hover:text-emerald-500'
+                  : 'dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600 hover:text-[#000326] dark:text-white'
               }`}
-              style={editing ? { background: 'linear-gradient(135deg, #10b981, #3b82f6)' } : {}}
+              style={editing ? { background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' } : {}}
             >
               {editing ? <Save className="w-4 h-4" /> : <Edit3 className="w-4 h-4" />}
               {editing ? 'Salvar alterações' : 'Editar perfil'}
@@ -252,10 +252,10 @@ export function Profile() {
 
           {/* Plano Ativo */}
           {user?.plan && (
-            <div className="md:col-span-2 dark:bg-gradient-to-br dark:from-emerald-500/10 dark:to-blue-500/10 bg-gradient-to-br from-emerald-50 to-blue-50 rounded-2xl p-4 border dark:border-emerald-500/20 border-emerald-200">
+            <div className="md:col-span-2 dark:bg-gradient-to-br dark:from-white/10 dark:to-blue-500/10 bg-gradient-to-br from-[#e8e9f2] to-[#f3f4f9] rounded-2xl p-4 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
               <div className="flex items-center gap-2 mb-2">
-                <CreditCard className="w-4 h-4 text-emerald-500" />
-                <p className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">Plano Ativo</p>
+                <CreditCard className="w-4 h-4 text-[#000326] dark:text-white" />
+                <p className="text-xs text-[#000326] dark:text-[#C5C5CE] dark:text-[#5a64b4] dark:text-[#C5C5CE] uppercase tracking-wider">Plano Ativo</p>
               </div>
               <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
                 {planLabels[user.plan]}
@@ -273,7 +273,7 @@ export function Profile() {
             {/* Profile Card */}
             <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200 text-center">
               <div className="relative inline-block mb-4">
-                <div className="w-28 h-28 rounded-3xl overflow-hidden mx-auto ring-4 ring-emerald-500/30">
+                <div className="w-28 h-28 rounded-3xl overflow-hidden mx-auto ring-4 ring-[#000326]/30 dark:ring-white/30">
                   <img
                     src={user?.avatar || 'https://ui-avatars.com/api/?name=User&background=10b981&color=fff'}
                     alt={user?.name || 'User'}
@@ -283,10 +283,10 @@ export function Profile() {
                 <button
                   onClick={handlePhotoUpload}
                   className="absolute -bottom-1 -right-1 w-8 h-8 rounded-xl flex items-center justify-center text-white shadow-lg hover:opacity-90 transition-opacity"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}>
+                  style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}>
                   <Camera className="w-4 h-4" />
                 </button>
-                <div className="absolute -top-1 -right-1 w-5 h-5 bg-emerald-500 rounded-full border-2 dark:border-zinc-900 border-white" />
+                <div className="absolute -top-1 -right-1 w-5 h-5 bg-[#000326] dark:bg-white rounded-full border-2 dark:border-zinc-900 border-white" />
               </div>
               <h2 className="dark:text-white text-slate-900 mb-0.5" style={{ fontWeight: 700 }}>
                 {user?.name || 'Usuário'}
@@ -301,8 +301,8 @@ export function Profile() {
                   border: '1px solid rgba(16,185,129,0.3)',
                 }}
               >
-                <Zap className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400" style={{ fontWeight: 600 }}>Ganho de Massa</span>
+                <Zap className="w-3.5 h-3.5 text-[#5a64b4] dark:text-[#C5C5CE]" />
+                <span className="text-[#5a64b4] dark:text-[#C5C5CE]" style={{ fontWeight: 600 }}>Ganho de Massa</span>
               </div>
 
               <div className="grid grid-cols-3 gap-2 mt-5 pt-5 border-t dark:border-zinc-800 border-slate-100">
@@ -343,7 +343,7 @@ export function Profile() {
                 </div>
                 <button
                   onClick={() => setAdding(true)}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-emerald-500 transition-colors"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:text-[#000326] dark:text-white transition-colors"
                 >
                   <Plus className="w-4 h-4" />
                 </button>
@@ -379,12 +379,12 @@ export function Profile() {
                     onKeyDown={(e) => e.key === 'Enter' && addRestriction()}
                     placeholder="Nova restrição..."
                     autoFocus
-                    className="flex-1 px-3 py-1.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-200 text-slate-800 focus:outline-none dark:focus:ring-1 focus:ring-1 dark:focus:ring-emerald-500/50 focus:ring-emerald-500/50"
+                    className="flex-1 px-3 py-1.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-200 text-slate-800 focus:outline-none dark:focus:ring-1 focus:ring-1 dark:focus:ring-[#000326] dark:ring-white/50 focus:ring-[#000326] dark:ring-white/50"
                   />
                   <button
                     onClick={addRestriction}
                     className="px-3 py-1.5 rounded-xl text-sm text-white"
-                    style={{ background: 'linear-gradient(135deg, #10b981, #3b82f6)' }}
+                    style={{ background: 'linear-gradient(135deg, #5a64b4, #3b82f6)' }}
                   >
                     OK
                   </button>
@@ -399,7 +399,7 @@ export function Profile() {
             <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
               <div className="flex items-center justify-between mb-5">
                 <h3 className="dark:text-white text-slate-900">Dados Corporais</h3>
-                <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20" style={{ fontWeight: 600 }}>
+                <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE] border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 600 }}>
                   Atualizado hoje
                 </span>
               </div>
@@ -424,7 +424,7 @@ export function Profile() {
               <h3 className="dark:text-white text-slate-900 mb-5">Objetivos Ativos</h3>
               <div className="space-y-4">
                 {[
-                  { label: 'Peso alvo', current: 79.5, target: 75, unit: 'kg', color: '#10b981' },
+                  { label: 'Peso alvo', current: 79.5, target: 75, unit: 'kg', color: '#5a64b4' },
                   { label: '% Gordura alvo', current: 17.8, target: 12, unit: '%', color: '#3b82f6' },
                   { label: 'Massa muscular', current: 65, target: 75, unit: 'kg', color: '#8b5cf6' },
                 ].map(({ label, current, target, unit, color }) => {
@@ -463,7 +463,7 @@ export function Profile() {
                 <h3 className="dark:text-white text-slate-900">Galeria de Progresso</h3>
                 <button
                   onClick={handleGalleryUpload}
-                  className="flex items-center gap-1.5 text-sm text-emerald-500 hover:text-emerald-400 transition-colors">
+                  className="flex items-center gap-1.5 text-sm text-[#000326] dark:text-white hover:text-[#5a64b4] dark:text-[#C5C5CE] transition-colors">
                   <Camera className="w-4 h-4" />
                   Adicionar foto
                 </button>
@@ -488,7 +488,7 @@ export function Profile() {
                     </div>
                     {photo.label === 'Atual' && (
                       <div className="absolute top-2 right-2">
-                        <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-500 text-white" style={{ fontWeight: 700 }}>
+                        <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white text-white" style={{ fontWeight: 700 }}>
                           Atual
                         </span>
                       </div>
@@ -512,7 +512,7 @@ export function Profile() {
                         type="text"
                         value={formValues[label]}
                         onChange={(e) => setFormValues(prev => ({ ...prev, [label]: e.target.value }))}
-                        className="mt-1 w-full px-3 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="mt-1 w-full px-3 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-100 dark:text-zinc-200 text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                       />
                     ) : (
                       <p className="mt-1 text-sm dark:text-zinc-200 text-slate-700" style={{ fontWeight: 500 }}>

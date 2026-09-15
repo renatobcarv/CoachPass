@@ -64,7 +64,7 @@ const categories = [
 ];
 
 const sourceColors = {
-  TACO: '#10b981',
+  TACO: '#5a64b4',
   TBCA: '#3b82f6',
   Fabricante: '#f59e0b',
   USDA: '#8b5cf6',
@@ -323,7 +323,7 @@ export function NutritionistAlimentos() {
                 <MacroBar label="Proteína" value={selectedFood.protein} max={30} color="#3b82f6" />
                 <MacroBar label="Carboidrato" value={selectedFood.carbs} max={50} color="#f59e0b" />
                 <MacroBar label="Gordura" value={selectedFood.fat} max={20} color="#ec4899" />
-                <MacroBar label="Fibras" value={selectedFood.fiber} max={10} color="#10b981" />
+                <MacroBar label="Fibras" value={selectedFood.fiber} max={10} color="#5a64b4" />
               </div>
 
               {/* Extra */}

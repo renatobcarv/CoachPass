@@ -135,14 +135,14 @@ const goals: Goal[] = [
 
 const categoryConfig = {
   peso: { label: 'Peso / Composição', icon: Scale, color: '#f59e0b' },
-  nutricional: { label: 'Nutricional', icon: Apple, color: '#10b981' },
+  nutricional: { label: 'Nutricional', icon: Apple, color: '#5a64b4' },
   habito: { label: 'Hábito Alimentar', icon: Star, color: '#8b5cf6' },
   hidratacao: { label: 'Hidratação', icon: Droplets, color: '#3b82f6' },
   exercicio: { label: 'Atividade Física', icon: Activity, color: '#ef4444' },
 };
 
 const statusConfig = {
-  active: { label: 'Ativa', color: '#10b981' },
+  active: { label: 'Ativa', color: '#5a64b4' },
   achieved: { label: 'Concluída', color: '#f59e0b' },
   paused: { label: 'Pausada', color: '#6b7280' },
 };
@@ -188,7 +188,7 @@ export function NutritionistMetas() {
       <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#10b981,#059669)' }}>
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)' }}>
               <Target className="w-5 h-5 text-white" />
             </div>
             <h1 className="dark:text-white text-slate-900">Prescrição de Metas</h1>
@@ -200,7 +200,7 @@ export function NutritionistMetas() {
         <button
           onClick={() => setShowNewModal(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#10b981,#059669)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
+          style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
         >
           <Plus className="w-4 h-4" />
           Nova Meta
@@ -210,7 +210,7 @@ export function NutritionistMetas() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
-          { label: 'Metas Ativas', value: activeGoals, icon: Target, color: '#10b981' },
+          { label: 'Metas Ativas', value: activeGoals, icon: Target, color: '#5a64b4' },
           { label: 'Concluídas', value: achievedGoals, icon: CheckCircle, color: '#f59e0b' },
           { label: 'Pacientes com Metas', value: new Set(goals.map(g => g.patientId)).size, icon: Users, color: '#3b82f6' },
           { label: 'Check-ins esta Semana', value: goals.reduce((s, g) => s + g.checkIns.length, 0), icon: Calendar, color: '#8b5cf6' },
@@ -238,7 +238,7 @@ export function NutritionistMetas() {
               key={id}
               onClick={() => setFilterStatus(id)}
               className={`px-4 py-2 rounded-xl text-xs transition-all ${filterStatus === id ? 'text-white' : 'dark:text-zinc-400 text-slate-600'}`}
-              style={filterStatus === id ? { background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 } : {}}
+              style={filterStatus === id ? { background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 } : {}}
             >
               {label}
             </button>
@@ -345,7 +345,7 @@ export function NutritionistMetas() {
                       {/* Actions */}
                       <div className="flex gap-2 flex-wrap">
                         <button
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-emerald-500 hover:border-emerald-400 hover:dark:text-emerald-400 transition-all"
+                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:border-[#5a64b4] hover:dark:text-[#5a64b4] dark:text-[#C5C5CE] transition-all"
                         >
                           <Calendar className="w-3 h-3" /> Registrar Check-in
                         </button>
@@ -414,13 +414,13 @@ export function NutritionistMetas() {
                         placeholder={placeholder}
                         value={newGoal[key as keyof typeof newGoal]}
                         onChange={(e) => setNewGoal(p => ({ ...p, [key]: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30 resize-none"
+                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 resize-none"
                       />
                     ) : type === 'select' && Array.isArray(options) ? (
                       <select
                         value={newGoal[key as keyof typeof newGoal]}
                         onChange={(e) => setNewGoal(p => ({ ...p, [key]: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                       >
                         <option value="">Selecione...</option>
                         {(options as any[]).map((o: any) =>
@@ -435,7 +435,7 @@ export function NutritionistMetas() {
                         placeholder={placeholder}
                         value={newGoal[key as keyof typeof newGoal]}
                         onChange={(e) => setNewGoal(p => ({ ...p, [key]: e.target.value }))}
-                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                       />
                     )}
                   </div>
@@ -449,7 +449,7 @@ export function NutritionistMetas() {
                 <button
                   onClick={() => setShowNewModal(false)}
                   className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm text-white hover:opacity-90 transition-all"
-                  style={{ background: 'linear-gradient(135deg,#10b981,#059669)', fontWeight: 600 }}
+                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                 >
                   <Target className="w-4 h-4" />
                   Prescrever Meta

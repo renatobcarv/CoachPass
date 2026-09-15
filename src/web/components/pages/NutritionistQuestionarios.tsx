@@ -63,7 +63,7 @@ const questionnaires: Questionnaire[] = [
     questions: 35,
     estimatedTime: '15 min',
     icon: Utensils,
-    color: '#10b981',
+    color: '#5a64b4',
     tags: ['Alimentação', 'Hábitos'],
   },
   {
@@ -167,7 +167,7 @@ export function NutritionistQuestionarios() {
   });
 
   const statusConfig = {
-    answered: { label: 'Respondido', color: '#10b981' },
+    answered: { label: 'Respondido', color: '#5a64b4' },
     pending: { label: 'Aguardando', color: '#f59e0b' },
     viewed: { label: 'Visualizado', color: '#3b82f6' },
   };
@@ -210,8 +210,8 @@ export function NutritionistQuestionarios() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         {[
           { label: 'Questionários Disponíveis', value: questionnaires.length, icon: ClipboardCheck, color: '#3b82f6' },
-          { label: 'Enviados este Mês', value: sentQuestionnaires.length, icon: Send, color: '#10b981' },
-          { label: 'Respondidos', value: sentQuestionnaires.filter(s => s.status === 'answered').length, icon: CheckCircle, color: '#10b981' },
+          { label: 'Enviados este Mês', value: sentQuestionnaires.length, icon: Send, color: '#5a64b4' },
+          { label: 'Respondidos', value: sentQuestionnaires.filter(s => s.status === 'answered').length, icon: CheckCircle, color: '#5a64b4' },
           { label: 'Aguardando Resposta', value: sentQuestionnaires.filter(s => s.status === 'pending').length, icon: Clock, color: '#f59e0b' },
         ].map(({ label, value, icon: Icon, color }) => (
           <div key={label} className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">

@@ -171,10 +171,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         plan: additionalData?.plan,
       });
 
+      const normalizedEmail = email.trim().toLowerCase()
       const data = await postJson<{
         user: PayloadUserDoc;
         token: string;
-      }>(`${USERS_API}/login`, { email, password });
+      }>(`${USERS_API}/login`, { email: normalizedEmail, password });
 
       if (!data.token || !data.user) {
         throw new Error('Conta criada, mas o login automático falhou. Tente entrar manualmente.');
