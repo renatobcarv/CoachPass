@@ -52,8 +52,15 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
-    create: ({ req }) => !req.user || isSuperUser(req),
-    read: ({ req }) => isSuperUser(req) || Boolean(req.user),
+    // Cadastro público precisa funcionar mesmo com cookie/sessão residual no navegador.
+    // Elevação a master/super continua bloqueada no beforeValidate.
+    create: () => true,
+    read: ({ req }) => {
+      if (isSuperUser(req)) return true
+      if (!req.user) return false
+      // Autenticado só lê a própria conta (vínculos usam collections dedicadas).
+      return { id: { equals: req.user.id } }
+    },
     update: ({ req, id }) =>
       isSuperUser(req) || Boolean(req.user && String(req.user.id) === String(id)),
     delete: ({ req }) => isSuperUser(req),
@@ -63,7 +70,9 @@ export const Users: CollectionConfig = {
       ({ data, operation, req, collection }) => {
         const bypass =
           req.context?.allowMasterCreate === true || req.context?.seedMaster === true
-        if (operation === 'create' && data && !req.user && !bypass) {
+        if (!data || bypass || isSuperUser(req)) return data
+
+        if (operation === 'create') {
           if (data.role === 'master' || data.isSuperAdmin === true) {
             throw new ValidationError({
               collection: collection?.slug,
@@ -75,7 +84,33 @@ export const Users: CollectionConfig = {
               ],
             })
           }
+          data.isSuperAdmin = false
+          if (data.role && !['student', 'personal', 'nutritionist'].includes(String(data.role))) {
+            data.role = 'student'
+          }
         }
+
+        // No update, usuário comum não sobe para master/super; pode só ajustar personal/nutritionist/student.
+        if (operation === 'update') {
+          if (data.role === 'master' || data.isSuperAdmin === true) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [
+                {
+                  path: 'role',
+                  message: 'Não é permitido elevar a conta a master por aqui.',
+                },
+              ],
+            })
+          }
+          if (data.role && !['student', 'personal', 'nutritionist'].includes(String(data.role))) {
+            delete data.role
+          }
+          if ('isSuperAdmin' in data) {
+            delete data.isSuperAdmin
+          }
+        }
+
         return data
       },
     ],
@@ -127,10 +162,12 @@ export const Users: CollectionConfig = {
       type: 'select',
       required: false,
       options: [
+        { label: 'Gratuito', value: 'free' },
         { label: 'Mensal', value: 'monthly' },
         { label: 'Semestral', value: 'semester' },
         { label: 'Anual', value: 'annual' },
       ],
+      defaultValue: 'free',
     },
   ],
 }

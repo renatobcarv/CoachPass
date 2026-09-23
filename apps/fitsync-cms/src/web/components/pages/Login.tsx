@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle, ChevronRight, Lock, Mail, X, Zap } from 'lucide-react';
+import { CheckCircle, ChevronRight, Lock, Mail, X, Zap, ArrowLeft } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { postJson, PayloadApiError, extractPayloadMessage, USERS_API } from '@/lib/cms';
@@ -136,6 +136,15 @@ export function Login() {
       </AnimatePresence>
 
       <div className="w-full max-w-md">
+        <div className="mb-4">
+          <Link
+            to="/"
+            className="inline-flex items-center gap-2 text-sm font-medium text-[#6a6a7a] hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para a home
+          </Link>
+        </div>
         <div className="mb-8 text-center">
           <Link to="/" className="inline-flex items-center gap-2.5">
             <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-gradient-to-br from-[#000326] to-[#000346] dark:from-white dark:to-[#C5C5CE]">
@@ -145,7 +154,8 @@ export function Login() {
           </Link>
           <h1 className="mt-6 text-2xl font-bold text-[#000326] dark:text-white">Entrar</h1>
           <p className="mt-2 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
-            Use o e-mail da sua conta. O painel abre conforme o seu perfil.
+            Use o e-mail e a senha da sua conta. Se for a primeira vez como aluno, o app pede o
+            perfil completo (telefone, peso, altura, objetivo etc.) logo após o login.
           </p>
           {isAuthenticated && user && (
             <button
@@ -221,6 +231,16 @@ export function Login() {
               Criar conta
             </Link>
           </p>
+          <div className="pt-2 border-t border-[#000326]/10 dark:border-white/10">
+            <a
+              href="/politica-de-privacidade.html"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-[#000326] border border-[#000326]/15 hover:bg-[#f3f4f9] dark:text-[#C5C5CE] dark:border-white/15 dark:hover:bg-white/5 transition-colors"
+            >
+              Termos e Política de Privacidade
+            </a>
+          </div>
         </form>
       </div>
     </div>

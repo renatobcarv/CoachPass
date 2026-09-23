@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 320" role="img" aria-label="Músculo peitoral destacado">
+  <rect width="200" height="320" rx="20" fill="#F3F4F9"/>
+  <!-- Silhueta corpo (frente) -->
+  <g fill="#D8D9E0">
+    <ellipse cx="100" cy="42" rx="22" ry="26"/>
+    <path d="M78 62c-18 8-34 28-38 52-2 12 2 20 10 22l12-6v48c0 20 8 36 18 44l20 40h20l20-40c10-8 18-24 18-44v-48l12 6c8-2 12-10 10-22-4-24-20-44-38-52-8-4-16-6-22-6s-14 2-22 6z"/>
+    <path d="M52 118c-16 8-28 28-30 48-1 10 6 16 14 14l16-8"/>
+    <path d="M148 118c16 8 28 28 30 48 1 10-6 16-14 14l-16-8"/>
+    <path d="M82 230l-8 70h18l10-70z"/>
+    <path d="M118 230l8 70h-18l-10-70z"/>
+  </g>
+  <!-- Peitoral destacado -->
+  <path d="M72 98c10-14 28-18 28-18s18 4 28 18c6 8 4 22-2 28-8 8-18 10-26 10s-18-2-26-10c-6-6-8-20-2-28z" fill="#E23B3B"/>
+  <path d="M88 108c4-6 12-8 12-8s8 2 12 8c2 4 1 10-1 12-4 4-8 5-11 5s-7-1-11-5c-2-2-3-8-1-12z" fill="#FF6B6B"/>
+  <text x="100" y="300" text-anchor="middle" fill="#000326" font-size="16" font-family="Segoe UI,Arial,sans-serif" font-weight="600">Peito</text>
+</svg>
