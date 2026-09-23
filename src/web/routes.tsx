@@ -21,21 +21,25 @@ import { NutritionistPatientDetails } from './components/pages/NutritionistPatie
 import { CreateDietPlan } from './components/pages/CreateDietPlan';
 import { NutritionConsultation } from './components/pages/NutritionConsultation';
 import { NutritionistAnamnese } from './components/pages/NutritionistAnamnese';
-import { NutritionistFinanceiro } from './components/pages/NutritionistFinanceiro';
 import { NutritionistAlimentos } from './components/pages/NutritionistAlimentos';
 import { PersonalAvaliacao } from './components/pages/PersonalAvaliacao';
 import { PersonalAgenda } from './components/pages/PersonalAgenda';
-import { PersonalFinanceiro } from './components/pages/PersonalFinanceiro';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { RequireStudentOnboarding } from './components/RequireStudentOnboarding';
 import { Settings } from './components/pages/Settings';
 import { PanelSelector } from './components/pages/PanelSelector';
 import { StudentOnboarding } from './components/pages/StudentOnboarding';
 import { ProfessionalOnboarding } from './components/pages/ProfessionalOnboarding';
+import { Plans } from './components/pages/Plans';
+import { PrivacyPolicy } from './components/pages/PrivacyPolicy';
 
 export const router = createBrowserRouter([
   { path: '/', Component: Home },
   { path: '/login', Component: Login },
   { path: '/cadastro', Component: Register },
+  { path: '/planos', Component: Plans },
+  { path: '/privacidade', Component: PrivacyPolicy },
+  { path: '/termos', Component: PrivacyPolicy },
   {
     path: '/selecionar-painel',
     element: <ProtectedRoute allowedRoles={['master']} />,
@@ -44,12 +48,12 @@ export const router = createBrowserRouter([
   {
     path: '/onboarding/student',
     element: <ProtectedRoute allowedRoles={['student']} />,
-    Component: StudentOnboarding,
+    children: [{ index: true, Component: StudentOnboarding }],
   },
   {
     path: '/onboarding/professional',
     element: <ProtectedRoute allowedRoles={['personal', 'nutritionist']} />,
-    Component: ProfessionalOnboarding,
+    children: [{ index: true, Component: ProfessionalOnboarding }],
   },
   { path: '/nutricionista', element: <Navigate to="/nutritionist" replace /> },
   { path: '/nutricionista/*', element: <Navigate to="/nutritionist" replace /> },
@@ -63,14 +67,19 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute allowedRoles={['student']} />,
     children: [
       {
-        Component: Layout,
+        element: <RequireStudentOnboarding />,
         children: [
-          { index: true, Component: Dashboard },
-          { path: 'treinos', Component: Workouts },
-          { path: 'dieta', Component: Diet },
-          { path: 'evolucao', Component: Evolution },
-          { path: 'perfil', Component: Profile },
-          { path: 'configuracoes', Component: Settings },
+          {
+            Component: Layout,
+            children: [
+              { index: true, Component: Dashboard },
+              { path: 'treinos', Component: Workouts },
+              { path: 'dieta', Component: Diet },
+              { path: 'evolucao', Component: Evolution },
+              { path: 'perfil', Component: Profile },
+              { path: 'configuracoes', Component: Settings },
+            ],
+          },
         ],
       },
     ],
@@ -91,7 +100,7 @@ export const router = createBrowserRouter([
           { path: 'avaliacao', Component: PersonalAvaliacao },
           { path: 'avaliacao/:studentId', Component: PersonalAvaliacao },
           { path: 'agenda', Component: PersonalAgenda },
-          { path: 'financeiro', Component: PersonalFinanceiro },
+          { path: 'financeiro', element: <Navigate to="/personal" replace /> },
           { path: 'perfil', Component: Profile },
           { path: 'configuracoes', Component: Settings },
         ],
@@ -113,7 +122,7 @@ export const router = createBrowserRouter([
           { path: 'anamnese', Component: NutritionistAnamnese },
           { path: 'anamnese/:patientId', Component: NutritionistAnamnese },
           { path: 'alimentos', Component: NutritionistAlimentos },
-          { path: 'financeiro', Component: NutritionistFinanceiro },
+          { path: 'financeiro', element: <Navigate to="/nutritionist" replace /> },
           { path: 'perfil', Component: Profile },
           { path: 'configuracoes', Component: Settings },
         ],

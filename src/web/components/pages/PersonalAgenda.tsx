@@ -415,10 +415,22 @@ export function PersonalAgenda() {
                 </div>
 
                 <label className="flex items-center gap-3 cursor-pointer">
-                  <div className={`relative w-11 h-6 rounded-full transition-all ${form.recurring ? 'bg-blue-500' : 'dark:bg-zinc-700 bg-slate-300'}`}
-                    onClick={() => setForm(f => ({ ...f, recurring: !f.recurring }))}>
-                    <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transform transition-transform ${form.recurring ? 'translate-x-5' : 'translate-x-0.5'}`} />
-                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={form.recurring}
+                    aria-label="Repetir semanalmente"
+                    onClick={() => setForm((f) => ({ ...f, recurring: !f.recurring }))}
+                    className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors ${
+                      form.recurring ? 'bg-blue-500' : 'bg-slate-300 dark:bg-zinc-700'
+                    }`}
+                  >
+                    <span
+                      className={`pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white shadow-sm transition-transform ${
+                        form.recurring ? 'translate-x-5' : 'translate-x-0'
+                      }`}
+                    />
+                  </button>
                   <span className="text-sm dark:text-zinc-300 text-slate-700">Repetir semanalmente</span>
                 </label>
               </div>

@@ -37,6 +37,37 @@ interface PrivacySettings {
   analyticsEnabled: boolean;
 }
 
+function SettingsToggle({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean
+  onChange: () => void
+  label?: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      aria-label={label}
+      onClick={onChange}
+      className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#000326]/40 ${
+        checked ? 'bg-[#000326] dark:bg-[#C5C5CE]' : 'bg-slate-200 dark:bg-zinc-700'
+      }`}
+    >
+      <span
+        className={`pointer-events-none absolute top-0.5 left-0.5 h-5 w-5 rounded-full shadow-sm transition-transform duration-200 ${
+          checked
+            ? 'translate-x-5 bg-white dark:bg-[#000326]'
+            : 'translate-x-0 bg-white'
+        }`}
+      />
+    </button>
+  )
+}
+
 export function Settings() {
   const navigate = useNavigate();
   const { user, logout, updateUser } = useAuth();
@@ -272,21 +303,21 @@ export function Settings() {
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative">
                         <img
-                          src={user?.avatar}
+                          src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=10b981&color=fff`}
                           alt={user?.name}
                           className="w-20 h-20 rounded-2xl object-cover"
                         />
                         <button
                           onClick={() => toast.info('Upload de foto em breve')}
-                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#000326] dark:bg-white flex items-center justify-center shadow-lg"
+                          className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#000326] text-white dark:bg-white dark:text-[#000326] flex items-center justify-center shadow-lg"
                         >
-                          <Camera className="w-3.5 h-3.5 text-white" />
+                          <Camera className="w-3.5 h-3.5" />
                         </button>
                       </div>
                       <div>
                         <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{user?.name}</p>
                         <p className="text-xs dark:text-zinc-500 text-slate-400 mb-2">{user?.email}</p>
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>
+                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] text-white dark:bg-white/15 dark:text-white" style={{ fontWeight: 600 }}>
                           {user?.role ? roleLabel[user.role] : 'Aluno'}
                         </span>
                       </div>
@@ -377,13 +408,16 @@ export function Settings() {
                                 <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
                               </div>
                             </div>
-                            <button
-                              onClick={() => setNotifications(p => ({ ...p, [key]: !p[key as keyof NotificationSettings] }))}
-                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
-                            >
-                              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform ${(notifications as any)[key] ? 'translate-x-5.5' : 'translate-x-0.5'}`}
-                                style={{ transform: (notifications as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
-                            </button>
+                            <SettingsToggle
+                              label={label}
+                              checked={Boolean((notifications as any)[key])}
+                              onChange={() =>
+                                setNotifications((p) => ({
+                                  ...p,
+                                  [key]: !p[key as keyof NotificationSettings],
+                                }))
+                              }
+                            />
                           </div>
                         ))}
                       </div>
@@ -410,13 +444,13 @@ export function Settings() {
                               <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 500 }}>{label}</p>
                               <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
                             </div>
-                            <button
-                              onClick={() => setNotifications(p => ({ ...p, [key]: !(p as any)[key] }))}
-                              className={`relative w-11 h-6 rounded-full transition-all ${(notifications as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
-                            >
-                              <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
-                                style={{ transform: (notifications as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
-                            </button>
+                            <SettingsToggle
+                              label={label}
+                              checked={Boolean((notifications as any)[key])}
+                              onChange={() =>
+                                setNotifications((p) => ({ ...p, [key]: !(p as any)[key] }))
+                              }
+                            />
                           </div>
                         ))}
                       </div>
@@ -459,13 +493,13 @@ export function Settings() {
                             <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
                           </div>
                         </div>
-                        <button
-                          onClick={() => setPrivacy(p => ({ ...p, [key]: !(p as any)[key] }))}
-                          className={`relative w-11 h-6 rounded-full transition-all ${(privacy as any)[key] ? 'bg-[#000326] dark:bg-white' : 'dark:bg-zinc-700 bg-slate-200'}`}
-                        >
-                          <div className="absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-transform"
-                            style={{ transform: (privacy as any)[key] ? 'translateX(20px)' : 'translateX(2px)' }} />
-                        </button>
+                        <SettingsToggle
+                          label={label}
+                          checked={Boolean((privacy as any)[key])}
+                          onChange={() =>
+                            setPrivacy((p) => ({ ...p, [key]: !(p as any)[key] }))
+                          }
+                        />
                       </div>
                     ))}
                   </div>
@@ -547,7 +581,7 @@ export function Settings() {
                                 <p className="text-xs dark:text-zinc-500 text-slate-400">{s.location} · {s.time}</p>
                               </div>
                               {s.current
-                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>Atual</span>
+                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] text-white dark:bg-white/15 dark:text-white" style={{ fontWeight: 600 }}>Atual</span>
                                 : <button onClick={() => toast.success('Sessão encerrada')} className="text-xs text-red-400 hover:underline">Encerrar</button>}
                             </div>
                           ))}
@@ -680,39 +714,110 @@ export function Settings() {
               )}
 
               {/* ── BILLING TAB ── */}
-              {activeTab === 'billing' && (
+              {activeTab === 'billing' && (() => {
+                const hasPaidPlan =
+                  user?.plan === 'monthly' || user?.plan === 'semester' || user?.plan === 'annual'
+                const planLabel =
+                  user?.plan === 'annual'
+                    ? 'Plano Anual'
+                    : user?.plan === 'semester'
+                      ? 'Plano Semestral'
+                      : user?.plan === 'monthly'
+                        ? 'Plano Mensal'
+                        : 'Plano Gratuito'
+                const planPrice =
+                  user?.plan === 'annual'
+                    ? 'R$ 50/mês'
+                    : user?.plan === 'semester'
+                      ? 'R$ 60/mês'
+                      : user?.plan === 'monthly'
+                        ? 'R$ 70/mês'
+                        : 'R$ 0'
+
+                return (
                 <div className="space-y-4">
-                  {/* Current Plan */}
                   <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
                     <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>Plano Atual</h3>
-                    <div className="p-5 rounded-2xl border border-[#000326]/25 dark:border-white/25 bg-[#000326] dark:bg-white/5">
+                    <div
+                      className={`p-5 rounded-2xl border ${
+                        hasPaidPlan
+                          ? 'border-[#000326]/25 dark:border-white/25 bg-[#000326] dark:bg-white/5'
+                          : 'border-[#000326]/10 dark:border-white/10 bg-[#f3f4f9] dark:bg-[#000137]'
+                      }`}
+                    >
                       <div className="flex items-center justify-between mb-3">
                         <div>
-                          <p className="text-[#5a64b4] dark:text-[#C5C5CE] text-xs uppercase tracking-widest" style={{ fontWeight: 600 }}>
-                            {user?.plan === 'annual' ? 'Plano Anual' : user?.plan === 'semester' ? 'Plano Semestral' : 'Plano Mensal'}
+                          <p
+                            className={`text-xs uppercase tracking-widest ${
+                              hasPaidPlan
+                                ? 'text-[#C5C5CE]'
+                                : 'text-[#6a6a7a] dark:text-[#C5C5CE]'
+                            }`}
+                            style={{ fontWeight: 600 }}
+                          >
+                            {planLabel}
                           </p>
-                          <p className="dark:text-white text-slate-900 text-2xl" style={{ fontWeight: 800 }}>
-                            {user?.plan === 'annual' ? 'R$ 50/mês' : user?.plan === 'semester' ? 'R$ 60/mês' : 'R$ 70/mês'}
+                          <p
+                            className={`text-2xl ${
+                              hasPaidPlan
+                                ? 'text-white'
+                                : 'text-[#000326] dark:text-white'
+                            }`}
+                            style={{ fontWeight: 800 }}
+                          >
+                            {planPrice}
                           </p>
                         </div>
-                        <div className="w-12 h-12 rounded-2xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
-                          <Zap className="w-6 h-6 text-[#5a64b4] dark:text-[#C5C5CE]" />
+                        <div
+                          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
+                            hasPaidPlan
+                              ? 'bg-white/10'
+                              : 'bg-white dark:bg-[#000346]'
+                          }`}
+                        >
+                          <Zap
+                            className={`w-6 h-6 ${
+                              hasPaidPlan
+                                ? 'text-[#C5C5CE]'
+                                : 'text-[#000326] dark:text-[#C5C5CE]'
+                            }`}
+                          />
                         </div>
                       </div>
                       <div className="flex items-center justify-between text-xs">
-                        <span className="dark:text-zinc-400 text-slate-500">Próxima cobrança: 15/04/2026</span>
-                        <span className="px-2 py-0.5 rounded-full bg-[#000326] dark:bg-white/10 text-[#5a64b4] dark:text-[#C5C5CE]" style={{ fontWeight: 600 }}>Ativo</span>
+                        <span className={hasPaidPlan ? 'text-[#C5C5CE]/80' : 'text-[#6a6a7a] dark:text-[#C5C5CE]/70'}>
+                          {hasPaidPlan
+                            ? 'Assinatura ativa'
+                            : 'Inclui até 2 gerações de treino com IA por mês'}
+                        </span>
+                        <span
+                          className={`px-2 py-0.5 rounded-full ${
+                            hasPaidPlan
+                              ? 'bg-white/10 text-[#C5C5CE]'
+                              : 'bg-[#000326]/10 text-[#000326] dark:bg-white/10 dark:text-[#C5C5CE]'
+                          }`}
+                          style={{ fontWeight: 600 }}
+                        >
+                          {hasPaidPlan ? 'Ativo' : 'Grátis'}
+                        </span>
                       </div>
                     </div>
 
                     <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {[
-                        { label: 'Alunos/Pacientes', value: 'Ilimitado', icon: User },
-                        { label: 'Armazenamento', value: '10 GB', icon: Download },
-                        { label: 'Suporte', value: 'Prioritário', icon: Star },
-                      ].map(({ label, value, icon: Icon }) => (
+                      {(hasPaidPlan
+                        ? [
+                            { label: 'Alunos/Pacientes', value: 'Ilimitado', icon: User },
+                            { label: 'Armazenamento', value: '10 GB', icon: Download },
+                            { label: 'Suporte', value: 'Prioritário', icon: Star },
+                          ]
+                        : [
+                            { label: 'Gerações IA', value: '2 / mês', icon: Zap },
+                            { label: 'Treinos', value: 'Ilimitados*', icon: Activity },
+                            { label: 'Suporte', value: 'Comunidade', icon: Star },
+                          ]
+                      ).map(({ label, value, icon: Icon }) => (
                         <div key={label} className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50">
-                          <Icon className="w-4 h-4 text-[#5a64b4] dark:text-[#C5C5CE] flex-shrink-0" />
+                          <Icon className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE] flex-shrink-0" />
                           <div>
                             <p className="text-xs dark:text-zinc-500 text-slate-400">{label}</p>
                             <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{value}</p>
@@ -720,37 +825,75 @@ export function Settings() {
                         </div>
                       ))}
                     </div>
+                    {!hasPaidPlan && (
+                      <p className="mt-3 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]/70">
+                        * Treinos publicados por profissionais ou gerados dentro da cota gratuita.
+                      </p>
+                    )}
                   </div>
 
-                  {/* Payment Method */}
                   <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                    <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>Método de Pagamento</h3>
-                    <div className="flex items-center justify-between p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                          <CreditCard className="w-5 h-5 text-blue-400" />
+                    <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>
+                      {hasPaidPlan ? 'Método de Pagamento' : 'Assinar um plano'}
+                    </h3>
+                    {hasPaidPlan ? (
+                      <>
+                        <div className="flex items-center justify-between p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
+                              <CreditCard className="w-5 h-5 text-blue-400" />
+                            </div>
+                            <div>
+                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
+                                Cartão cadastrado
+                              </p>
+                              <p className="text-xs dark:text-zinc-500 text-slate-400">Gerencie pelo provedor de cobrança</p>
+                            </div>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => toast.info('Gerenciar método de pagamento em breve')}
+                            className="text-xs text-[#000326] dark:text-[#C5C5CE] hover:underline"
+                            style={{ fontWeight: 600 }}
+                          >
+                            Atualizar
+                          </button>
                         </div>
-                        <div>
-                          <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Cartão terminando em 4242</p>
-                          <p className="text-xs dark:text-zinc-500 text-slate-400">Expira 12/2027</p>
+                        <div className="mt-4 space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => toast.info('Histórico de faturas em breve')}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium dark:text-zinc-300 text-slate-700 border dark:border-zinc-700 border-slate-200 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all"
+                          >
+                            <Download className="w-4 h-4" /> Ver histórico de faturas
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => navigate('/planos')}
+                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-[#000326] dark:text-white border border-[#000326]/25 dark:border-white/25 hover:bg-[#f3f4f9] dark:hover:bg-white/5 transition-all"
+                          >
+                            <RefreshCw className="w-4 h-4" /> Mudar plano
+                          </button>
                         </div>
+                      </>
+                    ) : (
+                      <div className="space-y-3">
+                        <p className="text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
+                          Você ainda não assinou nenhum plano pago. No gratuito, use até 2 gerações de treino com IA por mês.
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => navigate('/planos')}
+                          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-[#000326] hover:bg-[#000137] dark:bg-white dark:text-[#000326] dark:hover:bg-[#C5C5CE] transition-all"
+                        >
+                          <Zap className="w-4 h-4" /> Ver planos
+                        </button>
                       </div>
-                      <button onClick={() => toast.info('Gerenciar método de pagamento em breve')} className="text-xs text-blue-400 hover:underline" style={{ fontWeight: 600 }}>
-                        Atualizar
-                      </button>
-                    </div>
-
-                    <div className="mt-4 space-y-2">
-                      <button onClick={() => toast.info('Histórico de faturas em breve')} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm dark:text-zinc-300 text-slate-700 border dark:border-zinc-700 border-slate-200 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all">
-                        <Download className="w-4 h-4" /> Ver histórico de faturas
-                      </button>
-                      <button onClick={() => toast.info('Gerenciar plano em breve')} className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-amber-400 border border-amber-500/30 hover:bg-amber-500/10 transition-all">
-                        <RefreshCw className="w-4 h-4" /> Mudar plano
-                      </button>
-                    </div>
+                    )}
                   </div>
                 </div>
-              )}
+                )
+              })()}
 
               {/* ── DATA TAB ── */}
               {activeTab === 'data' && (

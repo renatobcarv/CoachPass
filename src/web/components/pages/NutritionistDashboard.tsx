@@ -1,68 +1,124 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
-import { Search, Stethoscope, UserPlus, Utensils } from 'lucide-react';
-import { AddPatientModal } from '../AddPatientModal';
+import React, { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router'
+import { Search, Stethoscope, UserPlus, Utensils } from 'lucide-react'
+import { AddPatientModal } from '../AddPatientModal'
+import { useAuth } from '../../context/AuthContext'
+import { PROFESSIONAL_LINKS_API, getJson, qs } from '@/lib/cms'
 
-interface Patient {
-  id: string;
-  name: string;
-  email: string;
-  status: 'active' | 'pending';
-  lastConsultation: string;
-  currentWeight: number;
-  avatar: string;
+interface PatientRow {
+  id: string
+  linkId: string
+  name: string
+  email: string
+  status: 'active' | 'pending'
+  avatar: string
 }
 
-const mockPatients: Patient[] = [
-  {
-    id: '1',
-    name: 'Ana Costa',
-    email: 'ana@email.com',
-    status: 'active',
-    lastConsultation: 'Há 3 dias',
-    currentWeight: 68.5,
-    avatar: 'https://ui-avatars.com/api/?name=Ana+Costa&background=f59e0b&color=fff',
-  },
-  {
-    id: '2',
-    name: 'Roberto Lima',
-    email: 'roberto@email.com',
-    status: 'active',
-    lastConsultation: 'Há 1 semana',
-    currentWeight: 92.3,
-    avatar: 'https://ui-avatars.com/api/?name=Roberto+Lima&background=3b82f6&color=fff',
-  },
-  {
-    id: '3',
-    name: 'Juliana Mendes',
-    email: 'juliana@email.com',
-    status: 'pending',
-    lastConsultation: 'Aguardando aceite',
-    currentWeight: 0,
-    avatar: 'https://ui-avatars.com/api/?name=Juliana+Mendes&background=8b5cf6&color=fff',
-  },
-];
+type LinkDoc = {
+  id: string
+  status: 'pending' | 'active' | 'revoked'
+  student:
+    | string
+    | {
+        id: string | number
+        name?: string
+        email?: string
+      }
+}
+
+type ListResponse = { docs: LinkDoc[] }
+
+function mapLink(doc: LinkDoc): PatientRow | null {
+  if (doc.status !== 'active' && doc.status !== 'pending') return null
+  const student = doc.student
+  const id =
+    typeof student === 'object' && student
+      ? String(student.id)
+      : String(student || '')
+  if (!id) return null
+  const name =
+    typeof student === 'object' && student
+      ? student.name || student.email || 'Paciente'
+      : 'Paciente'
+  const email =
+    typeof student === 'object' && student ? student.email || '' : ''
+  return {
+    id,
+    linkId: String(doc.id),
+    name,
+    email,
+    status: doc.status,
+    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f59e0b&color=fff`,
+  }
+}
 
 export function NutritionistDashboard() {
-  const navigate = useNavigate();
-  const [patients, setPatients] = useState<Patient[]>(mockPatients);
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
+  const navigate = useNavigate()
+  const { user } = useAuth()
+  const [patients, setPatients] = useState<PatientRow[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [showAddModal, setShowAddModal] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
 
-  const filtered = patients.filter((patient) =>
-    patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    patient.email.toLowerCase().includes(searchTerm.toLowerCase()),
-  );
+  const reload = useCallback(async () => {
+    if (!user?.accessToken || !user?.id) {
+      setPatients([])
+      setLoading(false)
+      return
+    }
+    setError(null)
+    const data = await getJson<ListResponse>(
+      `${PROFESSIONAL_LINKS_API}${qs({
+        'where[and][0][professional][equals]': user.id,
+        'where[and][1][professionalRole][equals]': 'nutritionist',
+        'where[and][2][or][0][status][equals]': 'pending',
+        'where[and][2][or][1][status][equals]': 'active',
+        depth: 1,
+        limit: 100,
+        sort: '-updatedAt',
+      })}`,
+      user.accessToken,
+    )
+    setPatients(data.docs.map(mapLink).filter((row): row is PatientRow => Boolean(row)))
+  }, [user?.accessToken, user?.id])
+
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        await reload()
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : 'Falha ao carregar pacientes.')
+        }
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [reload])
+
+  const filtered = patients.filter(
+    (patient) =>
+      patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      patient.email.toLowerCase().includes(searchTerm.toLowerCase()),
+  )
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold dark:text-white text-slate-900">Pacientes</h1>
-          <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">Convide, abra a ficha e crie o plano.</p>
+          <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">
+            Convide pacientes que já têm conta CoachPass.
+          </p>
         </div>
         <div className="flex gap-2">
           <button
+            type="button"
             onClick={() => navigate('/nutritionist/criar-plano')}
             className="px-3 py-2 rounded-xl text-sm font-medium dark:bg-zinc-900 bg-white border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900"
           >
@@ -70,8 +126,9 @@ export function NutritionistDashboard() {
             Criar plano
           </button>
           <button
+            type="button"
             onClick={() => navigate('/nutritionist/consulta/1')}
-            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-slate-900 dark:bg-[#000326] dark:bg-white"
+            className="px-3 py-2 rounded-xl text-sm font-medium text-white bg-[#000326] dark:bg-white dark:text-[#000326]"
           >
             <Stethoscope className="w-4 h-4 inline mr-1.5" />
             Consulta
@@ -90,52 +147,65 @@ export function NutritionistDashboard() {
           />
         </div>
         <button
+          type="button"
           onClick={() => setShowAddModal(true)}
-          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#000326] dark:bg-white"
+          className="px-4 py-2 rounded-xl text-sm font-medium text-white bg-[#000326] dark:bg-white dark:text-[#000326]"
         >
           <UserPlus className="w-4 h-4 inline mr-1.5" />
           Convidar
         </button>
       </div>
 
-      <div className="rounded-2xl border dark:border-zinc-800 border-slate-200 overflow-hidden">
-        {filtered.map((patient) => (
-          <button
-            key={patient.id}
-            onClick={() => patient.status === 'active' && navigate(`/nutritionist/paciente/${patient.id}`)}
-            className="w-full flex items-center gap-3 px-4 py-3 text-left dark:bg-zinc-900 bg-white border-b last:border-b-0 dark:border-zinc-800 border-slate-200"
-          >
-            <img src={patient.avatar} alt="" className="w-10 h-10 rounded-full" />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium dark:text-white text-slate-900">{patient.name}</p>
-              <p className="text-xs dark:text-zinc-500 text-slate-400 truncate">{patient.email}</p>
-            </div>
-            <span className="text-xs dark:text-zinc-400 text-slate-500">
-              {patient.status === 'pending' ? 'Pendente' : patient.lastConsultation}
-            </span>
-          </button>
-        ))}
-      </div>
+      {loading && (
+        <p className="text-sm dark:text-zinc-400 text-slate-500">Carregando pacientes…</p>
+      )}
+      {error && (
+        <div className="rounded-2xl border border-red-200 bg-red-50 dark:border-red-500/30 dark:bg-red-500/10 px-4 py-3 text-sm text-red-700 dark:text-red-300">
+          {error}
+        </div>
+      )}
+
+      {!loading && filtered.length === 0 && (
+        <div className="rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-zinc-900 bg-white px-4 py-10 text-center">
+          <p className="font-semibold dark:text-white text-slate-900">Nenhum paciente ainda</p>
+          <p className="mt-1.5 text-sm dark:text-zinc-400 text-slate-500 max-w-md mx-auto">
+            Use Convidar com o e-mail de um paciente que já se cadastrou no CoachPass.
+          </p>
+        </div>
+      )}
+
+      {filtered.length > 0 && (
+        <div className="rounded-2xl border dark:border-zinc-800 border-slate-200 overflow-hidden">
+          {filtered.map((patient) => (
+            <button
+              key={patient.linkId}
+              type="button"
+              onClick={() =>
+                patient.status === 'active' && navigate(`/nutritionist/paciente/${patient.id}`)
+              }
+              className="w-full flex items-center gap-3 px-4 py-3 text-left dark:bg-zinc-900 bg-white border-b last:border-b-0 dark:border-zinc-800 border-slate-200"
+            >
+              <img src={patient.avatar} alt="" className="w-10 h-10 rounded-full" />
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium dark:text-white text-slate-900">{patient.name}</p>
+                <p className="text-xs dark:text-zinc-500 text-slate-400 truncate">{patient.email}</p>
+              </div>
+              <span className="text-xs dark:text-zinc-400 text-slate-500">
+                {patient.status === 'pending' ? 'Pendente' : 'Ativo'}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
 
       <AddPatientModal
         isOpen={showAddModal}
         professionalType="nutritionist"
         onClose={() => setShowAddModal(false)}
-        onSuccess={(patient) => {
-          setPatients((prev) => [
-            ...prev,
-            {
-              id: String(patient.id ?? Date.now()),
-              name: patient.name,
-              email: patient.email,
-              status: 'pending',
-              lastConsultation: 'Aguardando aceite',
-              currentWeight: 0,
-              avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(patient.name)}&background=10b981&color=fff`,
-            },
-          ]);
+        onSuccess={() => {
+          void reload()
         }}
       />
     </div>
-  );
+  )
 }

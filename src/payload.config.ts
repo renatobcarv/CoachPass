@@ -8,6 +8,11 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { StudentProfiles } from './collections/StudentProfiles'
+import { ProfessionalLinks } from './collections/ProfessionalLinks'
+import { Workouts } from './collections/Workouts'
+import { MealPlans } from './collections/MealPlans'
+import { AiGenerations } from './collections/AiGenerations'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -44,7 +49,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media],
+  collections: [Users, Media, StudentProfiles, ProfessionalLinks, Workouts, MealPlans, AiGenerations],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
@@ -54,6 +59,9 @@ export default buildConfig({
     pool: {
       connectionString: process.env.DATABASE_URL || '',
     },
+    // Dev sincroniza schema; migrations versionadas para ambientes controlados.
+    push: process.env.PAYLOAD_DATABASE_PUSH !== 'false',
+    migrationDir: path.resolve(dirname, 'migrations'),
   }),
   email: emailAdapter(),
   sharp,

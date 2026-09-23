@@ -15,7 +15,6 @@ import {
   Users,
   Utensils,
   ClipboardList,
-  DollarSign,
   Calendar,
   Settings,
 } from 'lucide-react';
@@ -36,7 +35,6 @@ const personalNavItems = [
   { to: '/personal/criar-treino', icon: Dumbbell, label: 'Criar Treino' },
   { to: '/personal/avaliacao', icon: ClipboardList, label: 'Avaliação Física' },
   { to: '/personal/agenda', icon: Calendar, label: 'Agenda & Sessões' },
-  { to: '/personal/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/personal/perfil', icon: User, label: 'Perfil' },
   { to: '/personal/configuracoes', icon: Settings, label: 'Configurações' },
 ];
@@ -46,7 +44,6 @@ const nutritionistNavItems = [
   { to: '/nutritionist/criar-plano', icon: Utensils, label: 'Criar Plano Alimentar' },
   { to: '/nutritionist/anamnese', icon: ClipboardList, label: 'Anamnese' },
   { to: '/nutritionist/alimentos', icon: Apple, label: 'Base de Alimentos' },
-  { to: '/nutritionist/financeiro', icon: DollarSign, label: 'Financeiro' },
   { to: '/nutritionist/perfil', icon: User, label: 'Perfil' },
   { to: '/nutritionist/configuracoes', icon: Settings, label: 'Configurações' },
 ];

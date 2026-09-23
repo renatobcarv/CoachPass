@@ -87,33 +87,20 @@ export function Register() {
     setLoading(true);
     setBackendError(null);
 
-    // Simplificamos o papel por enquanto. No caso de profissional, 
-    // registramos como 'professional' genérico se a tabela aceitar,
-    // mas o AuthContext atual requer 'personal' ou 'nutritionist'.
-    // Portanto, vamos usar 'personal' como fallback temporário para passar na restrição do Supabase 
-    // e o profissional vai definir o papel correto dele no Onboarding (ou o admin/onboarding corrige).
-    // O mais interessante seria 'professional'. Para bater com o schema anterior, 
-    // passamos `personal` e depois ajustamos no onboarding.
+    // Profissional começa como personal; no onboarding escolhe personal ou nutricionista e o role é atualizado.
     const role = formData.userType === 'student' ? 'student' : 'personal';
 
     try {
-      // Tenta registrar na base de dados Auth e na tabela de Perfis
       await registerUser(formData.email.trim().toLowerCase(), formData.password, role, {
         name: formData.name,
-        // Enviaremos os outros dados vazios/nulos por enquanto.
-        // O Onboarding será responsável por preenchê-los.
       });
 
-      // Sucesso no cadastro!
       toast.success('Conta criada em nossa plataforma.');
       
-      // Iremos rotear o aluno ou profissional. 
-      // Todo novo registro deve preencher o onboarding.
       if (role === 'student') {
-        // Redireciona primeiramente pro root, o Guard de rota vai identificar perfil incompleto (passo futuro)
-        navigate('/app');
+        navigate('/onboarding/student', { replace: true });
       } else {
-        navigate('/personal');
+        navigate('/onboarding/professional', { replace: true });
       }
 
     } catch (err: unknown) {
@@ -159,7 +146,17 @@ export function Register() {
       </div>
 
       <div className="w-full max-w-2xl relative z-10">
-        
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => navigate('/')}
+            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Voltar para a home
+          </button>
+        </div>
+
         {/* Cabeçalho */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200 mb-6">
@@ -172,7 +169,9 @@ export function Register() {
             Criar conta
           </h1>
           <p className="text-sm dark:text-zinc-400 text-slate-500 font-light">
-            {step === 1 ? 'Selecione a modalidade de acesso' : 'Insira as credenciais para estabelecer sua conta'}
+            {step === 1
+              ? 'Selecione a modalidade de acesso'
+              : 'Nome, e-mail e senha. No próximo passo você completa telefone, medidas e objetivo.'}
           </p>
         </div>
 
@@ -383,7 +382,16 @@ export function Register() {
               </div>
 
               <p className="text-xs dark:text-zinc-600 text-slate-400 text-center mt-6 font-light">
-                Autenticando-se na infraestrutura, você valida as diretrizes de privacidade sistêmicas.
+                Ao criar a conta, você concorda com os{' '}
+                <a
+                  href="/politica-de-privacidade.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-slate-700 dark:text-zinc-300 hover:underline"
+                >
+                  Termos e Política de Privacidade
+                </a>
+                .
               </p>
             </motion.div>
           )}

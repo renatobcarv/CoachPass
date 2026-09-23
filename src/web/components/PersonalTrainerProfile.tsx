@@ -565,7 +565,7 @@ export function PersonalTrainerProfile() {
                   💡 Dica de Especialista
                 </p>
                 <p className="text-sm dark:text-zinc-300 text-slate-700">
-                  Organize exercícios por "tags" (ex: unilateral, composto, isolamento) para criar variações 
+                  Organize exercícios por &quot;tags&quot; (ex: unilateral, composto, isolamento) para criar variações 
                   rapidamente. Utilize periodização ondulatória para maximizar ganhos de força e hipertrofia.
                 </p>
               </div>

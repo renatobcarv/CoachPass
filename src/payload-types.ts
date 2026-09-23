@@ -69,6 +69,11 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    'student-profiles': StudentProfile;
+    'professional-links': ProfessionalLink;
+    workouts: Workout;
+    'meal-plans': MealPlan;
+    'ai-generations': AiGeneration;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -78,6 +83,11 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    'student-profiles': StudentProfilesSelect<false> | StudentProfilesSelect<true>;
+    'professional-links': ProfessionalLinksSelect<false> | ProfessionalLinksSelect<true>;
+    workouts: WorkoutsSelect<false> | WorkoutsSelect<true>;
+    'meal-plans': MealPlansSelect<false> | MealPlansSelect<true>;
+    'ai-generations': AiGenerationsSelect<false> | AiGenerationsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -131,7 +141,7 @@ export interface User {
   role?: ('master' | 'student' | 'personal' | 'nutritionist') | null;
   whatsapp?: string | null;
   professionalId?: string | null;
-  plan?: ('monthly' | 'semester' | 'annual') | null;
+  plan?: ('free' | 'monthly' | 'semester' | 'annual') | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -172,6 +182,134 @@ export interface Media {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-profiles".
+ */
+export interface StudentProfile {
+  id: number;
+  user: number | User;
+  displayName: string;
+  phone: string;
+  birthDate: string;
+  heightCm: number;
+  weightKg: number;
+  sex: 'male' | 'female' | 'other' | 'undisclosed';
+  goal: 'weight_loss' | 'hypertrophy';
+  bodyFatPercent?: number | null;
+  experienceLevel?: ('beginner' | 'intermediate' | 'advanced') | null;
+  trainingDaysPerWeek?: number | null;
+  sessionMinutes?: number | null;
+  equipmentAccess?: ('full_gym' | 'basic_gym' | 'home_weights' | 'bodyweight' | 'outdoor')[] | null;
+  foodAllergies?: string | null;
+  dietaryRestrictions?: string | null;
+  medicalConditions?: string | null;
+  injuries?: string | null;
+  medications?: string | null;
+  onboardingCompleted?: boolean | null;
+  onboardingCompletedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "professional-links".
+ */
+export interface ProfessionalLink {
+  id: number;
+  student: number | User;
+  professional: number | User;
+  professionalRole: 'personal' | 'nutritionist';
+  status: 'pending' | 'active' | 'revoked';
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workouts".
+ */
+export interface Workout {
+  id: number;
+  title: string;
+  student: number | User;
+  author?: (number | null) | User;
+  status: 'draft' | 'published';
+  source: 'professional' | 'ai';
+  observations?: string | null;
+  weekday?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') | null;
+  splitLabel?: string | null;
+  publishedAt?: string | null;
+  exercises?:
+    | {
+        name: string;
+        sets?: number | null;
+        reps?: string | null;
+        weight?: string | null;
+        rest?: string | null;
+        muscle?: string | null;
+        notes?: string | null;
+        instructions?: string | null;
+        youtubeUrl?: string | null;
+        muscleImage?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "meal-plans".
+ */
+export interface MealPlan {
+  id: number;
+  title: string;
+  student: number | User;
+  author?: (number | null) | User;
+  status: 'draft' | 'published';
+  source: 'professional' | 'ai';
+  observations?: string | null;
+  isInformational?: boolean | null;
+  publishedAt?: string | null;
+  meals?:
+    | {
+        name: string;
+        time?: string | null;
+        calories?: number | null;
+        notes?: string | null;
+        items?:
+          | {
+              name: string;
+              quantity?: string | null;
+              calories?: number | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-generations".
+ */
+export interface AiGeneration {
+  id: number;
+  user: number | User;
+  type: 'workout' | 'meal_plan';
+  status: 'pending' | 'succeeded' | 'failed' | 'blocked';
+  provider?: string | null;
+  errorMessage?: string | null;
+  /**
+   * ID do workout ou meal-plan gerado
+   */
+  resultId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -201,6 +339,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'student-profiles';
+        value: number | StudentProfile;
+      } | null)
+    | ({
+        relationTo: 'professional-links';
+        value: number | ProfessionalLink;
+      } | null)
+    | ({
+        relationTo: 'workouts';
+        value: number | Workout;
+      } | null)
+    | ({
+        relationTo: 'meal-plans';
+        value: number | MealPlan;
+      } | null)
+    | ({
+        relationTo: 'ai-generations';
+        value: number | AiGeneration;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -289,6 +447,126 @@ export interface MediaSelect<T extends boolean = true> {
   height?: T;
   focalX?: T;
   focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "student-profiles_select".
+ */
+export interface StudentProfilesSelect<T extends boolean = true> {
+  user?: T;
+  displayName?: T;
+  phone?: T;
+  birthDate?: T;
+  heightCm?: T;
+  weightKg?: T;
+  sex?: T;
+  goal?: T;
+  bodyFatPercent?: T;
+  experienceLevel?: T;
+  trainingDaysPerWeek?: T;
+  sessionMinutes?: T;
+  equipmentAccess?: T;
+  foodAllergies?: T;
+  dietaryRestrictions?: T;
+  medicalConditions?: T;
+  injuries?: T;
+  medications?: T;
+  onboardingCompleted?: T;
+  onboardingCompletedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "professional-links_select".
+ */
+export interface ProfessionalLinksSelect<T extends boolean = true> {
+  student?: T;
+  professional?: T;
+  professionalRole?: T;
+  status?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workouts_select".
+ */
+export interface WorkoutsSelect<T extends boolean = true> {
+  title?: T;
+  student?: T;
+  author?: T;
+  status?: T;
+  source?: T;
+  observations?: T;
+  weekday?: T;
+  splitLabel?: T;
+  publishedAt?: T;
+  exercises?:
+    | T
+    | {
+        name?: T;
+        sets?: T;
+        reps?: T;
+        weight?: T;
+        rest?: T;
+        muscle?: T;
+        notes?: T;
+        instructions?: T;
+        youtubeUrl?: T;
+        muscleImage?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "meal-plans_select".
+ */
+export interface MealPlansSelect<T extends boolean = true> {
+  title?: T;
+  student?: T;
+  author?: T;
+  status?: T;
+  source?: T;
+  observations?: T;
+  isInformational?: T;
+  publishedAt?: T;
+  meals?:
+    | T
+    | {
+        name?: T;
+        time?: T;
+        calories?: T;
+        notes?: T;
+        items?:
+          | T
+          | {
+              name?: T;
+              quantity?: T;
+              calories?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ai-generations_select".
+ */
+export interface AiGenerationsSelect<T extends boolean = true> {
+  user?: T;
+  type?: T;
+  status?: T;
+  provider?: T;
+  errorMessage?: T;
+  resultId?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

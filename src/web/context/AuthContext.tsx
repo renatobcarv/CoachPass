@@ -20,7 +20,7 @@ export interface User {
   avatar?: string;
   whatsapp?: string;
   professionalId?: string;
-  plan?: 'monthly' | 'semester' | 'annual';
+  plan?: 'free' | 'monthly' | 'semester' | 'annual';
   createdAt?: string;
   accessToken?: string;
 }
@@ -161,6 +161,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     additionalData?: Partial<User>,
   ) => {
     try {
+      // Evita cookie/JWT residual bloquear o POST /api/users (403).
+      try {
+        const existing = localStorage.getItem(TOKEN_KEY);
+        if (existing) {
+          await postJson(`${USERS_API}/logout`, {}, existing).catch(() => undefined);
+        }
+      } catch {
+        /* ignore */
+      }
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem('fitsync_user');
+      setUser(null);
+
       await postJson(`${USERS_API}`, {
         email: email.trim().toLowerCase(),
         password,
@@ -213,16 +226,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const updateUser = (data: Partial<User>) => {
-    setUser((prev) => (prev ? { ...prev, ...data } : prev));
-    const saved = localStorage.getItem('fitsync_user');
-    if (saved) {
-      try {
-        localStorage.setItem('fitsync_user', JSON.stringify({ ...JSON.parse(saved), ...data }));
-      } catch {
-        /* ignore */
-      }
-    }
-  };
+    setUser((prev) => {
+      if (!prev) return prev
+      const next = { ...prev, ...data }
+      persistSession(next)
+      return next
+    })
+  }
 
   return (
     <AuthContext.Provider
