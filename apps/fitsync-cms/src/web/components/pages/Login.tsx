@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle, ChevronRight, Lock, Mail, X, Zap, ArrowLeft } from 'lucide-react';
+import { CheckCircle, ChevronRight, Mail, X, Zap, ArrowLeft } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { postJson, PayloadApiError, extractPayloadMessage, USERS_API } from '@/lib/cms';
+import { PasswordInput } from '../PasswordField';
 
 function pathForRole(role: UserRole) {
   if (role === 'student') return '/app';
@@ -188,19 +189,20 @@ export function Login() {
             </div>
           </div>
           <div>
-            <label className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">Senha</label>
-            <div className="relative">
-              <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e9a]" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Sua senha"
-                autoComplete="current-password"
-                className={inputCls}
-                required
-              />
-            </div>
+            <label htmlFor="login-password" className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">
+              Senha
+            </label>
+            <PasswordInput
+              id="login-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Sua senha"
+              autoComplete="current-password"
+              iconClassName="text-[#8e8e9a]"
+              toggleClassName="text-[#8e8e9a] hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-white"
+              className={inputCls}
+              required
+            />
           </div>
           <div className="flex justify-end">
             <button

@@ -6,7 +6,7 @@ import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config.js'
 
-const password = 'CoachPass123'
+const password = 'CoachPass#2026'
 const accounts = [
   { email: 'aluno@coachpass.app', name: 'Aluno Demo', role: 'student' as const },
   { email: 'personal@coachpass.app', name: 'Personal Demo', role: 'personal' as const },

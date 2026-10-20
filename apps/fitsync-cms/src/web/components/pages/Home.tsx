@@ -8,7 +8,6 @@ import {
   ClipboardList,
   Compass,
   Dumbbell,
-  Github,
   HeartHandshake,
   LineChart,
   Lock,
@@ -21,8 +20,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
-
-const REPO_URL = 'https://github.com/renatobcarv/CoachPass';
 
 const nav = [
   { href: '#inicio', label: 'Início' },
@@ -616,28 +613,7 @@ export function Home() {
 
       <footer className="border-t border-slate-200/70 bg-white/70 dark:border-white/10 dark:bg-white/[0.02]">
         <div className="max-w-6xl mx-auto px-4 py-14">
-          <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-5">
-            <div className="lg:col-span-2">
-              <Logo />
-              <p className="mt-4 text-sm text-slate-500 max-w-sm leading-relaxed dark:text-slate-400">
-                Gestão, acompanhamento e análise de dados para personal trainers e nutricionistas que cuidam da
-                própria carteira de alunos.
-              </p>
-              <div className="mt-5 flex items-center gap-2">
-                <span className="w-2 h-2 rounded-full bg-amber-400" />
-                <span className="text-xs text-slate-500 dark:text-slate-400">Projeto em desenvolvimento · MVP</span>
-              </div>
-              <a
-                href={REPO_URL}
-                target="_blank"
-                rel="noreferrer"
-                className="mt-5 inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm text-slate-600 border border-slate-200/80 bg-white/70 transition duration-200 hover:-translate-y-0.5 hover:bg-white hover:text-[#000326] dark:text-white dark:border-white/10 dark:bg-white/5 dark:text-slate-300 dark:hover:bg-white/10 dark:hover:text-white"
-              >
-                <Github className="w-4 h-4" />
-                Repositório no GitHub
-              </a>
-            </div>
-
+          <div className="grid gap-10 md:grid-cols-3">
             <div>
               <h4 className="text-sm font-semibold text-[#000326] dark:text-white">Plataforma</h4>
               <ul className="mt-4 space-y-2.5">

@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config.js'
 
-const password = 'FitSync123!'
+const password = 'Treino#Forte2026'
 
 const accounts = [
   {
@@ -70,7 +70,7 @@ async function main() {
   }
 
   console.log('\n=== Usuários de teste ===')
-  console.log('Senha de todos: FitSync123!')
+  console.log('Senha de todos: a definida na constante `password` deste script.')
   console.log('========================\n')
 }
 

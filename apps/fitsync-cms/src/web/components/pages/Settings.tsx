@@ -1,22 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router';
 import {
-  Settings as SettingsIcon, Bell, Shield, Palette, Globe, Lock,
-  User, Mail, Phone, Camera, Save, ChevronRight, CheckCircle,
-  Moon, Sun, Monitor, Volume2, VolumeX, Smartphone, Laptop,
-  Eye, EyeOff, Key, LogOut, Trash2, CreditCard, AlertTriangle,
+  Settings as SettingsIcon, Bell, Shield, Globe, Lock,
+  User, Mail, Phone, Camera, Save, ChevronRight,
+  Volume2, VolumeX, Smartphone, Laptop,
+  Eye, Key, LogOut, Trash2, CreditCard, AlertTriangle,
   RefreshCw, Download, ArrowLeft, Zap, ToggleLeft, ToggleRight,
   MessageSquare, Star, Activity,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../context/ThemeContext';
 import { projectId, publicAnonKey } from '@/lib/supabase/info';
+import { getPasswordErrors } from '@/lib/passwordPolicy';
+import { PasswordInput, PasswordRequirements } from '../PasswordField';
 
 const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-da3e276b`;
 
-type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'appearance' | 'billing' | 'data';
+type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'billing' | 'data';
 
 interface NotificationSettings {
   email: boolean;
@@ -70,16 +71,16 @@ function SettingsToggle({
 
 export function Settings() {
   const navigate = useNavigate();
-  const { user, logout, updateUser } = useAuth();
-  const { theme, toggleTheme } = useTheme();
+  const { user, logout, updateUser, changePassword } = useAuth();
 
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
-  const [showCurrent, setShowCurrent] = useState(false);
-  const [showNew, setShowNew] = useState(false);
+  const [passwordSubmitAttempted, setPasswordSubmitAttempted] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [changingPassword, setChangingPassword] = useState(false);
 
   // Profile form
   const [profileForm, setProfileForm] = useState({
@@ -173,13 +174,32 @@ export function Settings() {
     }
   };
 
-  const handlePasswordChange = () => {
-    if (!passwordForm.current) { toast.error('Informe a senha atual'); return; }
-    if (passwordForm.new.length < 6) { toast.error('Nova senha deve ter ao menos 6 caracteres'); return; }
-    if (passwordForm.new !== passwordForm.confirm) { toast.error('Senhas não coincidem'); return; }
-    toast.success('Senha alterada com sucesso!');
+  const closePasswordModal = () => {
     setShowPasswordModal(false);
     setPasswordForm({ current: '', new: '', confirm: '' });
+    setPasswordSubmitAttempted(false);
+    setPasswordError(null);
+  };
+
+  const handlePasswordChange = async () => {
+    setPasswordSubmitAttempted(true);
+    if (!passwordForm.current) { setPasswordError('Informe a senha atual.'); return; }
+    const policyErrors = getPasswordErrors(passwordForm.new, { name: user?.name, email: user?.email });
+    if (policyErrors.length > 0) { setPasswordError(policyErrors[0]); return; }
+    if (passwordForm.new === passwordForm.current) { setPasswordError('A nova senha deve ser diferente da atual.'); return; }
+    if (passwordForm.new !== passwordForm.confirm) { setPasswordError('As senhas não coincidem.'); return; }
+
+    setPasswordError(null);
+    setChangingPassword(true);
+    try {
+      await changePassword(passwordForm.current, passwordForm.new);
+      toast.success('Senha alterada com sucesso!');
+      closePasswordModal();
+    } catch (err) {
+      setPasswordError(err instanceof Error ? err.message : 'Não foi possível alterar a senha.');
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleLogout = () => {
@@ -200,7 +220,6 @@ export function Settings() {
     { id: 'notifications', label: 'Notificações', icon: Bell },
     { id: 'privacy', label: 'Privacidade', icon: Shield },
     { id: 'security', label: 'Segurança', icon: Lock },
-    { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'billing', label: 'Plano & Cobrança', icon: CreditCard },
     { id: 'data', label: 'Meus Dados', icon: Download },
   ];
@@ -611,108 +630,6 @@ export function Settings() {
                 </div>
               )}
 
-              {/* ── APPEARANCE TAB ── */}
-              {activeTab === 'appearance' && (
-                <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                  <h3 className="dark:text-white text-slate-900 mb-6" style={{ fontWeight: 700 }}>
-                    Aparência & Tema
-                  </h3>
-
-                  <div className="space-y-6">
-                    {/* Theme */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Tema da Interface
-                      </p>
-                      <div className="grid grid-cols-3 gap-3">
-                        {[
-                          { id: 'dark', label: 'Escuro', icon: Moon, desc: 'Fundo preto grafite', active: theme === 'dark' },
-                          { id: 'light', label: 'Claro', icon: Sun, desc: 'Fundo branco limpo', active: theme === 'light' },
-                          { id: 'system', label: 'Sistema', icon: Monitor, desc: 'Seguir o dispositivo', active: false },
-                        ].map(({ id, label, icon: Icon, desc, active }) => (
-                          <button
-                            key={id}
-                            onClick={() => { if ((id === 'dark' && theme === 'light') || (id === 'light' && theme === 'dark')) toggleTheme(); }}
-                            className={`flex flex-col items-center gap-2 p-4 rounded-2xl border transition-all ${
-                              active
-                                ? 'dark:bg-zinc-800 bg-slate-100 border-[#000326]/40 dark:border-white/40'
-                                : 'dark:bg-zinc-800/30 bg-slate-50 dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600'
-                            }`}
-                          >
-                            <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${active ? 'bg-[#000326] dark:bg-white/10' : 'dark:bg-zinc-700 bg-slate-200'}`}>
-                              <Icon className={`w-5 h-5 ${active ? 'text-[#5a64b4] dark:text-[#C5C5CE]' : 'dark:text-zinc-400 text-slate-500'}`} />
-                            </div>
-                            <p className="text-xs dark:text-white text-slate-900" style={{ fontWeight: active ? 600 : 400 }}>{label}</p>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400 text-center leading-tight">{desc}</p>
-                            {active && <CheckCircle className="w-4 h-4 text-[#000326] dark:text-white" />}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Font Size */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Tamanho da Fonte
-                      </p>
-                      <div className="flex items-center gap-2">
-                        {['Pequeno', 'Médio', 'Grande'].map((size, i) => (
-                          <button
-                            key={size}
-                            onClick={() => toast.info(`Fonte ${size.toLowerCase()} aplicada`)}
-                            className={`flex-1 py-2.5 rounded-xl text-sm border transition-all ${
-                              i === 1
-                                ? 'dark:bg-zinc-800 bg-slate-100 dark:border-zinc-600 border-slate-300 dark:text-white text-slate-900'
-                                : 'dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-500 hover:dark:border-zinc-600'
-                            }`}
-                            style={{ fontWeight: i === 1 ? 600 : 400, fontSize: i === 0 ? '12px' : i === 1 ? '14px' : '16px' }}
-                          >
-                            {size}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Language */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Idioma
-                      </p>
-                      <select className="w-full px-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none">
-                        <option>🇧🇷 Português (Brasil)</option>
-                        <option>🇺🇸 English (US)</option>
-                        <option>🇪🇸 Español</option>
-                      </select>
-                    </div>
-
-                    {/* Accent Colors */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Cor de Destaque
-                      </p>
-                      <div className="flex gap-3">
-                        {[
-                          { color: '#5a64b4', label: 'Marinho', active: true },
-                          { color: '#3b82f6', label: 'Azul' },
-                          { color: '#8b5cf6', label: 'Violeta' },
-                          { color: '#f59e0b', label: 'Âmbar' },
-                          { color: '#ef4444', label: 'Vermelho' },
-                          { color: '#ec4899', label: 'Rosa' },
-                        ].map(({ color, label, active }) => (
-                          <button
-                            key={color}
-                            onClick={() => toast.info(`Cor ${label} selecionada`)}
-                            title={label}
-                            className={`w-8 h-8 rounded-full transition-all hover:scale-110 ${active ? 'ring-2 ring-offset-2 dark:ring-offset-zinc-900 ring-offset-white' : ''}`}
-                            style={{ backgroundColor: color, ...(active ? { boxShadow: `0 0 0 2px ${color}` } : {}) }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* ── BILLING TAB ── */}
               {activeTab === 'billing' && (() => {
                 const hasPaidPlan =
@@ -971,52 +888,73 @@ export function Settings() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={() => setShowPasswordModal(false)}
+            onClick={closePasswordModal}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={e => e.stopPropagation()}
-              className="w-full max-w-md dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6 shadow-2xl"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="change-password-title"
+              className="w-full max-w-md max-h-[90vh] overflow-y-auto dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>Alterar Senha</h3>
-                <button onClick={() => setShowPasswordModal(false)} className="w-8 h-8 rounded-xl dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 flex items-center justify-center hover:dark:bg-zinc-700 transition-colors">
+                <h3 id="change-password-title" className="dark:text-white text-slate-900 text-lg" style={{ fontWeight: 700 }}>Alterar Senha</h3>
+                <button onClick={closePasswordModal} aria-label="Fechar" className="w-8 h-8 rounded-xl dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 flex items-center justify-center hover:dark:bg-zinc-700 transition-colors">
                   ✕
                 </button>
               </div>
-              <div className="space-y-4">
-                {[
-                  { label: 'Senha Atual', key: 'current', show: showCurrent, toggle: () => setShowCurrent(p => !p) },
-                  { label: 'Nova Senha', key: 'new', show: showNew, toggle: () => setShowNew(p => !p) },
-                  { label: 'Confirmar Nova Senha', key: 'confirm', show: showNew, toggle: () => setShowNew(p => !p) },
-                ].map(({ label, key, show, toggle }) => (
+              <form
+                className="space-y-4"
+                onSubmit={e => { e.preventDefault(); void handlePasswordChange(); }}
+              >
+                {passwordError && (
+                  <p role="alert" className="p-3 rounded-xl text-sm bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400">
+                    {passwordError}
+                  </p>
+                )}
+                {([
+                  { label: 'Senha Atual', key: 'current', autoComplete: 'current-password' },
+                  { label: 'Nova Senha', key: 'new', autoComplete: 'new-password' },
+                  { label: 'Confirmar Nova Senha', key: 'confirm', autoComplete: 'new-password' },
+                ] as const).map(({ label, key, autoComplete }) => (
                   <div key={key}>
-                    <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>{label}</label>
-                    <div className="relative">
-                      <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                      <input
-                        type={show ? 'text' : 'password'}
-                        value={(passwordForm as any)[key]}
-                        onChange={e => setPasswordForm(p => ({ ...p, [key]: e.target.value }))}
-                        className="w-full pl-10 pr-10 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
-                        placeholder="••••••••"
+                    <label htmlFor={`change-password-${key}`} className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>{label}</label>
+                    <PasswordInput
+                      id={`change-password-${key}`}
+                      value={passwordForm[key]}
+                      onChange={e => { setPasswordForm(p => ({ ...p, [key]: e.target.value })); setPasswordError(null); }}
+                      autoComplete={autoComplete}
+                      maxLength={128}
+                      aria-describedby={key === 'new' ? 'change-password-rules' : undefined}
+                      iconClassName="dark:text-zinc-500"
+                      className="w-full pl-10 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
+                      placeholder="••••••••"
+                    />
+                    {key === 'new' && (
+                      <PasswordRequirements
+                        id="change-password-rules"
+                        password={passwordForm.new}
+                        context={{ name: user?.name, email: user?.email }}
+                        showErrors={passwordSubmitAttempted}
                       />
-                      <button type="button" onClick={toggle} className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400">
-                        {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                      </button>
-                    </div>
+                    )}
+                    {key === 'confirm' && passwordForm.confirm && passwordForm.confirm !== passwordForm.new && (
+                      <p className="text-xs text-red-500 mt-2">As senhas não coincidem.</p>
+                    )}
                   </div>
                 ))}
                 <button
-                  onClick={handlePasswordChange}
-                  className="w-full py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
+                  type="submit"
+                  disabled={changingPassword}
+                  className="w-full py-3 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
                   style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
                 >
-                  Salvar Nova Senha
+                  {changingPassword ? 'Salvando…' : 'Salvar Nova Senha'}
                 </button>
-              </div>
+              </form>
             </motion.div>
           </motion.div>
         )}

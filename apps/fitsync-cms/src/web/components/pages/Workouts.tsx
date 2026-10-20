@@ -1,9 +1,11 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Dumbbell, ExternalLink, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
 import {
   WorkoutDoc,
   fetchPublishedWorkouts,
+  generateWorkoutWithAi,
   relName,
 } from '../../lib/studentApi'
 
@@ -33,6 +35,7 @@ const WEEKDAY_PT: Record<string, string> = {
 export function Workouts() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  const [generating, setGenerating] = useState(false)
   const [workouts, setWorkouts] = useState<WorkoutDoc[]>([])
   const [error, setError] = useState<string | null>(null)
 
@@ -63,6 +66,29 @@ export function Workouts() {
     }
   }, [reload])
 
+  const handleGenerate = async () => {
+    if (!user?.accessToken || generating) return
+    setGenerating(true)
+    setError(null)
+    try {
+      const result = await generateWorkoutWithAi(user.accessToken)
+      toast.success(
+        `Semana criada: ${result.count} treinos. Restam ${result.remaining} gerações neste mês.`,
+      )
+      try {
+        await reload()
+      } catch {
+        toast.error('Semana criada, mas a lista não atualizou. Recarregue a página.')
+      }
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Não foi possível gerar a semana.'
+      setError(message)
+      toast.error(message)
+    } finally {
+      setGenerating(false)
+    }
+  }
+
   const sorted = useMemo(() => {
     return [...workouts].sort((a, b) => {
       const ai = WEEKDAY_ORDER.indexOf(a.weekday || '')
@@ -85,12 +111,12 @@ export function Workouts() {
         </div>
         <button
           type="button"
-          disabled
-          title="Geração com IA em breve"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] opacity-60 cursor-not-allowed"
+          onClick={handleGenerate}
+          disabled={generating || !user?.accessToken}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] disabled:opacity-60 disabled:cursor-not-allowed"
         >
-          <Sparkles className="w-4 h-4" />
-          Gerar semana com IA · Em breve
+          <Sparkles className={`w-4 h-4 ${generating ? 'animate-pulse' : ''}`} />
+          {generating ? 'Gerando semana…' : 'Gerar semana com IA'}
         </button>
       </div>
 
@@ -104,7 +130,7 @@ export function Workouts() {
           <Dumbbell className="w-8 h-8 mx-auto text-[#8e8e9a]" />
           <p className="mt-3 font-semibold text-[#000326] dark:text-white">Nenhum treino ainda</p>
           <p className="mt-1.5 text-sm text-[#6a6a7a] dark:text-[#C5C5CE] max-w-md mx-auto">
-            Quando um personal publicar um treino — ou quando a geração com IA estiver disponível —
+            Quando um personal publicar um treino, ou quando você gerar a semana com IA,
             ele será listado aqui.
           </p>
         </div>

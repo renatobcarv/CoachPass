@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   USERS_API,
   postJson,
   getJson,
+  patchJson,
   PayloadApiError,
   extractPayloadMessage,
+  assertSecureTransport,
+  onSessionInvalid,
 } from '@/lib/cms';
 
 export type UserRole = 'master' | 'student' | 'personal' | 'nutritionist';
@@ -30,12 +33,15 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<UserRole>;
   register: (email: string, password: string, role: UserRole, additionalData?: Partial<User>) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   isAuthenticated: boolean;
 }
 
 const TOKEN_KEY = 'fitsync_payload_token';
+const USER_KEY = 'fitsync_user';
+const AUTH_TOAST_ID = 'auth-session';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -75,16 +81,56 @@ function buildUser(doc: PayloadUserDoc, accessToken: string): User {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const userRef = useRef<User | null>(null);
+  const verifyingTokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    userRef.current = user;
+  }, [user]);
 
   const persistSession = useCallback((next: User | null) => {
     if (next?.accessToken) {
       localStorage.setItem(TOKEN_KEY, next.accessToken);
-      localStorage.setItem('fitsync_user', JSON.stringify(next));
+      localStorage.setItem(USER_KEY, JSON.stringify(next));
     } else {
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('fitsync_user');
+      localStorage.removeItem(USER_KEY);
     }
   }, []);
+
+  // O localStorage pode já guardar o token de outra conta (login em outra aba); não apagá-lo.
+  const endDeadSession = useCallback((deadToken: string) => {
+    if (userRef.current?.accessToken !== deadToken) return;
+    if (localStorage.getItem(TOKEN_KEY) === deadToken) {
+      localStorage.removeItem(TOKEN_KEY);
+      localStorage.removeItem(USER_KEY);
+    }
+    userRef.current = null;
+    setUser(null);
+    toast.error('Sua sessão foi encerrada. Entre novamente.', { id: AUTH_TOAST_ID });
+  }, []);
+
+  useEffect(() => {
+    return onSessionInvalid((kind, token) => {
+      if (userRef.current?.accessToken !== token) return;
+      if (kind === 'unauthorized') {
+        endDeadSession(token);
+        return;
+      }
+      if (verifyingTokenRef.current === token) return;
+      verifyingTokenRef.current = token;
+      getJson<{ user: PayloadUserDoc | null }>(`${USERS_API}/me`, token)
+        .then((data) => {
+          if (!data.user) endDeadSession(token);
+        })
+        .catch(() => {
+          /* falha de rede não derruba a sessão; 401 já é tratado pelo próprio aviso */
+        })
+        .finally(() => {
+          verifyingTokenRef.current = null;
+        });
+    });
+  }, [endDeadSession]);
 
   useEffect(() => {
     let cancelled = false;
@@ -101,16 +147,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.user) {
           const u = buildUser(data.user, token);
           setUser(u);
-          localStorage.setItem('fitsync_user', JSON.stringify(u));
+          localStorage.setItem(USER_KEY, JSON.stringify(u));
         } else {
           localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem('fitsync_user');
+          localStorage.removeItem(USER_KEY);
           setUser(null);
         }
       } catch {
         if (!cancelled) {
           localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem('fitsync_user');
+          localStorage.removeItem(USER_KEY);
           setUser(null);
         }
       } finally {
@@ -123,8 +169,54 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
+  // O evento storage só dispara nas outras abas; a aba que fez login/logout já atualizou o estado.
+  useEffect(() => {
+    const handleStorage = (event: StorageEvent) => {
+      if (event.storageArea !== localStorage) return;
+      if (event.key !== TOKEN_KEY && event.key !== null) return;
+
+      const nextToken = localStorage.getItem(TOKEN_KEY);
+      if (nextToken === (userRef.current?.accessToken ?? null)) return;
+
+      if (!nextToken) {
+        if (userRef.current) {
+          userRef.current = null;
+          setUser(null);
+          toast.info('Você saiu da conta em outra aba.', { id: AUTH_TOAST_ID });
+        }
+        return;
+      }
+
+      getJson<{ user: PayloadUserDoc | null }>(`${USERS_API}/me`, nextToken)
+        .then((data) => {
+          if (localStorage.getItem(TOKEN_KEY) !== nextToken) return;
+          if (!data.user) {
+            userRef.current = null;
+            setUser(null);
+            return;
+          }
+          const next = buildUser(data.user, nextToken);
+          const previousId = userRef.current?.id;
+          userRef.current = next;
+          setUser(next);
+          if (previousId !== next.id) {
+            toast.info(`Conta trocada em outra aba: ${next.email}`, { id: AUTH_TOAST_ID });
+          }
+        })
+        .catch(() => {
+          if (localStorage.getItem(TOKEN_KEY) !== nextToken) return;
+          userRef.current = null;
+          setUser(null);
+        });
+    };
+
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
+  }, []);
+
   const login = async (email: string, password: string, _roleHint: UserRole): Promise<UserRole> => {
     try {
+      assertSecureTransport();
       const data = await postJson<{
         user: PayloadUserDoc;
         token: string;
@@ -146,9 +238,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : e instanceof Error
             ? e.message
             : '';
-      const msg = /incorrect|invalid|unauthorized/i.test(raw)
-        ? 'E-mail ou senha incorretos.'
-        : raw || 'E-mail ou senha incorretos.';
+      const msg = /locked/i.test(raw)
+        ? 'Conta bloqueada temporariamente por excesso de tentativas. Aguarde alguns minutos.'
+        : /incorrect|invalid|unauthorized/i.test(raw)
+          ? 'E-mail ou senha incorretos.'
+          : raw || 'E-mail ou senha incorretos.';
       toast.error(msg);
       throw e;
     }
@@ -161,6 +255,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     additionalData?: Partial<User>,
   ) => {
     try {
+      assertSecureTransport();
       // Evita cookie/JWT residual bloquear o POST /api/users (403).
       try {
         const existing = localStorage.getItem(TOKEN_KEY);
@@ -171,7 +266,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         /* ignore */
       }
       localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem('fitsync_user');
+      localStorage.removeItem(USER_KEY);
       setUser(null);
 
       await postJson(`${USERS_API}`, {
@@ -211,6 +306,38 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!user) throw new Error('Sessão expirada. Entre novamente.');
+    assertSecureTransport();
+
+    // O PATCH do Payload não confere a senha atual, então ela é validada via login antes.
+    let token: string;
+    try {
+      const data = await postJson<{ token: string }>(`${USERS_API}/login`, {
+        email: user.email,
+        password: currentPassword,
+      });
+      token = data.token;
+    } catch (e) {
+      const raw = e instanceof PayloadApiError ? extractPayloadMessage(e.data) || e.message : '';
+      if (/locked/i.test(raw)) {
+        throw new Error('Conta bloqueada temporariamente por excesso de tentativas. Aguarde alguns minutos.');
+      }
+      throw new Error('Senha atual incorreta.');
+    }
+
+    try {
+      await patchJson(`${USERS_API}/${user.id}`, { password: newPassword }, token);
+    } catch (e) {
+      const msg = e instanceof PayloadApiError ? extractPayloadMessage(e.data) || e.message : '';
+      throw new Error(msg || 'Não foi possível alterar a senha.');
+    }
+
+    const next = { ...user, accessToken: token };
+    setUser(next);
+    persistSession(next);
+  };
+
   const logout = async () => {
     const token = localStorage.getItem(TOKEN_KEY);
     try {
@@ -241,6 +368,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         register,
+        changePassword,
         logout,
         updateUser,
         isAuthenticated: !!user,

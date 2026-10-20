@@ -3,6 +3,48 @@ import { ValidationError } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 
 import { isSuperUser } from '../access/isSuper'
+import { getPasswordErrors, type PasswordContext } from '../lib/passwordPolicy'
+
+const PASSWORD_OPERATIONS = new Set(['create', 'update', 'resetPassword'])
+
+async function passwordContextFor(
+  operation: string,
+  args: { data?: Record<string, unknown>; id?: number | string },
+  req: PayloadRequest,
+): Promise<PasswordContext> {
+  const data = args.data ?? {}
+  const context: PasswordContext = {
+    name: typeof data.name === 'string' ? data.name : undefined,
+    email: typeof data.email === 'string' ? data.email : undefined,
+  }
+  if (context.name && context.email) return context
+
+  let existing: { name?: string | null; email?: string | null } | null = null
+  try {
+    if (operation === 'update' && args.id !== undefined) {
+      existing = await req.payload.findByID({
+        collection: 'users',
+        id: args.id,
+        depth: 0,
+        overrideAccess: true,
+        req,
+      })
+    } else if (operation === 'resetPassword' && typeof data.token === 'string') {
+      existing = (await req.payload.db.findOne({
+        collection: 'users',
+        where: { resetPasswordToken: { equals: data.token } },
+        req,
+      })) as typeof existing
+    }
+  } catch {
+    existing = null
+  }
+
+  return {
+    name: context.name ?? existing?.name ?? undefined,
+    email: context.email ?? existing?.email ?? undefined,
+  }
+}
 
 function adminServerURL(req: PayloadRequest): string {
   const config = req.payload.config
@@ -23,6 +65,10 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
   },
   auth: {
+    cookies: {
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'Lax',
+    },
     forgotPassword: {
       generateEmailSubject: () => 'FitSync — Redefinir senha do painel',
       generateEmailHTML: (args) => {
@@ -66,6 +112,27 @@ export const Users: CollectionConfig = {
     delete: ({ req }) => isSuperUser(req),
   },
   hooks: {
+    // Cobre cadastro, PATCH de senha e /reset-password (que não passa pela validação de campos).
+    beforeOperation: [
+      async ({ args, operation, req, collection }) => {
+        if (!PASSWORD_OPERATIONS.has(operation)) return args
+        const target = args as { data?: Record<string, unknown>; id?: number | string }
+        const password = target.data?.password
+        if (password === undefined || password === null) return args
+
+        const errors =
+          typeof password === 'string'
+            ? getPasswordErrors(password, await passwordContextFor(operation, target, req))
+            : ['Senha inválida.']
+        if (errors.length > 0) {
+          throw new ValidationError({
+            collection: collection?.slug,
+            errors: errors.map((message) => ({ path: 'password', message })),
+          })
+        }
+        return args
+      },
+    ],
     beforeValidate: [
       ({ data, operation, req, collection }) => {
         const bypass =

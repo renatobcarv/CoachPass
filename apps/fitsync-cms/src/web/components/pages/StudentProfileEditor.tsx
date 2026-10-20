@@ -13,6 +13,7 @@ import {
   goalLabel,
   saveStudentProfile,
 } from '../../lib/studentApi'
+import { formatPhone } from '../../lib/phone'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 
 const card =
@@ -33,9 +34,10 @@ export function StudentProfileEditor() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [form, setForm] = useState({
     displayName: user?.name || '',
-    phone: user?.whatsapp || '',
+    phone: formatPhone(user?.whatsapp || ''),
     birthDate: '',
     heightCm: '',
     weightKg: '',
@@ -60,13 +62,15 @@ export function StudentProfileEditor() {
         setLoading(false)
         return
       }
+      setLoading(true)
+      setLoadError(null)
       try {
         const doc = await fetchMyStudentProfile(user.id, user.accessToken)
         if (cancelled || !doc) return
         setProfileId(doc.id)
         setForm({
           displayName: doc.displayName || '',
-          phone: doc.phone || '',
+          phone: formatPhone(doc.phone || ''),
           birthDate: doc.birthDate ? doc.birthDate.slice(0, 10) : '',
           heightCm: String(doc.heightCm ?? ''),
           weightKg: String(doc.weightKg ?? ''),
@@ -84,6 +88,14 @@ export function StudentProfileEditor() {
           injuries: doc.injuries || '',
           medications: doc.medications || '',
         })
+      } catch (err) {
+        if (!cancelled) {
+          setLoadError(
+            err instanceof Error && err.message
+              ? `Não foi possível carregar seu perfil: ${err.message}`
+              : 'Não foi possível carregar seu perfil.',
+          )
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
@@ -103,6 +115,10 @@ export function StudentProfileEditor() {
   }
 
   const handleSave = async () => {
+    if (loadError) {
+      toast.error('Recarregue o perfil antes de salvar.')
+      return
+    }
     if (!user?.accessToken || !form.sex || !form.goal) {
       toast.error('Preencha os campos obrigatórios.')
       return
@@ -165,9 +181,15 @@ export function StudentProfileEditor() {
           Dados usados para personalizar treinos e orientações. E-mail da conta: {user?.email}
           {age != null ? ` · ${age} anos` : ''}
           {form.goal ? ` · ${goalLabel(form.goal)}` : ''}
-          {profileId ? '' : ' · Perfil ainda não salvo'}
+          {profileId || loadError ? '' : ' · Perfil ainda não salvo'}
         </p>
       </div>
+
+      {loadError && (
+        <div role="alert" className={`${card} text-sm text-red-600 dark:text-red-300`}>
+          {loadError}
+        </div>
+      )}
 
       <div className={`${card} space-y-4`}>
         <h2 className="font-semibold text-[#000326] dark:text-white">Informações obrigatórias</h2>
@@ -185,7 +207,12 @@ export function StudentProfileEditor() {
             <input
               className={inputCls}
               value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
+              onChange={(e) => setForm({ ...form, phone: formatPhone(e.target.value) })}
+              placeholder="(11) 99999-9999"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              maxLength={15}
             />
           </label>
           <label className="text-sm space-y-1">
@@ -338,7 +365,7 @@ export function StudentProfileEditor() {
 
       <button
         type="button"
-        disabled={saving}
+        disabled={saving || Boolean(loadError)}
         onClick={handleSave}
         className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#000326] text-white dark:bg-white dark:text-[#000326] font-medium disabled:opacity-50"
       >

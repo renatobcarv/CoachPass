@@ -3,10 +3,12 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 
+import type { User } from '@/payload-types'
+
 export const dynamic = 'force-dynamic'
 
 type AuthUser = {
-  id: string | number
+  id: User['id']
   role?: string
   isSuperAdmin?: boolean
 }

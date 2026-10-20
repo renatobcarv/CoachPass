@@ -5,6 +5,7 @@ import {
   MEAL_PLANS_API,
   USERS_API,
   AI_GENERATE_WORKOUT_API,
+  AI_CHAT_API,
   getJson,
   postJson,
   patchJson,
@@ -298,6 +299,15 @@ export async function fetchAiQuota(token: string): Promise<AiQuota> {
 
 export async function generateWorkoutWithAi(token: string): Promise<GenerateWorkoutResult> {
   return postJson<GenerateWorkoutResult>(AI_GENERATE_WORKOUT_API, {}, token)
+}
+
+export type AiChatMessage = { role: 'user' | 'ai'; text: string }
+
+export async function sendAiChat(
+  token: string,
+  messages: AiChatMessage[],
+): Promise<{ reply: string }> {
+  return postJson<{ reply: string }>(AI_CHAT_API, { messages }, token)
 }
 
 export { relId }

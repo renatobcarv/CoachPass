@@ -8,7 +8,7 @@ import { getPayload } from 'payload'
 import config from '../payload.config.js'
 
 const email = (process.env.MASTER_EMAIL || 'master@fitsync.local').trim().toLowerCase()
-const password = process.env.MASTER_PASSWORD || 'MasterFitSync!MudeEstaSenha2026'
+const password = process.env.MASTER_PASSWORD || 'Painel#Seguro!MudeEsta2026'
 
 async function main() {
   const payload = await getPayload({ config })

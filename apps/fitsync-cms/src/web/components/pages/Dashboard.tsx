@@ -1,13 +1,16 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { Link, useNavigate } from 'react-router'
 import {
   Apple,
   ArrowRight,
   Dumbbell,
+  Loader2,
   Sparkles,
   UserRound,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
+import { PayloadApiError } from '@/lib/cms'
 import {
   AiQuota,
   MealPlanDoc,
@@ -17,6 +20,7 @@ import {
   fetchAiQuota,
   fetchPublishedMealPlans,
   fetchPublishedWorkouts,
+  generateWorkoutWithAi,
   goalLabel,
   relName,
   fetchMyStudentProfile,
@@ -46,6 +50,8 @@ export function Dashboard() {
   const [mealPlans, setMealPlans] = useState<MealPlanDoc[]>([])
   const [quota, setQuota] = useState<AiQuota | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   const firstName = user?.name?.split(' ')[0] || profile?.displayName?.split(' ')[0] || 'Aluno'
   const today = useMemo(() => weekdayLabel(), [])
@@ -94,6 +100,47 @@ export function Dashboard() {
       cancelled = true
     }
   }, [user?.accessToken, user?.id])
+
+  const reloadAfterGeneration = useCallback(async () => {
+    if (!user?.accessToken) return
+    const [workoutDocs, aiQuota] = await Promise.all([
+      fetchPublishedWorkouts(user.id, user.accessToken),
+      fetchAiQuota(user.accessToken).catch(() => null),
+    ])
+    setWorkouts(workoutDocs)
+    if (aiQuota) setQuota(aiQuota)
+  }, [user?.accessToken, user?.id])
+
+  const handleGenerateWorkout = async () => {
+    if (!user?.accessToken || generating) return
+    setGenerating(true)
+    setAiError(null)
+    try {
+      const result = await generateWorkoutWithAi(user.accessToken)
+      toast.success(
+        `Semana criada: ${result.count} treinos. Restam ${result.remaining} gerações neste mês.`,
+      )
+      try {
+        await reloadAfterGeneration()
+      } catch {
+        toast.error('Semana criada, mas a lista não atualizou. Recarregue a página.')
+      }
+    } catch (err) {
+      const message =
+        err instanceof PayloadApiError && (err.status === 402 || err.status === 422)
+          ? err.message
+          : err instanceof Error && err.message
+            ? err.message
+            : 'Não foi possível gerar o treino.'
+      setAiError(message)
+      toast.error(message)
+      if (err instanceof PayloadApiError && err.status === 402) {
+        await reloadAfterGeneration().catch(() => undefined)
+      }
+    } finally {
+      setGenerating(false)
+    }
+  }
 
   if (loading) {
     return (
@@ -198,15 +245,29 @@ export function Dashboard() {
             </h2>
             <p className="mt-1.5 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
               Sem personal ou nutricionista vinculado, seu painel começa vazio. Aguarde a publicação
-              de um profissional. A geração com IA estará disponível em breve.
+              de um profissional ou gere uma semana de treinos com IA a partir do seu perfil.
             </p>
           </div>
           <div className="grid sm:grid-cols-2 gap-3">
-            <div className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left opacity-70">
-              <Sparkles className="w-5 h-5 text-[#000326] dark:text-[#C5C5CE]" />
+            <button
+              type="button"
+              onClick={() => void handleGenerateWorkout()}
+              disabled={generating}
+              aria-busy={generating}
+              className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left transition hover:border-[#000326]/40 dark:hover:border-white/40 disabled:cursor-wait disabled:opacity-70"
+            >
+              {generating ? (
+                <Loader2 className="w-5 h-5 animate-spin text-[#000326] dark:text-[#C5C5CE]" />
+              ) : (
+                <Sparkles className="w-5 h-5 text-[#000326] dark:text-[#C5C5CE]" />
+              )}
               <p className="mt-3 font-semibold text-[#000326] dark:text-white">Gerar treino com IA</p>
-              <p className="mt-1 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">Em breve</p>
-            </div>
+              <p className="mt-1 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">
+                {generating
+                  ? 'Gerando sua semana…'
+                  : `${remainingGenerations} de ${quotaLimit} gerações disponíveis neste mês`}
+              </p>
+            </button>
             <div className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left opacity-70">
               <Sparkles className="w-5 h-5 text-[#000326] dark:text-[#C5C5CE]" />
               <p className="mt-3 font-semibold text-[#000326] dark:text-white">
@@ -215,6 +276,11 @@ export function Dashboard() {
               <p className="mt-1 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">Em breve</p>
             </div>
           </div>
+          {aiError && (
+            <p role="alert" className="text-sm text-red-600 dark:text-red-300">
+              {aiError}
+            </p>
+          )}
         </div>
       )}
 

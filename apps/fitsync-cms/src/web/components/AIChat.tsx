@@ -1,44 +1,73 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, ChevronDown, Zap } from 'lucide-react';
+import { Bot, X, Send, ChevronDown, Zap } from 'lucide-react';
 import { motion } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { sendAiChat, type AiChatMessage } from '../lib/studentApi';
+import { PayloadApiError } from '@/lib/cms';
 
 interface Message {
   id: string;
   role: 'user' | 'ai';
   text: string;
   time: string;
+  error?: boolean;
 }
 
-const initialMessages: Message[] = [
+const HISTORY_LIMIT = 12;
+
+const quickReplies = [
   {
-    id: '1',
-    role: 'ai',
-    text: 'Olá, Lucas! 👋 Sou sua IA de treino e dieta. Como posso te ajudar hoje? Posso sugerir exercícios alternativos, ajustar suas metas calóricas ou criar um plano personalizado.',
-    time: '10:30',
+    label: 'Substituir supino por outro exercício',
+    prompt: 'Que exercício posso fazer no lugar do supino, considerando os equipamentos que tenho?',
+  },
+  {
+    label: 'Reduzir calorias hoje',
+    prompt: 'Quais cuidados devo ter se quiser comer menos calorias hoje sem prejudicar o treino?',
+  },
+  {
+    label: 'Adicionar mais proteína',
+    prompt: 'Como posso incluir mais proteína nas minhas refeições do dia a dia?',
+  },
+  {
+    label: 'Treino para hoje sem equipamento',
+    prompt: 'Que treino posso fazer hoje usando só o peso do corpo?',
   },
 ];
 
-const quickReplies = [
-  'Substituir supino por outro exercício',
-  'Reduzir calorias hoje',
-  'Adicionar mais proteína',
-  'Treino para hoje sem equipamento',
-];
+function nowTime() {
+  return new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+}
 
-const aiResponses = [
-  'Ótima escolha! Posso substituir o supino por flexões declinadas ou crucifixo com halteres. Qual você prefere? Ambos trabalham o peitoral de forma eficaz.',
-  'Entendido! Vou reduzir suas calorias de 2.800 para 2.400 kcal hoje. Removi a colação da tarde. Isso mantém sua proteína em 180g e cut de 400kcal.',
-  'Perfeito! Adicionei um shake de proteína pós-treino (30g proteína) e um ovo cozido à sua colação. Total de proteína ajustado para 220g/dia.',
-  'Treino sem equipamento criado! Circuito: Flexão 4×15, Agachamento 4×20, Prancha 3×60s, Burpee 3×10. Duração: ~40 minutos. Devo adicionar ao seu plano?',
-];
+function chatErrorMessage(err: unknown): string {
+  if (err instanceof PayloadApiError) {
+    if (err.status === 401 || err.status === 403) {
+      return 'Sua sessão expirou. Entre novamente para usar o assistente.';
+    }
+    return err.message || 'Não consegui responder agora. Tente de novo em instantes.';
+  }
+  if (err instanceof TypeError) {
+    return 'Sem conexão com o servidor. Verifique sua internet e tente de novo.';
+  }
+  return err instanceof Error && err.message
+    ? err.message
+    : 'Não consegui responder agora. Tente de novo em instantes.';
+}
 
 export function AIChat() {
+  const { user } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const responseIndex = useRef(0);
+
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const greeting: Message = {
+    id: 'greeting',
+    role: 'ai',
+    text: `Olá${firstName ? `, ${firstName}` : ''}! 👋 Sou o assistente de treino e alimentação do CoachPass. Posso sugerir exercícios alternativos, tirar dúvidas sobre execução e dar orientações gerais de alimentação.`,
+    time: '',
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -48,32 +77,46 @@ export function AIChat() {
     scrollToBottom();
   }, [messages, isTyping]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+  const sendMessage = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isTyping) return;
 
     const userMsg: Message = {
       id: Date.now().toString(),
       role: 'user',
-      text,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
+      text: trimmed,
+      time: nowTime(),
     };
+
+    const history: AiChatMessage[] = [...messages, userMsg]
+      .filter((msg) => !msg.error)
+      .slice(-HISTORY_LIMIT)
+      .map(({ role, text: body }) => ({ role, text: body }));
 
     setMessages((prev) => [...prev, userMsg]);
     setInput('');
-    setIsTyping(true);
 
-    setTimeout(() => {
-      const idx = responseIndex.current % aiResponses.length;
-      responseIndex.current += 1;
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        text: aiResponses[idx],
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      };
+    const pushAi = (body: string, error = false) => {
+      setMessages((prev) => [
+        ...prev,
+        { id: `${Date.now()}-ai`, role: 'ai', text: body, time: nowTime(), error },
+      ]);
+    };
+
+    if (!user?.accessToken) {
+      pushAi('Entre na sua conta para conversar com o assistente.', true);
+      return;
+    }
+
+    setIsTyping(true);
+    try {
+      const { reply } = await sendAiChat(user.accessToken, history);
+      pushAi(reply);
+    } catch (err) {
+      pushAi(chatErrorMessage(err), true);
+    } finally {
       setIsTyping(false);
-      setMessages((prev) => [...prev, aiMsg]);
-    }, 1800);
+    }
   };
 
   return (
@@ -92,9 +135,6 @@ export function AIChat() {
           }}
         >
           <Bot className="w-6 h-6 text-white" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs" style={{ fontWeight: 700 }}>
-            1
-          </span>
         </motion.button>
       )}
 
@@ -152,7 +192,7 @@ export function AIChat() {
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-3 dark:bg-zinc-950 bg-slate-50">
-            {messages.map((msg) => (
+            {[greeting, ...messages].map((msg) => (
               <div
                 key={msg.id}
                 className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
@@ -166,17 +206,22 @@ export function AIChat() {
                   className={`max-w-[75%] rounded-2xl px-3 py-2.5 ${
                     msg.role === 'user'
                       ? 'bg-gradient-to-br from-[#000326] to-[#5a64b4] text-white rounded-tr-sm'
-                      : 'dark:bg-zinc-900 bg-white dark:text-zinc-100 text-slate-800 rounded-tl-sm dark:border-zinc-800 border border-slate-200'
+                      : msg.error
+                        ? 'bg-red-50 dark:bg-red-500/10 text-red-700 dark:text-red-300 rounded-tl-sm border border-red-200 dark:border-red-500/30'
+                        : 'dark:bg-zinc-900 bg-white dark:text-zinc-100 text-slate-800 rounded-tl-sm dark:border-zinc-800 border border-slate-200'
                   }`}
+                  role={msg.error ? 'alert' : undefined}
                 >
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-white/70' : 'dark:text-zinc-500 text-slate-400'
-                    }`}
-                  >
-                    {msg.time}
-                  </p>
+                  <p className="text-sm leading-relaxed whitespace-pre-wrap break-words">{msg.text}</p>
+                  {msg.time && (
+                    <p
+                      className={`text-xs mt-1 ${
+                        msg.role === 'user' ? 'text-white/70' : 'dark:text-zinc-500 text-slate-400'
+                      }`}
+                    >
+                      {msg.time}
+                    </p>
+                  )}
                 </div>
               </div>
             ))}
@@ -203,13 +248,15 @@ export function AIChat() {
 
           {/* Quick replies */}
           <div className="px-3 py-2 dark:bg-zinc-950 bg-slate-50 flex gap-2 overflow-x-auto">
-            {quickReplies.slice(0, 2).map((reply) => (
+            {quickReplies.map((reply) => (
               <button
-                key={reply}
-                onClick={() => sendMessage(reply)}
-                className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full dark:bg-zinc-800 bg-white dark:text-zinc-300 text-slate-600 dark:border-zinc-700 border border-slate-200 hover:border-[#000326] dark:hover:border-white hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] transition-colors whitespace-nowrap"
+                key={reply.label}
+                type="button"
+                onClick={() => void sendMessage(reply.prompt)}
+                disabled={isTyping}
+                className="disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0 text-xs px-3 py-1.5 rounded-full dark:bg-zinc-800 bg-white dark:text-zinc-300 text-slate-600 dark:border-zinc-700 border border-slate-200 hover:border-[#000326] dark:hover:border-white hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] transition-colors whitespace-nowrap"
               >
-                {reply}
+                {reply.label}
               </button>
             ))}
           </div>
@@ -220,13 +267,18 @@ export function AIChat() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void sendMessage(input);
+              }}
               placeholder="Pergunte à IA..."
+              maxLength={2000}
               className="flex-1 text-sm px-3 py-2.5 rounded-xl dark:bg-zinc-900 bg-slate-100 dark:text-zinc-100 text-slate-800 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none dark:focus:ring-1 focus:ring-1 dark:focus:ring-[#000326] dark:ring-white/50 focus:ring-[#000326] dark:ring-white/50 border-0"
             />
             <button
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim()}
+              type="button"
+              onClick={() => void sendMessage(input)}
+              disabled={!input.trim() || isTyping}
+              aria-label="Enviar mensagem"
               className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
               style={{
                 background: input.trim() ? 'linear-gradient(135deg, #5a64b4, #3b82f6)' : undefined,

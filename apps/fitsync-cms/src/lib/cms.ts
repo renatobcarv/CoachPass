@@ -8,6 +8,44 @@ export const PROFESSIONAL_LINKS_INVITE_API = `${CMS_BASE_URL}/api/professional-l
 export const WORKOUTS_API = `${CMS_BASE_URL}/api/workouts`
 export const MEAL_PLANS_API = `${CMS_BASE_URL}/api/meal-plans`
 export const AI_GENERATE_WORKOUT_API = `${CMS_BASE_URL}/api/ai/generate-workout`
+export const AI_CHAT_API = `${CMS_BASE_URL}/api/ai/chat`
+
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/** Bloqueia envio de credenciais por HTTP puro em produção (localhost continua liberado). */
+export function assertSecureTransport(url: string = USERS_API): void {
+  if (process.env.NODE_ENV !== 'production' || typeof window === 'undefined') return
+  const target = new URL(url, window.location.href)
+  if (target.protocol !== 'https:' && !LOCAL_HOSTS.has(target.hostname)) {
+    throw new Error('Conexão insegura: o envio de senha só é permitido via HTTPS.')
+  }
+}
+
+export type SessionInvalidKind = 'unauthorized' | 'forbidden'
+type SessionInvalidListener = (kind: SessionInvalidKind, token: string) => void
+
+const sessionInvalidListeners = new Set<SessionInvalidListener>()
+
+/** 401 = token recusado; 403 pode ser sessão revogada ou permissão negada de verdade. */
+export function onSessionInvalid(listener: SessionInvalidListener): () => void {
+  sessionInvalidListeners.add(listener)
+  return () => {
+    sessionInvalidListeners.delete(listener)
+  }
+}
+
+function notifySessionInvalid(status: number, authToken?: string | null): void {
+  if (!authToken) return
+  const kind: SessionInvalidKind | null =
+    status === 401 ? 'unauthorized' : status === 403 ? 'forbidden' : null
+  if (!kind) return
+  for (const listener of sessionInvalidListeners) listener(kind, authToken)
+}
+
+const PAYLOAD_MESSAGES_PT: Record<string, string> = {
+  'You are not allowed to perform this action.': 'Você não tem permissão para esta ação.',
+  'You are not allowed to perform this action': 'Você não tem permissão para esta ação.',
+}
 
 export class PayloadApiError extends Error {
   constructor(
@@ -38,7 +76,7 @@ function firstFieldErrorMessage(errors: unknown): string {
   return ''
 }
 
-export function extractPayloadMessage(data: unknown): string {
+function rawPayloadMessage(data: unknown): string {
   if (!data || typeof data !== 'object') return ''
   const d = data as Record<string, unknown>
   const fromErrors = firstFieldErrorMessage(d.errors)
@@ -46,6 +84,11 @@ export function extractPayloadMessage(data: unknown): string {
   if (typeof d.message === 'string' && d.message.trim()) return d.message
   if (typeof d.error === 'string' && d.error.trim()) return d.error
   return ''
+}
+
+export function extractPayloadMessage(data: unknown): string {
+  const raw = rawPayloadMessage(data)
+  return PAYLOAD_MESSAGES_PT[raw.trim()] ?? raw
 }
 
 export async function postJson<T>(
@@ -66,6 +109,7 @@ export async function postJson<T>(
   })
   const data = (await res.json().catch(() => ({}))) as unknown
   if (!res.ok) {
+    notifySessionInvalid(res.status, authToken)
     throw new PayloadApiError(res.status, data)
   }
   return data as T
@@ -79,6 +123,7 @@ export async function getJson<T>(url: string, authToken: string): Promise<T> {
   })
   const data = (await res.json().catch(() => ({}))) as unknown
   if (!res.ok) {
+    notifySessionInvalid(res.status, authToken)
     throw new PayloadApiError(res.status, data)
   }
   return data as T
@@ -99,6 +144,7 @@ export async function patchJson<T>(
   })
   const data = (await res.json().catch(() => ({}))) as unknown
   if (!res.ok) {
+    notifySessionInvalid(res.status, authToken)
     throw new PayloadApiError(res.status, data)
   }
   return data as T

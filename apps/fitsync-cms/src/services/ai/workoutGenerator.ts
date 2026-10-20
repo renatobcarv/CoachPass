@@ -1,5 +1,6 @@
 import type { Payload } from 'payload'
 
+import type { User, Workout } from '@/payload-types'
 import { catalogForPrompt } from './catalog'
 import { generateWeekWithGemini, type GeneratedWorkout } from './geminiProvider'
 import { enrichWorkout, generateWeekFromCatalog } from './localWorkoutGenerator'
@@ -22,6 +23,22 @@ type ProfileDoc = {
   birthDate?: string | null
   foodAllergies?: string | null
   dietaryRestrictions?: string | null
+}
+
+type Weekday = NonNullable<Workout['weekday']>
+
+const WEEKDAYS: readonly Weekday[] = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+]
+
+function toWeekday(value?: string | null): Weekday | undefined {
+  return WEEKDAYS.find((day) => day === value)
 }
 
 function ageFromBirthDate(birthDate?: string | null): number | null {
@@ -99,7 +116,7 @@ async function generateWeekWorkouts(
 
 export async function createAiWorkoutForStudent(args: {
   payload: Payload
-  userId: string | number
+  userId: User['id']
   profile: ProfileDoc
 }): Promise<
   | {
@@ -170,7 +187,7 @@ export async function createAiWorkoutForStudent(args: {
           status: 'published',
           source: 'ai',
           observations: workout.observations,
-          weekday: workout.weekday,
+          weekday: toWeekday(workout.weekday),
           splitLabel: workout.splitLabel,
           publishedAt,
           exercises: workout.exercises,

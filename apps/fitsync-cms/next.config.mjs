@@ -2,6 +2,7 @@ import { withPayload } from '@payloadcms/next/withPayload'
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  allowedDevOrigins: ['*.trycloudflare.com'],
   // Warnings/erros legados de telas mock não devem bloquear o build nesta etapa.
   eslint: {
     ignoreDuringBuilds: true,

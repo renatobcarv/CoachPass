@@ -20,6 +20,7 @@ import {
   fetchMyStudentProfile,
   saveStudentProfile,
 } from '../../lib/studentApi'
+import { formatPhone } from '../../lib/phone'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 
 type FormState = {
@@ -61,7 +62,7 @@ export function StudentOnboarding() {
   const [bootstrapping, setBootstrapping] = useState(true)
   const [form, setForm] = useState<FormState>({
     displayName: user?.name || '',
-    phone: user?.whatsapp || '',
+    phone: formatPhone(user?.whatsapp || ''),
     birthDate: '',
     heightCm: '',
     weightKg: '',
@@ -96,7 +97,7 @@ export function StudentOnboarding() {
           setForm((prev) => ({
             ...prev,
             displayName: existing.displayName || prev.displayName,
-            phone: existing.phone || prev.phone,
+            phone: existing.phone ? formatPhone(existing.phone) : prev.phone,
             birthDate: existing.birthDate ? existing.birthDate.slice(0, 10) : '',
             heightCm: existing.heightCm != null ? String(existing.heightCm) : '',
             weightKg: existing.weightKg != null ? String(existing.weightKg) : '',
@@ -270,8 +271,12 @@ export function StudentOnboarding() {
                 <input
                   className={inputCls}
                   value={form.phone}
-                  onChange={(e) => setField('phone', e.target.value)}
+                  onChange={(e) => setField('phone', formatPhone(e.target.value))}
                   placeholder="(11) 99999-9999"
+                  type="tel"
+                  inputMode="numeric"
+                  autoComplete="tel"
+                  maxLength={15}
                   required
                 />
               </div>

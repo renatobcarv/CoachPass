@@ -5,7 +5,6 @@ import {
   User,
   Briefcase,
   Mail,
-  Lock,
   ArrowRight,
   ArrowLeft,
   CheckCircle,
@@ -17,6 +16,8 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
+import { getPasswordErrors } from '@/lib/passwordPolicy';
+import { PasswordInput, PasswordRequirements } from '../PasswordField';
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
@@ -50,6 +51,7 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [backendError, setBackendError] = useState<string | null>(null);
+  const [submitAttempted, setSubmitAttempted] = useState(false);
 
   // --- Funções Auxiliares ---
 
@@ -71,10 +73,15 @@ export function Register() {
       newErrors.email = 'E-mail em formato inválido';
     }
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
-    else if (formData.password.length < 6) {
-      newErrors.password = 'A senha deve ter no mínimo 6 caracteres';
+    else {
+      const passwordErrors = getPasswordErrors(formData.password, {
+        name: formData.name,
+        email: formData.email,
+      });
+      if (passwordErrors.length > 0) newErrors.password = passwordErrors[0];
     }
 
+    setSubmitAttempted(true);
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -337,20 +344,35 @@ export function Register() {
 
                 {/* Senha */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
-                    Código Criptografado
+                  <label
+                    htmlFor="register-password"
+                    className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold"
+                  >
+                    Senha de segurança
                   </label>
-                  <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
-                    <input
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Exigência mínima de 6 caracteres"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
-                    />
-                  </div>
-                  {errors.password && <p className="text-xs text-red-500 mt-2 font-medium">{errors.password}</p>}
+                  <PasswordInput
+                    id="register-password"
+                    value={formData.password}
+                    onChange={(e) => handleInputChange('password', e.target.value)}
+                    placeholder="Crie uma senha forte"
+                    autoComplete="new-password"
+                    maxLength={128}
+                    aria-invalid={Boolean(errors.password)}
+                    aria-describedby="register-password-rules register-password-error"
+                    iconClassName="dark:text-zinc-600"
+                    className={`w-full pl-10 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
+                  />
+                  {errors.password && (
+                    <p id="register-password-error" role="alert" className="text-xs text-red-500 mt-2 font-medium">
+                      {errors.password}
+                    </p>
+                  )}
+                  <PasswordRequirements
+                    id="register-password-rules"
+                    password={formData.password}
+                    context={{ name: formData.name, email: formData.email }}
+                    showErrors={submitAttempted}
+                  />
                 </div>
               </div>
 
