@@ -3,10 +3,22 @@ import { Outlet } from 'react-router';
 import { Bell, Menu, Moon, Sun } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 import { AIChat } from './AIChat';
+import { BrandLogo } from './brand/Brand';
 import { useTheme } from '../context/ThemeContext';
+import { useAuth } from '../context/AuthContext';
+import { StudentShell } from './student/StudentShell';
+import { ProShell } from './pro/ProShell';
 import { toast } from 'sonner';
 
 export function Layout() {
+  const { user } = useAuth();
+  // Aluno e profissionais usam o shell da marca; o layout antigo fica só como fallback (ex.: master).
+  if (user?.role === 'student') return <StudentShell />;
+  if (user?.role === 'personal' || user?.role === 'nutritionist') return <ProShell />;
+  return <ProfessionalLayout />;
+}
+
+function ProfessionalLayout() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const { theme, toggleTheme } = useTheme();
   const isDark = theme === 'dark';
@@ -25,12 +37,7 @@ export function Layout() {
             <Menu className="w-5 h-5" />
           </button>
 
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#000326] dark:bg-white">
-              <span className="text-white text-xs font-bold dark:text-[#000326]">C</span>
-            </div>
-            <span className="text-base font-bold tracking-tight text-[#000326] dark:text-white">CoachPass</span>
-          </div>
+          <BrandLogo size={22} />
 
           <div className="flex items-center gap-2">
             <button

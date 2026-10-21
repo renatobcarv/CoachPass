@@ -31,7 +31,7 @@ import { PanelSelector } from './components/pages/PanelSelector';
 import { StudentOnboarding } from './components/pages/StudentOnboarding';
 import { ProfessionalOnboarding } from './components/pages/ProfessionalOnboarding';
 import { Plans } from './components/pages/Plans';
-import { PrivacyPolicy } from './components/pages/PrivacyPolicy';
+import { PrivacyPolicy, TermsOfUse } from './components/pages/PrivacyPolicy';
 
 export const router = createBrowserRouter([
   { path: '/', Component: Home },
@@ -39,7 +39,7 @@ export const router = createBrowserRouter([
   { path: '/cadastro', Component: Register },
   { path: '/planos', Component: Plans },
   { path: '/privacidade', Component: PrivacyPolicy },
-  { path: '/termos', Component: PrivacyPolicy },
+  { path: '/termos', Component: TermsOfUse },
   {
     path: '/selecionar-painel',
     element: <ProtectedRoute allowedRoles={['master']} />,
@@ -101,7 +101,8 @@ export const router = createBrowserRouter([
           { path: 'avaliacao/:studentId', Component: PersonalAvaliacao },
           { path: 'agenda', Component: PersonalAgenda },
           { path: 'financeiro', element: <Navigate to="/personal" replace /> },
-          { path: 'perfil', Component: Profile },
+          // Perfil do personal agora faz parte do painel principal
+          { path: 'perfil', element: <Navigate to="/personal" replace /> },
           { path: 'configuracoes', Component: Settings },
         ],
       },

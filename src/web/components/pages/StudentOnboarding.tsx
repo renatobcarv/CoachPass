@@ -1,14 +1,21 @@
-import React, { useEffect, useMemo, useState } from 'react'
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router'
-import { motion } from 'motion/react'
+import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
   ArrowLeft,
-  ArrowRight,
-  CheckCircle,
-  Heart,
-  Ruler,
-  Target,
-  Weight,
+  Building2,
+  Check,
+  CornerDownLeft,
+  Dumbbell,
+  Flame,
+  Home as HomeIcon,
+  Pencil,
+  PersonStanding,
+  Sprout,
+  Trees,
+  TrendingUp,
+  Trophy,
+  Warehouse,
 } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
@@ -21,6 +28,7 @@ import {
   saveStudentProfile,
 } from '../../lib/studentApi'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
+import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
 
 type FormState = {
   displayName: string
@@ -42,21 +50,202 @@ type FormState = {
   medications: string
 }
 
-const equipmentOptions: { value: EquipmentAccess; label: string }[] = [
-  { value: 'full_gym', label: 'Academia completa' },
-  { value: 'basic_gym', label: 'Academia básica' },
-  { value: 'home_weights', label: 'Halteres / elásticos em casa' },
-  { value: 'bodyweight', label: 'Apenas peso corporal' },
-  { value: 'outdoor', label: 'Ar livre' },
+type IconType = React.ComponentType<{ className?: string; style?: React.CSSProperties }>
+
+const sexOptions: { value: StudentSex; label: string }[] = [
+  { value: 'male', label: 'Masculino' },
+  { value: 'female', label: 'Feminino' },
+  { value: 'other', label: 'Outro' },
+  { value: 'undisclosed', label: 'Prefiro não informar' },
 ]
 
-const inputCls =
-  'w-full px-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border dark:border-zinc-800 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] font-light text-sm'
+const goalOptions: { value: StudentGoal; label: string; desc: string; icon: IconType; color: string }[] = [
+  {
+    value: 'weight_loss',
+    label: 'Emagrecimento',
+    desc: 'Reduzir gordura com treino e alimentação que cabem na rotina.',
+    icon: Flame,
+    color: 'var(--amber)',
+  },
+  {
+    value: 'hypertrophy',
+    label: 'Hipertrofia',
+    desc: 'Ganhar massa muscular com progressão de carga consistente.',
+    icon: Dumbbell,
+    color: 'var(--blue-2)',
+  },
+]
+
+const experienceOptions: { value: ExperienceLevel; label: string; desc: string; icon: IconType }[] = [
+  { value: 'beginner', label: 'Iniciante', desc: 'Comecei agora ou voltei depois de muito tempo.', icon: Sprout },
+  { value: 'intermediate', label: 'Intermediário', desc: 'Treino com frequência há alguns meses.', icon: TrendingUp },
+  { value: 'advanced', label: 'Avançado', desc: 'Treino há anos e conheço bem os exercícios.', icon: Trophy },
+]
+
+const equipmentOptions: { value: EquipmentAccess; label: string; icon: IconType }[] = [
+  { value: 'full_gym', label: 'Academia completa', icon: Building2 },
+  { value: 'basic_gym', label: 'Academia básica', icon: Warehouse },
+  { value: 'home_weights', label: 'Halteres / elásticos em casa', icon: HomeIcon },
+  { value: 'bodyweight', label: 'Apenas peso corporal', icon: PersonStanding },
+  { value: 'outdoor', label: 'Ar livre', icon: Trees },
+]
+
+const minutesOptions = ['30', '45', '60', '75', '90', '120']
+
+type StepId =
+  | 'name'
+  | 'phone'
+  | 'birth'
+  | 'sex'
+  | 'body'
+  | 'goal'
+  | 'experience'
+  | 'days'
+  | 'minutes'
+  | 'equipment'
+  | 'bodyfat'
+  | 'food'
+  | 'health'
+  | 'review'
+
+type StepDef = { id: StepId; section: string; title: string; hint?: string; optional?: boolean }
+
+const STEPS: StepDef[] = [
+  { id: 'name', section: 'Sobre você', title: 'Como podemos te chamar?' },
+  { id: 'phone', section: 'Sobre você', title: 'Qual é o seu WhatsApp?', hint: 'Seu profissional usa para combinar treinos e consultas.' },
+  { id: 'birth', section: 'Sobre você', title: 'Quando você nasceu?' },
+  { id: 'sex', section: 'Sobre você', title: 'Qual é o seu sexo?', hint: 'Ajuda a calcular gasto calórico e referências de medidas.' },
+  { id: 'body', section: 'Seu corpo', title: 'Qual sua altura e seu peso hoje?', hint: 'Não precisa ser exato. Você atualiza a cada semana.' },
+  { id: 'goal', section: 'Objetivo', title: 'Qual é o seu objetivo principal?' },
+  { id: 'experience', section: 'Treino', title: 'Como está sua experiência com treino?', optional: true },
+  { id: 'days', section: 'Treino', title: 'Quantos dias por semana você pode treinar?', optional: true },
+  { id: 'minutes', section: 'Treino', title: 'Quanto tempo você tem por treino?', optional: true },
+  { id: 'equipment', section: 'Treino', title: 'Onde você vai treinar?', hint: 'Marque todos que se aplicam.', optional: true },
+  { id: 'bodyfat', section: 'Seu corpo', title: 'Sabe seu percentual de gordura?', hint: 'Se não souber, pode pular. O profissional mede na avaliação.', optional: true },
+  { id: 'food', section: 'Alimentação', title: 'Alguma alergia ou restrição alimentar?', hint: 'O nutricionista vê isso antes de montar seu plano.', optional: true },
+  { id: 'health', section: 'Saúde', title: 'Algo sobre sua saúde que devemos saber?', hint: 'Fica visível só para você e os profissionais vinculados.', optional: true },
+  { id: 'review', section: 'Revisão', title: 'Tudo certo por aqui?' },
+]
+
+function isTextTarget(el: EventTarget | null) {
+  return el instanceof HTMLTextAreaElement
+}
+
+/* ---------- Peças do quiz ---------- */
+
+function OptionCard({
+  index,
+  selected,
+  onClick,
+  icon: Icon,
+  color = 'var(--blue-2)',
+  label,
+  desc,
+  multi,
+}: {
+  index: number
+  selected: boolean
+  onClick: () => void
+  icon?: IconType
+  color?: string
+  label: string
+  desc?: string
+  multi?: boolean
+}) {
+  return (
+    <motion.button
+      type="button"
+      onClick={onClick}
+      whileTap={{ scale: 0.98 }}
+      aria-pressed={selected}
+      className={`group relative w-full text-left rounded-2xl border px-5 py-4 flex items-center gap-4 transition-[background,border-color,box-shadow] duration-300 ${
+        selected
+          ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.12)]'
+          : 'border-[var(--line-2)] bg-white/[0.025] hover:bg-white/[0.06] hover:border-[rgba(232,236,255,0.28)]'
+      }`}
+    >
+      <span
+        className={`cp-mono w-7 h-7 shrink-0 rounded-lg grid place-items-center text-[12px] border transition-colors ${
+          selected ? 'cp-selected border-transparent' : 'border-[var(--line-2)] text-[var(--muted)]'
+        }`}
+      >
+        {selected && multi ? <Check className="w-3.5 h-3.5" strokeWidth={3} /> : index + 1}
+      </span>
+      {Icon && (
+        <span
+          className="w-11 h-11 shrink-0 rounded-xl grid place-items-center"
+          style={{ background: `color-mix(in srgb, ${color} 15%, transparent)` }}
+        >
+          <Icon className="w-5 h-5" style={{ color }} />
+        </span>
+      )}
+      <span className="flex-1 min-w-0">
+        <span className="cp-display block text-[18px] font-semibold leading-tight">{label}</span>
+        {desc && <span className="block mt-1 text-[14px] leading-snug text-[var(--muted)]">{desc}</span>}
+      </span>
+      {selected && !multi && (
+        <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }} className="text-[var(--blue-2)]">
+          <Check className="w-5 h-5" strokeWidth={2.5} />
+        </motion.span>
+      )}
+    </motion.button>
+  )
+}
+
+function Chip({ selected, onClick, children }: { selected: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <motion.button
+      type="button"
+      whileTap={{ scale: 0.95 }}
+      onClick={onClick}
+      aria-pressed={selected}
+      className={`cp-display h-16 min-w-16 px-5 rounded-2xl border text-[22px] font-semibold transition-[background,border-color,color] duration-300 ${
+        selected
+          ? 'cp-selected border-transparent'
+          : 'border-[var(--line-2)] bg-white/[0.025] text-[var(--cream)] hover:bg-white/[0.06]'
+      }`}
+    >
+      {children}
+    </motion.button>
+  )
+}
+
+function FieldCaption({ children }: { children: React.ReactNode }) {
+  return <p className="cp-mono mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">{children}</p>
+}
+
+function ReviewRow({ label, value, onEdit }: { label: string; value: string; onEdit?: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onEdit}
+      disabled={!onEdit}
+      className="group w-full flex items-center justify-between gap-4 py-3.5 border-b border-[var(--line)] last:border-b-0 text-left disabled:cursor-default"
+    >
+      <span className="text-[14px] text-[var(--muted)] shrink-0">{label}</span>
+      <span className="flex items-center gap-3 min-w-0">
+        <span className={`truncate text-[15px] ${value === '—' ? 'text-[var(--dim)]' : 'text-white font-medium'}`}>{value}</span>
+        {onEdit && (
+          <Pencil className="w-3.5 h-3.5 shrink-0 text-[var(--dim)] opacity-0 group-hover:opacity-100 transition-opacity" />
+        )}
+      </span>
+    </button>
+  )
+}
+
+function formatDate(iso: string) {
+  if (!iso) return '—'
+  const [y, m, d] = iso.split('-')
+  return `${d}/${m}/${y}`
+}
+
+/* ---------- Página ---------- */
 
 export function StudentOnboarding() {
   const navigate = useNavigate()
   const { user } = useAuth()
-  const [step, setStep] = useState(1)
+  const [step, setStep] = useState(0)
+  const [direction, setDirection] = useState(1)
   const [loading, setLoading] = useState(false)
   const [bootstrapping, setBootstrapping] = useState(true)
   const [form, setForm] = useState<FormState>({
@@ -78,6 +267,7 @@ export function StudentOnboarding() {
     injuries: '',
     medications: '',
   })
+  const advanceTimer = useRef<number | undefined>(undefined)
 
   useEffect(() => {
     let cancelled = false
@@ -128,6 +318,8 @@ export function StudentOnboarding() {
     }
   }, [user?.accessToken, user?.id, navigate])
 
+  useEffect(() => () => window.clearTimeout(advanceTimer.current), [])
+
   const setField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }))
   }
@@ -153,6 +345,58 @@ export function StudentOnboarding() {
     )
   }, [form])
 
+  const current = STEPS[step]
+
+  const stepValid = useCallback(
+    (id: StepId) => {
+      switch (id) {
+        case 'name':
+          return Boolean(form.displayName.trim())
+        case 'phone':
+          return Boolean(form.phone.trim())
+        case 'birth':
+          return Boolean(form.birthDate)
+        case 'sex':
+          return Boolean(form.sex)
+        case 'body':
+          return Boolean(form.heightCm && form.weightKg)
+        case 'goal':
+          return Boolean(form.goal)
+        case 'review':
+          return step1Valid
+        default:
+          return true
+      }
+    },
+    [form, step1Valid],
+  )
+
+  const goTo = useCallback(
+    (next: number) => {
+      window.clearTimeout(advanceTimer.current)
+      setDirection(next > step ? 1 : -1)
+      setStep(Math.max(0, Math.min(STEPS.length - 1, next)))
+    },
+    [step],
+  )
+
+  const next = useCallback(() => {
+    if (!stepValid(current.id)) return
+    goTo(step + 1)
+  }, [current.id, goTo, step, stepValid])
+
+  const back = () => goTo(step - 1)
+
+  /** Escolha única: marca e avança sozinho, no ritmo de quiz. */
+  const pickAndAdvance = (apply: () => void) => {
+    apply()
+    window.clearTimeout(advanceTimer.current)
+    advanceTimer.current = window.setTimeout(() => {
+      setDirection(1)
+      setStep((s) => Math.min(STEPS.length - 1, s + 1))
+    }, 380)
+  }
+
   const handleComplete = async () => {
     if (!user?.accessToken) {
       toast.error('Sessão expirada. Entre novamente.')
@@ -161,7 +405,8 @@ export function StudentOnboarding() {
     }
     if (!step1Valid || !form.sex || !form.goal) {
       toast.error('Preencha os campos obrigatórios.')
-      setStep(1)
+      const firstInvalid = STEPS.findIndex((s) => !stepValid(s.id))
+      goTo(firstInvalid === -1 ? 0 : firstInvalid)
       return
     }
 
@@ -208,314 +453,503 @@ export function StudentOnboarding() {
     }
   }
 
+  // Teclado: Enter avança; números escolhem a opção nas perguntas de escolha.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (bootstrapping || loading) return
+      if (e.key === 'Enter' && !e.shiftKey && !isTextTarget(e.target)) {
+        e.preventDefault()
+        if (current.id === 'review') void handleComplete()
+        else next()
+        return
+      }
+      const typing = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement
+      if (typing) return
+      const n = Number(e.key)
+      if (!Number.isInteger(n) || n < 1) return
+      if (current.id === 'sex' && sexOptions[n - 1]) pickAndAdvance(() => setField('sex', sexOptions[n - 1].value))
+      if (current.id === 'goal' && goalOptions[n - 1]) pickAndAdvance(() => setField('goal', goalOptions[n - 1].value))
+      if (current.id === 'experience' && experienceOptions[n - 1])
+        pickAndAdvance(() => setField('experienceLevel', experienceOptions[n - 1].value))
+      if (current.id === 'days' && n <= 7) pickAndAdvance(() => setField('trainingDaysPerWeek', String(n)))
+      if (current.id === 'equipment' && equipmentOptions[n - 1]) toggleEquipment(equipmentOptions[n - 1].value)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  })
+
+  const firstName = form.displayName.trim().split(' ')[0]
+  const bmi = useMemo(() => {
+    const h = Number(form.heightCm) / 100
+    const w = Number(form.weightKg)
+    if (!h || !w || h < 1 || h > 2.5) return null
+    return w / (h * h)
+  }, [form.heightCm, form.weightKg])
+
   if (bootstrapping) {
     return (
-      <div className="min-h-screen flex items-center justify-center dark:bg-[#000326] bg-[#f3f4f9]">
-        <p className="text-sm dark:text-[#C5C5CE] text-[#6a6a7a]">Carregando…</p>
+      <div className="cp-brand min-h-screen grid place-items-center">
+        <div className="flex flex-col items-center gap-5">
+          <BrandLogo size={30} />
+          <div className="w-40 h-[3px] rounded-full bg-[var(--line-2)] overflow-hidden">
+            <motion.div
+              className="h-full w-1/3 cp-brand-bar"
+              animate={{ x: ['-100%', '300%'] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+            />
+          </div>
+        </div>
       </div>
     )
   }
 
+  const valid = stepValid(current.id)
+  const sectionSteps = STEPS.filter((s) => s.section === current.section)
+  const sectionPos = sectionSteps.findIndex((s) => s.id === current.id) + 1
+  const isReview = current.id === 'review'
+
+  const renderStep = () => {
+    switch (current.id) {
+      case 'name':
+        return (
+          <input
+            autoFocus
+            className="cp-field cp-field-lg"
+            value={form.displayName}
+            onChange={(e) => setField('displayName', e.target.value)}
+            placeholder="Seu nome"
+            autoComplete="name"
+          />
+        )
+      case 'phone':
+        return (
+          <input
+            autoFocus
+            type="tel"
+            inputMode="tel"
+            className="cp-field cp-field-lg"
+            value={form.phone}
+            onChange={(e) => setField('phone', e.target.value)}
+            placeholder="(11) 99999-9999"
+            autoComplete="tel"
+          />
+        )
+      case 'birth':
+        return (
+          <input
+            autoFocus
+            type="date"
+            className="cp-field cp-field-lg"
+            value={form.birthDate}
+            onChange={(e) => setField('birthDate', e.target.value)}
+            max={new Date().toISOString().slice(0, 10)}
+          />
+        )
+      case 'sex':
+        return (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {sexOptions.map((o, i) => (
+              <OptionCard
+                key={o.value}
+                index={i}
+                label={o.label}
+                selected={form.sex === o.value}
+                onClick={() => pickAndAdvance(() => setField('sex', o.value))}
+              />
+            ))}
+          </div>
+        )
+      case 'body':
+        return (
+          <div>
+            <div className="grid grid-cols-2 gap-4">
+              <label className="block">
+                <FieldCaption>Altura</FieldCaption>
+                <div className="relative">
+                  <input
+                    autoFocus
+                    type="number"
+                    inputMode="numeric"
+                    className="cp-field cp-field-lg pr-14"
+                    value={form.heightCm}
+                    onChange={(e) => setField('heightCm', e.target.value)}
+                    placeholder="175"
+                  />
+                  <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">cm</span>
+                </div>
+              </label>
+              <label className="block">
+                <FieldCaption>Peso</FieldCaption>
+                <div className="relative">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    step="0.1"
+                    className="cp-field cp-field-lg pr-14"
+                    value={form.weightKg}
+                    onChange={(e) => setField('weightKg', e.target.value)}
+                    placeholder="75.5"
+                  />
+                  <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">kg</span>
+                </div>
+              </label>
+            </div>
+            <AnimatePresence>
+              {bmi && (
+                <motion.p
+                  initial={{ opacity: 0, y: 6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mt-5 cp-mono text-[13px] text-[var(--muted)]"
+                >
+                  IMC estimado: <span className="text-white">{bmi.toFixed(1).replace('.', ',')}</span> · é só uma
+                  referência, a avaliação física é com o profissional.
+                </motion.p>
+              )}
+            </AnimatePresence>
+          </div>
+        )
+      case 'goal':
+        return (
+          <div className="grid gap-3">
+            {goalOptions.map((o, i) => (
+              <OptionCard
+                key={o.value}
+                index={i}
+                icon={o.icon}
+                color={o.color}
+                label={o.label}
+                desc={o.desc}
+                selected={form.goal === o.value}
+                onClick={() => pickAndAdvance(() => setField('goal', o.value))}
+              />
+            ))}
+          </div>
+        )
+      case 'experience':
+        return (
+          <div className="grid gap-3">
+            {experienceOptions.map((o, i) => (
+              <OptionCard
+                key={o.value}
+                index={i}
+                icon={o.icon}
+                label={o.label}
+                desc={o.desc}
+                selected={form.experienceLevel === o.value}
+                onClick={() => pickAndAdvance(() => setField('experienceLevel', o.value))}
+              />
+            ))}
+          </div>
+        )
+      case 'days':
+        return (
+          <div className="flex flex-wrap gap-3">
+            {['1', '2', '3', '4', '5', '6', '7'].map((d) => (
+              <Chip
+                key={d}
+                selected={form.trainingDaysPerWeek === d}
+                onClick={() => pickAndAdvance(() => setField('trainingDaysPerWeek', d))}
+              >
+                {d}
+              </Chip>
+            ))}
+          </div>
+        )
+      case 'minutes':
+        return (
+          <div>
+            <div className="flex flex-wrap gap-3">
+              {minutesOptions.map((m) => (
+                <Chip
+                  key={m}
+                  selected={form.sessionMinutes === m}
+                  onClick={() => pickAndAdvance(() => setField('sessionMinutes', m))}
+                >
+                  {m}
+                  <span className="text-[13px] font-normal opacity-70 ml-1">min</span>
+                </Chip>
+              ))}
+            </div>
+            <label className="mt-6 flex items-center gap-3 text-[14px] text-[var(--muted)]">
+              Outro valor:
+              <input
+                type="number"
+                min={15}
+                max={180}
+                className="cp-field h-11 w-28 pl-4"
+                value={minutesOptions.includes(form.sessionMinutes) ? '' : form.sessionMinutes}
+                onChange={(e) => setField('sessionMinutes', e.target.value)}
+                placeholder="min"
+              />
+            </label>
+          </div>
+        )
+      case 'equipment':
+        return (
+          <div className="grid sm:grid-cols-2 gap-3">
+            {equipmentOptions.map((o, i) => (
+              <OptionCard
+                key={o.value}
+                index={i}
+                multi
+                icon={o.icon}
+                label={o.label}
+                selected={form.equipmentAccess.includes(o.value)}
+                onClick={() => toggleEquipment(o.value)}
+              />
+            ))}
+          </div>
+        )
+      case 'bodyfat':
+        return (
+          <div className="relative max-w-[260px]">
+            <input
+              autoFocus
+              type="number"
+              inputMode="decimal"
+              step="0.1"
+              className="cp-field cp-field-lg pr-12"
+              value={form.bodyFatPercent}
+              onChange={(e) => setField('bodyFatPercent', e.target.value)}
+              placeholder="18"
+            />
+            <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">%</span>
+          </div>
+        )
+      case 'food':
+        return (
+          <div className="space-y-5">
+            <label className="block">
+              <FieldCaption>Alergias alimentares</FieldCaption>
+              <textarea
+                autoFocus
+                className="cp-field"
+                value={form.foodAllergies}
+                onChange={(e) => setField('foodAllergies', e.target.value)}
+                placeholder="Ex.: amendoim, frutos do mar"
+              />
+            </label>
+            <label className="block">
+              <FieldCaption>Restrições alimentares</FieldCaption>
+              <textarea
+                className="cp-field"
+                value={form.dietaryRestrictions}
+                onChange={(e) => setField('dietaryRestrictions', e.target.value)}
+                placeholder="Ex.: vegetariano, sem lactose, sem glúten"
+              />
+            </label>
+          </div>
+        )
+      case 'health':
+        return (
+          <div className="space-y-5">
+            {(
+              [
+                ['medicalConditions', 'Deficiências, limitações ou condições médicas', 'Ex.: hipertensão, asma, diabetes'],
+                ['injuries', 'Lesões atuais ou anteriores', 'Ex.: dor no joelho direito, cirurgia no ombro'],
+                ['medications', 'Medicamentos ou acompanhamento médico', 'Ex.: uso contínuo de ...'],
+              ] as const
+            ).map(([key, label, placeholder], i) => (
+              <label key={key} className="block">
+                <FieldCaption>{label}</FieldCaption>
+                <textarea
+                  autoFocus={i === 0}
+                  className="cp-field min-h-[76px]"
+                  value={form[key]}
+                  onChange={(e) => setField(key, e.target.value)}
+                  placeholder={placeholder}
+                />
+              </label>
+            ))}
+          </div>
+        )
+      case 'review': {
+        const at = (id: StepId) => () => goTo(STEPS.findIndex((s) => s.id === id))
+        const join = (...v: string[]) => v.filter(Boolean).join(' · ') || '—'
+        return (
+          <div className="rounded-3xl border border-[var(--line-2)] bg-white/[0.025] px-5 sm:px-7 py-3">
+            <ReviewRow label="Nome" value={form.displayName || '—'} onEdit={at('name')} />
+            <ReviewRow label="E-mail" value={user?.email || '—'} />
+            <ReviewRow label="WhatsApp" value={form.phone || '—'} onEdit={at('phone')} />
+            <ReviewRow label="Nascimento" value={formatDate(form.birthDate)} onEdit={at('birth')} />
+            <ReviewRow label="Sexo" value={sexOptions.find((o) => o.value === form.sex)?.label || '—'} onEdit={at('sex')} />
+            <ReviewRow
+              label="Altura e peso"
+              value={form.heightCm && form.weightKg ? `${form.heightCm} cm · ${form.weightKg} kg` : '—'}
+              onEdit={at('body')}
+            />
+            <ReviewRow label="Objetivo" value={goalOptions.find((o) => o.value === form.goal)?.label || '—'} onEdit={at('goal')} />
+            <ReviewRow
+              label="Treino"
+              value={join(
+                experienceOptions.find((o) => o.value === form.experienceLevel)?.label || '',
+                form.trainingDaysPerWeek ? `${form.trainingDaysPerWeek}x/semana` : '',
+                form.sessionMinutes ? `${form.sessionMinutes} min` : '',
+              )}
+              onEdit={at('experience')}
+            />
+            <ReviewRow
+              label="Local"
+              value={join(...form.equipmentAccess.map((v) => equipmentOptions.find((o) => o.value === v)?.label || ''))}
+              onEdit={at('equipment')}
+            />
+            <ReviewRow
+              label="Alimentação"
+              value={join(form.foodAllergies.trim(), form.dietaryRestrictions.trim())}
+              onEdit={at('food')}
+            />
+            <ReviewRow
+              label="Saúde"
+              value={join(form.medicalConditions.trim(), form.injuries.trim(), form.medications.trim())}
+              onEdit={at('health')}
+            />
+          </div>
+        )
+      }
+    }
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 dark:bg-[#000326] bg-[#f3f4f9]">
-      <div className="w-full max-w-xl">
-        <div className="text-center mb-8">
-          <h1 className="dark:text-white text-[#000326] mb-2 tracking-tight text-2xl font-semibold">
-            Complete seu perfil
-          </h1>
-          <p className="text-sm dark:text-[#C5C5CE] text-[#6a6a7a] font-light max-w-md mx-auto">
-            Esses dados ficam no seu perfil e ajudam a personalizar treinos e orientações.
-          </p>
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs dark:text-[#C5C5CE] text-[#8e8e9a]">
-            <span className={step === 1 ? 'font-semibold text-[#000326] dark:text-white' : ''}>
-              1. Obrigatórios
-            </span>
-            <span>·</span>
-            <span className={step === 2 ? 'font-semibold text-[#000326] dark:text-white' : ''}>
-              2. Complementares
+    <MotionConfig reducedMotion="user">
+      <div className="cp-brand relative min-h-screen flex flex-col overflow-hidden">
+        <Grain />
+        <Backdrop variant="auth" />
+
+        {/* Topo: logo, progresso, contador */}
+        <header className="relative z-10 px-4 sm:px-8 pt-5">
+          <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-4">
+            <BrandLogo size={24} />
+            <span className="cp-mono text-[12px] text-[var(--muted)]">
+              {String(step + 1).padStart(2, '0')} <span className="text-[var(--dim)]">/ {String(STEPS.length).padStart(2, '0')}</span>
             </span>
           </div>
-        </div>
-
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="dark:bg-[#000137] bg-white rounded-2xl p-6 sm:p-8 border dark:border-white/10 border-[#000326]/10 shadow-xl space-y-5"
-        >
-          {step === 1 && (
-            <>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Nome completo *
-                </label>
-                <input
-                  className={inputCls}
-                  value={form.displayName}
-                  onChange={(e) => setField('displayName', e.target.value)}
-                  placeholder="Seu nome"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  E-mail
-                </label>
-                <input className={`${inputCls} opacity-70`} value={user?.email || ''} disabled />
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Telefone *
-                </label>
-                <input
-                  className={inputCls}
-                  value={form.phone}
-                  onChange={(e) => setField('phone', e.target.value)}
-                  placeholder="(11) 99999-9999"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Data de nascimento *
-                </label>
-                <div className="relative">
-                  <Heart className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
-                  <input
-                    type="date"
-                    className={`${inputCls} pl-10`}
-                    value={form.birthDate}
-                    onChange={(e) => setField('birthDate', e.target.value)}
-                    required
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    Altura (cm) *
-                  </label>
-                  <div className="relative">
-                    <Ruler className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
-                    <input
-                      type="number"
-                      className={`${inputCls} pl-10`}
-                      value={form.heightCm}
-                      onChange={(e) => setField('heightCm', e.target.value)}
-                      placeholder="175"
-                      required
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    Peso (kg) *
-                  </label>
-                  <div className="relative">
-                    <Weight className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
-                    <input
-                      type="number"
-                      step="0.1"
-                      className={`${inputCls} pl-10`}
-                      value={form.weightKg}
-                      onChange={(e) => setField('weightKg', e.target.value)}
-                      placeholder="75.5"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Sexo *
-                </label>
-                <select
-                  className={inputCls}
-                  value={form.sex}
-                  onChange={(e) => setField('sex', e.target.value as StudentSex | '')}
-                  required
-                >
-                  <option value="">Selecione</option>
-                  <option value="male">Masculino</option>
-                  <option value="female">Feminino</option>
-                  <option value="other">Outro</option>
-                  <option value="undisclosed">Prefiro não informar</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Objetivo principal *
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  {(
-                    [
-                      { value: 'weight_loss', label: 'Emagrecimento' },
-                      { value: 'hypertrophy', label: 'Hipertrofia' },
-                    ] as const
-                  ).map((option) => (
-                    <button
-                      key={option.value}
-                      type="button"
-                      onClick={() => setField('goal', option.value)}
-                      className={`rounded-xl border px-4 py-3 text-sm font-medium transition ${
-                        form.goal === option.value
-                          ? 'border-[#000326] bg-[#000326] text-white dark:border-white dark:bg-white dark:text-[#000326]'
-                          : 'border-[#000326]/15 dark:border-white/10 text-[#000326] dark:text-white'
-                      }`}
-                    >
-                      <Target className="w-4 h-4 inline mr-2" />
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+          <div className="max-w-[1100px] mx-auto mt-5 flex gap-1">
+            {STEPS.map((s, i) => (
               <button
+                key={s.id}
                 type="button"
-                disabled={!step1Valid}
-                onClick={() => setStep(2)}
-                className="w-full py-3.5 rounded-lg bg-[#000326] text-white dark:bg-white dark:text-[#000326] font-medium disabled:opacity-50 flex items-center justify-center gap-2"
+                aria-label={`Ir para: ${s.title}`}
+                onClick={() => (i < step ? goTo(i) : undefined)}
+                className={`h-[3px] flex-1 rounded-full overflow-hidden bg-[var(--line-2)] ${i < step ? 'cursor-pointer' : 'cursor-default'}`}
               >
-                Continuar
-                <ArrowRight className="w-4 h-4" />
+                <motion.span
+                  className="block h-full cp-brand-bar"
+                  initial={false}
+                  animate={{ width: i < step ? '100%' : i === step ? '45%' : '0%' }}
+                  transition={{ duration: 0.5, ease: [0.2, 0.8, 0.2, 1] }}
+                />
               </button>
-            </>
-          )}
+            ))}
+          </div>
+        </header>
 
-          {step === 2 && (
-            <>
-              <p className="text-sm dark:text-[#C5C5CE] text-[#6a6a7a]">
-                Campos opcionais — preencha o que souber. Você pode editar depois no perfil.
-              </p>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    % Gordura
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    className={inputCls}
-                    value={form.bodyFatPercent}
-                    onChange={(e) => setField('bodyFatPercent', e.target.value)}
-                    placeholder="Opcional"
-                  />
+        {/* Pergunta */}
+        <main className="relative z-10 flex-1 flex items-center px-4 sm:px-8 py-10">
+          <div className="w-full max-w-[680px] mx-auto">
+            <AnimatePresence mode="wait" custom={direction}>
+              <motion.div
+                key={current.id}
+                custom={direction}
+                variants={{
+                  enter: (d: number) => ({ opacity: 0, y: d > 0 ? 40 : -40 }),
+                  center: { opacity: 1, y: 0 },
+                  exit: (d: number) => ({ opacity: 0, y: d > 0 ? -40 : 40 }),
+                }}
+                initial="enter"
+                animate="center"
+                exit="exit"
+                transition={{ duration: 0.45, ease: [0.2, 0.8, 0.2, 1] }}
+              >
+                <p className="cp-kicker flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--amber)]" />
+                  {current.section}
+                  {current.optional && <span className="text-[var(--dim)]">· opcional</span>}
+                </p>
+                <h1 className="cp-display mt-4 text-[clamp(30px,4.4vw,52px)] font-bold leading-[1.04]">
+                  {step === 0 ? (
+                    <>
+                      Bem-vindo ao CoachPass.{' '}
+                      <span className="cp-accent">{current.title}</span>
+                    </>
+                  ) : isReview && firstName ? (
+                    <>
+                      {firstName}, <span className="cp-accent">tudo certo por aqui?</span>
+                    </>
+                  ) : (
+                    current.title
+                  )}
+                </h1>
+                {(current.hint || isReview) && (
+                  <p className="mt-3 text-[16px] text-[var(--muted)]">
+                    {isReview ? 'Toque em qualquer linha para ajustar. Tudo pode ser editado depois no perfil.' : current.hint}
+                  </p>
+                )}
+
+                <div className="mt-9">{renderStep()}</div>
+
+                {/* Ações */}
+                <div className="mt-10 flex flex-wrap items-center gap-4">
+                  {isReview ? (
+                    <CTAButton type="button" onClick={handleComplete} disabled={loading || !step1Valid}>
+                      {loading ? 'Salvando…' : 'Concluir e ir ao painel'}
+                    </CTAButton>
+                  ) : (
+                    <CTAButton type="button" onClick={next} disabled={!valid}>
+                      {current.optional && !stepHasValue(current.id, form) ? 'Pular' : 'Continuar'}
+                    </CTAButton>
+                  )}
+                  {!isReview && (
+                    <span className="hidden sm:inline-flex items-center gap-1.5 cp-mono text-[12px] text-[var(--dim)]">
+                      ou pressione <kbd className="px-1.5 py-0.5 rounded-md border border-[var(--line-2)] text-[var(--muted)]">Enter</kbd>
+                      <CornerDownLeft className="w-3.5 h-3.5" />
+                    </span>
+                  )}
                 </div>
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    Experiência
-                  </label>
-                  <select
-                    className={inputCls}
-                    value={form.experienceLevel}
-                    onChange={(e) =>
-                      setField('experienceLevel', e.target.value as ExperienceLevel | '')
-                    }
-                  >
-                    <option value="">Opcional</option>
-                    <option value="beginner">Iniciante</option>
-                    <option value="intermediate">Intermediário</option>
-                    <option value="advanced">Avançado</option>
-                  </select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    Dias / semana
-                  </label>
-                  <input
-                    type="number"
-                    min={1}
-                    max={7}
-                    className={inputCls}
-                    value={form.trainingDaysPerWeek}
-                    onChange={(e) => setField('trainingDaysPerWeek', e.target.value)}
-                    placeholder="Ex: 4"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    Minutos / treino
-                  </label>
-                  <input
-                    type="number"
-                    min={15}
-                    max={180}
-                    className={inputCls}
-                    value={form.sessionMinutes}
-                    onChange={(e) => setField('sessionMinutes', e.target.value)}
-                    placeholder="Ex: 60"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                  Equipamentos / ambiente
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {equipmentOptions.map((option) => {
-                    const active = form.equipmentAccess.includes(option.value)
-                    return (
-                      <button
-                        key={option.value}
-                        type="button"
-                        onClick={() => toggleEquipment(option.value)}
-                        className={`px-3 py-1.5 rounded-full text-xs border transition ${
-                          active
-                            ? 'border-[#000326] bg-[#000326]/10 text-[#000326] dark:border-white dark:bg-white/10 dark:text-white'
-                            : 'border-[#000326]/15 dark:border-white/10 text-[#6a6a7a] dark:text-[#C5C5CE]'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    )
-                  })}
-                </div>
-              </div>
-              {(
-                [
-                  ['foodAllergies', 'Alergias alimentares'],
-                  ['dietaryRestrictions', 'Restrições alimentares'],
-                  ['medicalConditions', 'Deficiências, limitações ou condições médicas'],
-                  ['injuries', 'Lesões atuais ou anteriores'],
-                  ['medications', 'Medicamentos ou acompanhamento médico'],
-                ] as const
-              ).map(([key, label]) => (
-                <div key={key}>
-                  <label className="block text-xs dark:text-[#C5C5CE] text-[#6a6a7a] mb-2 uppercase tracking-wider font-semibold">
-                    {label}
-                  </label>
-                  <textarea
-                    className={`${inputCls} min-h-[72px] resize-y`}
-                    value={form[key]}
-                    onChange={(e) => setField(key, e.target.value)}
-                    placeholder="Opcional"
-                  />
-                </div>
-              ))}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="flex-1 py-3.5 rounded-lg border border-[#000326]/15 dark:border-white/10 text-[#000326] dark:text-white font-medium flex items-center justify-center gap-2"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Voltar
-                </button>
-                <button
-                  type="button"
-                  disabled={loading}
-                  onClick={handleComplete}
-                  className="flex-[1.4] py-3.5 rounded-lg bg-[#000326] text-white dark:bg-white dark:text-[#000326] font-medium disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? 'Salvando…' : 'Concluir e ir ao painel'}
-                  {!loading && <CheckCircle className="w-4 h-4" />}
-                </button>
-              </div>
-            </>
-          )}
-        </motion.div>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        </main>
+
+        {/* Rodapé: voltar + seções */}
+        <footer className="relative z-10 px-4 sm:px-8 pb-6">
+          <div className="max-w-[1100px] mx-auto flex items-center justify-between gap-4">
+            <button
+              type="button"
+              onClick={back}
+              disabled={step === 0}
+              className="inline-flex items-center gap-2 text-[14px] text-[var(--muted)] hover:text-white disabled:opacity-0 transition"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Voltar
+            </button>
+            <p className="hidden sm:block cp-mono text-[11.5px] text-[var(--dim)]">
+              {current.section} · pergunta {sectionPos} de {sectionSteps.length}
+            </p>
+          </div>
+        </footer>
       </div>
-    </div>
+    </MotionConfig>
   )
+}
+
+function stepHasValue(id: StepId, form: FormState) {
+  switch (id) {
+    case 'experience':
+      return Boolean(form.experienceLevel)
+    case 'days':
+      return Boolean(form.trainingDaysPerWeek)
+    case 'minutes':
+      return Boolean(form.sessionMinutes)
+    case 'equipment':
+      return form.equipmentAccess.length > 0
+    case 'bodyfat':
+      return Boolean(form.bodyFatPercent)
+    case 'food':
+      return Boolean(form.foodAllergies.trim() || form.dietaryRestrictions.trim())
+    case 'health':
+      return Boolean(form.medicalConditions.trim() || form.injuries.trim() || form.medications.trim())
+    default:
+      return true
+  }
 }

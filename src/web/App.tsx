@@ -11,11 +11,27 @@ export default function App() {
     <ThemeProvider>
       <AuthProvider>
         <RouterProvider router={router} />
-        <Toaster 
+        {/* Avisos com o visual da marca (estilos .cp-toast em brand.css) */}
+        <Toaster
           position="top-right"
-          richColors
           expand={false}
           closeButton
+          gap={10}
+          toastOptions={{
+            unstyled: true,
+            classNames: {
+              toast: 'cp-toast',
+              title: 'cp-toast-title',
+              description: 'cp-toast-desc',
+              icon: 'cp-toast-icon',
+              closeButton: 'cp-toast-close',
+              actionButton: 'cp-toast-action',
+              success: 'cp-toast-success',
+              error: 'cp-toast-error',
+              info: 'cp-toast-info',
+              warning: 'cp-toast-warning',
+            },
+          }}
         />
       </AuthProvider>
     </ThemeProvider>

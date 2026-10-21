@@ -104,8 +104,8 @@ export async function POST(request: Request) {
   const link = await payload.create({
     collection: 'professional-links',
     data: {
-      student: student.id,
-      professional: authUser.id,
+      student: student.id as number,
+      professional: authUser.id as number,
       professionalRole,
       status: 'pending',
     },

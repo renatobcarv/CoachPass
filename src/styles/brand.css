@@ -1,0 +1,857 @@
+/*
+ * Linguagem visual das telas públicas (landing, login, cadastro, planos).
+ * Tudo fica escopado em .cp-brand para não alterar os painéis internos.
+ */
+.cp-brand {
+  --ink: #05060b;
+  --ink-2: #0a0c16;
+  --ink-3: #10131f;
+  --ink-4: #181c2c;
+  --navy: #000326;
+  --navy-2: #0b1250;
+  --line: rgba(232, 236, 255, 0.08);
+  --line-2: rgba(232, 236, 255, 0.15);
+  --cream: #f4f6fb;
+  --muted: #9aa1b8;
+  --dim: #6b7290;
+
+  /* Escala da marca: mesma matiz ultramarina da logo (239°–247°), do navy ao índigo e clareada p/ fundo escuro */
+  --brand-900: #01022c;
+  --brand-800: #060349;
+  --brand-700: #0c0467;
+  --brand-600: #16059f;
+  --brand-500: #2a14e0;
+  --brand-400: #5546ff;
+  --brand-300: #8c82ff;
+  --brand-200: #c4bfff;
+  /* degradê oficial (logo) e versão clara para títulos em fundo escuro */
+  --brand-grad: linear-gradient(120deg, #01022c 0%, #0c0467 45%, #16059f 100%);
+  --brand-grad-light: linear-gradient(100deg, #e1deff 0%, #a59dff 38%, #6a5cff 72%, #3f27ff 100%);
+  --brand-grad-btn: linear-gradient(180deg, #3a24ff 0%, #2412d0 55%, #16059f 100%);
+
+  --blue: var(--brand-500);
+  --blue-2: var(--brand-300);
+  --violet: var(--brand-400);
+  --cyan: #38d6f5;
+  --amber: #ffb547;
+  --peach: #ff8a5c;
+  --teal: #2ee6c8;
+  --red: #ff5d6c;
+
+  --paper: #f4f5fa;
+  --paper-2: #ffffff;
+  --paper-ink: #000326;
+  --paper-muted: #5b6178;
+  --paper-line: rgba(0, 3, 38, 0.09);
+
+  --f-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --f-body: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  --f-serif: 'Instrument Serif', Georgia, serif;
+  --f-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+  color-scheme: dark;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--f-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  overflow-x: clip;
+}
+
+@layer components {
+  /*
+   * Logo oficial (símbolo + nome) aplicada como máscara, para poder pintar com o degradê
+   * certo em cada fundo. Usada nas telas públicas e no app (sidebar, header, chat).
+   */
+  .cp-logo-mark,
+  .cp-logo-word {
+    display: inline-block;
+    flex-shrink: 0;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    background: linear-gradient(135deg, #000326 0%, #0b0560 50%, #13088f 100%);
+  }
+
+  .cp-logo-mark {
+    aspect-ratio: 731 / 557;
+    -webkit-mask-image: url('/brand/coachpass-mark-mask.png');
+    mask-image: url('/brand/coachpass-mark-mask.png');
+  }
+
+  .cp-logo-word {
+    aspect-ratio: 901 / 145;
+    -webkit-mask-image: url('/brand/coachpass-wordmark-mask.png');
+    mask-image: url('/brand/coachpass-wordmark-mask.png');
+  }
+
+  /* Fundos escuros: mesmo degradê da marca, clareado para ter contraste */
+  .dark .cp-logo-mark,
+  .cp-brand .cp-logo-mark,
+  .cp-logo-on-dark .cp-logo-mark {
+    background: #f4f6fb;
+  }
+
+  .dark .cp-logo-word,
+  .cp-brand .cp-logo-word,
+  .cp-logo-on-dark .cp-logo-word {
+    background: #f4f6fb;
+  }
+
+  .cp-logo-white .cp-logo-mark,
+  .cp-logo-white .cp-logo-word {
+    background: #ffffff;
+  }
+
+  .cp-brand .cp-paper .cp-logo-mark,
+  .cp-brand .cp-paper .cp-logo-word {
+    background: linear-gradient(135deg, #000326 0%, #0b0560 50%, #13088f 100%);
+  }
+
+  .cp-brand ::selection {
+    background: var(--cream);
+    color: var(--ink);
+  }
+
+  .cp-brand :focus-visible {
+    outline: 2px solid var(--cream);
+    outline-offset: 3px;
+    border-radius: 10px;
+  }
+
+  .cp-display {
+    font-family: var(--f-display);
+    font-variation-settings: 'opsz' 96;
+    letter-spacing: -0.035em;
+  }
+
+  .cp-serif {
+    font-family: var(--f-serif);
+    font-style: italic;
+    font-weight: 400;
+    letter-spacing: -0.01em;
+  }
+
+  .cp-mono {
+    font-family: var(--f-mono);
+  }
+
+  /* Texto em degradê: frio (marca) e quente (complementar) */
+  /* Destaque de título: degradê da marca (índigo da logo) */
+  .cp-accent,
+  .cp-grad-cool {
+    --cp-grad: var(--brand-grad-light);
+    background: var(--cp-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .cp-paper .cp-accent,
+  .cp-paper .cp-grad-cool {
+    --cp-grad: linear-gradient(100deg, #000326 0%, #0c0467 45%, #2a14e0 100%);
+  }
+
+  /* background-clip:text não atravessa filhos com transform (palavras animadas): aplica em cada uma */
+  .cp-accent .cp-wi,
+  .cp-grad-cool .cp-wi {
+    background: var(--cp-grad);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    padding-right: 0.04em;
+  }
+
+  /* Faixa/fundo com o degradê oficial */
+  .cp-brand-surface {
+    background: var(--brand-grad);
+    color: #fff;
+  }
+
+  .cp-grad-warm {
+    color: var(--amber);
+  }
+
+  .cp-mark {
+    background: linear-gradient(transparent 62%, rgba(255, 181, 71, 0.38) 62%);
+    padding: 0 0.1em;
+  }
+
+  .cp-paper .cp-mark {
+    background: linear-gradient(transparent 62%, rgba(61, 107, 255, 0.22) 62%);
+  }
+
+  /* Palavras com máscara para o reveal */
+  .cp-w {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: top;
+    padding: 0.06em 0.02em 0.14em;
+    margin: -0.06em -0.02em -0.14em;
+  }
+
+  .cp-wi {
+    display: inline-block;
+    will-change: transform;
+  }
+
+  /* Fundos */
+  .cp-grain {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 90;
+    opacity: 0.05;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .cp-gridlines {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 64px 64px;
+    -webkit-mask-image: radial-gradient(ellipse 70% 60% at 60% 40%, #000 15%, transparent 72%);
+    mask-image: radial-gradient(ellipse 70% 60% at 60% 40%, #000 15%, transparent 72%);
+  }
+
+  .cp-paper .cp-gridlines {
+    background-image:
+      linear-gradient(var(--paper-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--paper-line) 1px, transparent 1px);
+  }
+
+  .cp-glow {
+    display: none;
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(30px);
+    pointer-events: none;
+  }
+
+  /* Seção clara alternada */
+  .cp-paper {
+    background: var(--paper);
+    color: var(--paper-ink);
+  }
+
+  /* Botão principal: pill com degradê, brilho e seta em círculo */
+  .cp-btn {
+    --h: 56px;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 14px;
+    height: var(--h);
+    padding: 0 8px 0 26px;
+    border-radius: 9999px;
+    background: var(--brand-grad-btn);
+    color: #fff;
+    font-weight: 650;
+    font-size: 16px;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.28),
+      inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 12px 28px -14px rgba(42, 20, 224, 0.9);
+    transition:
+      transform 0.35s var(--ease),
+      filter 0.25s,
+      opacity 0.2s;
+  }
+
+  .cp-btn .cp-arr {
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    border-radius: 9999px;
+    background: #fff;
+    color: var(--brand-600);
+    display: grid;
+    place-items: center;
+    transition: transform 0.45s var(--ease);
+  }
+
+  .cp-btn:hover {
+    filter: brightness(1.12);
+    transform: translateY(-1px);
+  }
+
+  .cp-btn:hover .cp-arr {
+    transform: translateX(3px);
+  }
+
+
+  .cp-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .cp-btn.cp-btn-lg {
+    --h: 64px;
+    font-size: 18px;
+    padding-left: 30px;
+  }
+
+  .cp-btn.cp-btn-lg .cp-arr {
+    width: 48px;
+    height: 48px;
+    flex-basis: 48px;
+  }
+
+  .cp-btn.cp-btn-block {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .cp-btn-ghost {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 44px;
+    padding: 0 20px;
+    border-radius: 9999px;
+    border: 1px solid var(--line-2);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--cream);
+    font-weight: 550;
+    font-size: 15px;
+    transition:
+      transform 0.3s var(--ease),
+      background 0.3s,
+      border-color 0.3s;
+  }
+
+  .cp-btn-ghost:hover {
+    transform: translateY(-1px);
+    background: rgba(255, 255, 255, 0.07);
+    border-color: rgba(232, 236, 255, 0.28);
+  }
+
+  .cp-paper .cp-btn-ghost {
+    border-color: var(--paper-line);
+    background: #fff;
+    color: var(--paper-ink);
+  }
+
+  .cp-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    height: 40px;
+    padding: 0 18px;
+    border-radius: 9999px;
+    background: var(--cream);
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 14px;
+    transition:
+      transform 0.3s var(--ease),
+      background 0.3s;
+  }
+
+  .cp-btn-sm:hover {
+    background: #fff;
+    transform: translateY(-1px);
+  }
+
+  /* Eyebrow / kicker */
+  .cp-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 7px 14px 7px 11px;
+    border: 1px solid var(--line-2);
+    border-radius: 9999px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.025);
+  }
+
+  .cp-paper .cp-eyebrow {
+    border-color: var(--paper-line);
+    color: var(--paper-muted);
+    background: #fff;
+  }
+
+  .cp-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: var(--amber);
+    box-shadow: 0 0 0 4px rgba(255, 181, 71, 0.18);
+    animation: cp-pulse 2s infinite;
+  }
+
+  .cp-kicker {
+    font-family: var(--f-mono);
+    font-size: 12px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .cp-paper .cp-kicker {
+    color: var(--paper-muted);
+  }
+
+  /* Cards */
+  .cp-card {
+    position: relative;
+    border-radius: 24px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.025);
+    transition:
+      transform 0.45s var(--ease),
+      border-color 0.35s,
+      background 0.35s;
+  }
+
+  .cp-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--line-2);
+  }
+
+  .cp-paper .cp-card {
+    border-color: var(--paper-line);
+    background: var(--paper-2);
+    box-shadow: 0 1px 2px rgba(0, 3, 38, 0.04);
+  }
+
+  .cp-paper .cp-card:hover {
+    box-shadow: 0 24px 50px -30px rgba(0, 3, 38, 0.35);
+    border-color: rgba(0, 3, 38, 0.16);
+  }
+
+  .cp-live {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 9px;
+    border-radius: 9999px;
+    font-family: var(--f-mono);
+    font-size: 10.5px;
+    letter-spacing: 0.1em;
+    color: var(--teal);
+    background: rgba(46, 230, 200, 0.1);
+    border: 1px solid rgba(46, 230, 200, 0.25);
+  }
+
+  .cp-paper .cp-live {
+    color: #0b8f7a;
+    background: rgba(46, 230, 200, 0.12);
+  }
+
+  .cp-live::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: cp-pulse 2s infinite;
+  }
+
+  .cp-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 5px 11px;
+    border-radius: 9px;
+    font-family: var(--f-mono);
+    font-size: 12px;
+    color: var(--muted);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--line);
+  }
+
+  .cp-paper .cp-chip {
+    color: var(--paper-muted);
+    background: #fff;
+    border-color: var(--paper-line);
+  }
+
+  /* Campos de formulário */
+  .cp-field {
+    width: 100%;
+    height: 52px;
+    padding: 0 16px 0 44px;
+    border-radius: 14px;
+    border: 1px solid var(--line-2);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--cream);
+    font-size: 15px;
+    transition:
+      border-color 0.25s,
+      background 0.25s,
+      box-shadow 0.25s;
+  }
+
+  .cp-field.cp-field-lg {
+    height: 68px;
+    padding: 0 22px;
+    border-radius: 18px;
+    font-family: var(--f-display);
+    font-size: 24px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+  }
+
+  textarea.cp-field {
+    height: auto;
+    min-height: 92px;
+    padding: 14px 16px;
+    line-height: 1.5;
+    resize: vertical;
+  }
+
+  .cp-field::placeholder {
+    color: var(--dim);
+  }
+
+  .cp-field:focus {
+    outline: none;
+    border-color: rgba(244, 246, 251, 0.55);
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .cp-field[aria-invalid='true'] {
+    border-color: rgba(255, 93, 108, 0.7);
+  }
+
+  /* Marquee */
+  .cp-marquee {
+    display: flex;
+    width: max-content;
+    animation: cp-marquee 38s linear infinite;
+  }
+
+  .cp-marquee-mask {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  }
+
+  .cp-float {
+    animation: cp-float 7s ease-in-out infinite;
+  }
+}
+
+@keyframes cp-shine {
+  0%,
+  55% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes cp-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+@keyframes cp-marquee {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes cp-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-12px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cp-dot,
+  .cp-live::before,
+  .cp-marquee,
+  .cp-float {
+    animation: none;
+  }
+}
+
+/* App do aluno no celular: botão/painel do chat de IA acima da barra de abas inferior */
+@media (max-width: 1023px) {
+  .cp-app-shell button.cp-ai-fab {
+    bottom: calc(84px + env(safe-area-inset-bottom));
+  }
+
+  .cp-has-action-bar .cp-app-shell button.cp-ai-fab {
+    bottom: calc(160px + env(safe-area-inset-bottom));
+  }
+}
+
+/* Barras e seleções com o degradê da marca */
+.cp-brand-bar {
+  background: linear-gradient(90deg, #2a14e0 0%, #5546ff 60%, #8c82ff 100%);
+}
+
+.cp-brand-bar-v {
+  background: linear-gradient(180deg, #8c82ff 0%, #5546ff 50%, #2a14e0 100%);
+}
+
+.cp-selected {
+  background: var(--brand-grad-btn);
+  color: #fff;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.25),
+    0 10px 24px -14px rgba(42, 20, 224, 0.9);
+}
+
+/* Spotlight (luz que segue o cursor) — cards .cp-card / .cp-spot; posição vem de useSpotlight() */
+.cp-card,
+.cp-spot {
+  isolation: isolate;
+}
+
+.cp-card::before,
+.cp-spot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(140, 130, 255, 0.65), transparent 65%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+}
+
+.cp-card::after,
+.cp-spot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(85, 70, 255, 0.1), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.35s;
+  pointer-events: none;
+}
+
+.cp-card:hover::before,
+.cp-card:hover::after,
+.cp-spot:hover::before,
+.cp-spot:hover::after {
+  opacity: 1;
+}
+
+.cp-paper .cp-card::before {
+  background: radial-gradient(260px circle at var(--mx, 50%) var(--my, 0%), rgba(22, 5, 159, 0.45), transparent 65%);
+}
+
+.cp-paper .cp-card::after {
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 0%), rgba(22, 5, 159, 0.05), transparent 60%);
+}
+
+/*
+ * Telas antigas dentro do shell da marca: os cinzas "zinc" e o navy fixo viram os tons da marca.
+ * CSS fora de @layer vence as utilities do Tailwind, então nenhuma tela precisa ser editada.
+ */
+.cp-app-shell .dark\:bg-zinc-900 { background-color: #0d0f18; }
+.cp-app-shell .dark\:bg-zinc-900\/50 { background-color: rgba(255, 255, 255, 0.02); }
+.cp-app-shell .dark\:bg-zinc-800 { background-color: #151826; }
+.cp-app-shell .dark\:bg-zinc-800\/30,
+.cp-app-shell .dark\:bg-zinc-800\/40,
+.cp-app-shell .dark\:bg-zinc-800\/50,
+.cp-app-shell .dark\:bg-zinc-800\/60 { background-color: rgba(255, 255, 255, 0.035); }
+.cp-app-shell .dark\:bg-zinc-700 { background-color: #1d2132; }
+.cp-app-shell .dark\:bg-zinc-950 { background-color: var(--ink); }
+.cp-app-shell .dark\:border-zinc-800 { border-color: var(--line); }
+.cp-app-shell .dark\:border-zinc-700 { border-color: var(--line-2); }
+.cp-app-shell .dark\:bg-\[\#000326\] { background-color: var(--brand-600); }
+.cp-app-shell .dark\:bg-\[\#000346\],
+.cp-app-shell .dark\:bg-\[\#000137\] { background-color: #151826; }
+.cp-app-shell .dark\:text-\[\#5a64b4\] { color: var(--brand-300); }
+.cp-app-shell .dark\:text-\[\#C5C5CE\] { color: var(--muted); }
+.cp-app-shell .dark\:border-\[\#000326\],
+.cp-app-shell .dark\:border-\[\#000326\]\/20,
+.cp-app-shell .dark\:border-\[\#000326\]\/25,
+.cp-app-shell .dark\:border-\[\#000326\]\/30,
+.cp-app-shell .dark\:border-\[\#000326\]\/40 { border-color: rgba(140, 130, 255, 0.3); }
+
+/* tokens do shadcn (cards, popovers, inputs) dentro do shell */
+.cp-app-shell.dark {
+  --background: #05060b;
+  --foreground: #f4f6fb;
+  --card: #0d0f18;
+  --card-foreground: #f4f6fb;
+  --popover: #10131f;
+  --popover-foreground: #f4f6fb;
+  --primary: #f4f6fb;
+  --primary-foreground: #05060b;
+  --secondary: #151826;
+  --secondary-foreground: #f4f6fb;
+  --accent: #151826;
+  --accent-foreground: #f4f6fb;
+  --border: rgba(232, 236, 255, 0.1);
+  --input: rgba(232, 236, 255, 0.12);
+  --ring: #5546ff;
+}
+
+/* ---------- Pop-ups ---------- */
+
+/* Modal da marca */
+.cp-modal {
+  overflow: hidden;
+  background: #0d0f18;
+  color: #f4f6fb;
+  border: 1px solid rgba(232, 236, 255, 0.12);
+  border-radius: 28px 28px 0 0;
+  box-shadow:
+    0 40px 100px -30px rgba(0, 0, 0, 0.95),
+    0 0 0 1px rgba(85, 70, 255, 0.08);
+}
+
+@media (min-width: 640px) {
+  .cp-modal {
+    border-radius: 28px;
+  }
+}
+
+.cp-modal-bar {
+  display: block;
+  height: 3px;
+  background: linear-gradient(90deg, #16059f 0%, #2a14e0 35%, #5546ff 70%, #8c82ff 100%);
+}
+
+/* Avisos (sonner) */
+.cp-toast {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 356px;
+  max-width: calc(100vw - 32px);
+  padding: 14px 40px 14px 16px;
+  border-radius: 18px;
+  background: rgba(13, 15, 24, 0.96);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  color: #f4f6fb;
+  border: 1px solid rgba(232, 236, 255, 0.12);
+  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.9);
+  font-family: 'Geist', ui-sans-serif, system-ui, sans-serif;
+  overflow: hidden;
+  --cp-toast-color: #8c82ff;
+}
+
+.cp-toast::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--cp-toast-color);
+}
+
+.cp-toast-success {
+  --cp-toast-color: #2ee6c8;
+}
+
+.cp-toast-error {
+  --cp-toast-color: #ff5d6c;
+}
+
+.cp-toast-warning {
+  --cp-toast-color: #ffb547;
+}
+
+.cp-toast-info {
+  --cp-toast-color: #8c82ff;
+}
+
+.cp-toast-icon {
+  flex-shrink: 0;
+  width: 30px;
+  height: 30px;
+  margin: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--cp-toast-color);
+  background: color-mix(in srgb, var(--cp-toast-color) 15%, transparent);
+}
+
+.cp-toast-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.cp-toast-title {
+  font-family: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.3;
+  padding-top: 4px;
+}
+
+.cp-toast-desc {
+  margin-top: 3px;
+  font-size: 13px;
+  line-height: 1.45;
+  color: #9aa1b8;
+}
+
+.cp-toast-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  left: auto;
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  background: transparent;
+  border: 0;
+  color: #6b7290;
+  transform: none;
+  cursor: pointer;
+  transition: color 0.2s, background 0.2s;
+}
+
+.cp-toast-close:hover {
+  color: #f4f6fb;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.cp-toast-action {
+  margin-left: auto;
+  align-self: center;
+  height: 30px;
+  padding: 0 12px;
+  border-radius: 9999px;
+  background: #f4f6fb;
+  color: #05060b;
+  font-size: 13px;
+  font-weight: 600;
+}

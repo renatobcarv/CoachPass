@@ -1,4 +1,5 @@
 import type { Payload } from 'payload'
+import type { Workout } from '../../payload-types'
 
 import { catalogForPrompt } from './catalog'
 import { generateWeekWithGemini, type GeneratedWorkout } from './geminiProvider'
@@ -111,7 +112,9 @@ export async function createAiWorkoutForStudent(args: {
     }
   | { ok: false; code: string; message: string; remaining?: number }
 > {
-  const { payload, userId, profile } = args
+  const { payload, profile } = args
+  // IDs do Postgres são numéricos; a assinatura aceita string por compatibilidade (só tipagem).
+  const userId = args.userId as number
 
   const quota = await getAiQuota(payload, userId)
   if (quota.blocked) {
@@ -170,7 +173,7 @@ export async function createAiWorkoutForStudent(args: {
           status: 'published',
           source: 'ai',
           observations: workout.observations,
-          weekday: workout.weekday,
+          weekday: workout.weekday as Workout['weekday'],
           splitLabel: workout.splitLabel,
           publishedAt,
           exercises: workout.exercises,

@@ -7,16 +7,15 @@ import {
   Mail,
   Lock,
   ArrowRight,
-  ArrowLeft,
-  CheckCircle,
   Heart,
-  Check,
   Shield,
   AlertCircle
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
+import { AuthShell, FieldLabel } from '../brand/AuthShell';
+import { CTAButton } from '../brand/Brand';
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
@@ -50,6 +49,8 @@ export function Register() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [backendError, setBackendError] = useState<string | null>(null);
+  // E-mail já cadastrado: em vez de só avisar, oferece entrar com ele
+  const [emailTaken, setEmailTaken] = useState(false);
 
   // --- Funções Auxiliares ---
 
@@ -59,6 +60,11 @@ export function Register() {
     // Limpa os erros logo que o usuário começa a digitar novamente
     setErrors((prev) => ({ ...prev, [field]: '' }));
     setBackendError(null);
+    setEmailTaken(false);
+  };
+
+  const goToLoginWithEmail = () => {
+    navigate('/login', { state: { email: formData.email.trim().toLowerCase() } });
   };
 
   // Validação explícita dos dados inseridos no Passo 2
@@ -119,7 +125,12 @@ export function Register() {
         lower.includes('unique') ||
         lower.includes('já existe')
       ) {
-        setBackendError('Este e-mail já está cadastrado. Faça o login.');
+        setEmailTaken(true);
+        setBackendError(
+          formData.userType === 'professional'
+            ? 'Este e-mail já tem conta no CoachPass. Entre com ele para acessar o seu painel profissional.'
+            : 'Este e-mail já está cadastrado. Faça o login.',
+        );
       } else if (
         lower.includes('valid email') ||
         lower.includes('e-mail em formato') ||
@@ -138,52 +149,55 @@ export function Register() {
   const progressPct = (step / totalSteps) * 100;
 
   // --- Renderização Visual (Interface do Usuário) ---
+  const isStudent = formData.userType === 'student';
+  const iconCls = 'w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--dim)] pointer-events-none';
+
   return (
-    <div className="min-h-screen dark:bg-zinc-950 bg-slate-50 flex items-center justify-center p-4">
-      {/* Decoração sutil de fundo premium */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none flex justify-center items-center">
-        <div className="w-[800px] h-[800px] rounded-full blur-[120px] opacity-5 mix-blend-screen" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.2) 0%, transparent 70%)' }} />
-      </div>
-
-      <div className="w-full max-w-2xl relative z-10">
-        <div className="mb-4">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="inline-flex items-center gap-2 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-zinc-400 dark:hover:text-white transition-colors"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Voltar para a home
-          </button>
-        </div>
-
-        {/* Cabeçalho */}
-        <div className="text-center mb-10">
-          <div className="inline-flex items-center gap-3 px-4 py-2 rounded-xl dark:bg-zinc-900/50 bg-white/50 backdrop-blur-sm border dark:border-zinc-800 border-slate-200 mb-6">
-            <div className="w-8 h-8 rounded flex items-center justify-center bg-[#000326] dark:bg-white/10 dark:bg-[#000326] dark:bg-white/20">
-              <Shield className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE] dark:text-[#5a64b4] dark:text-[#C5C5CE]" />
-            </div>
-            <span className="text-sm dark:text-zinc-300 text-slate-700 tracking-wide font-medium">COACHPASS</span>
-          </div>
-          <h1 className="dark:text-white text-slate-900 mb-3 tracking-tight" style={{ fontSize: '2rem', fontWeight: 600 }}>
-            Criar conta
-          </h1>
-          <p className="text-sm dark:text-zinc-400 text-slate-500 font-light">
+    <AuthShell
+      title="Comece em"
+      accent="dois passos."
+      lead="Escolha como vai usar o CoachPass e crie o acesso. Telefone, medidas, objetivo ou registro profissional ficam para o passo seguinte, já dentro do app."
+      aside={
+        <ol className="mt-10 space-y-3">
+          {['Escolha o tipo de acesso', 'Nome, e-mail e senha', 'Complete o perfil no app'].map((t, i) => (
+            <li key={t} className="flex items-center gap-4">
+              <span
+                className={`cp-mono w-8 h-8 rounded-full grid place-items-center text-[12px] border ${
+                  i < step ? 'border-transparent cp-selected' : 'border-[var(--line-2)] text-[var(--muted)]'
+                }`}
+              >
+                0{i + 1}
+              </span>
+              <span className={i < step ? 'text-white' : 'text-[var(--muted)]'}>{t}</span>
+            </li>
+          ))}
+        </ol>
+      }
+    >
+      <div className="w-full max-w-[560px]">
+        <div className="mb-8">
+          <p className="cp-kicker">Criar conta</p>
+          <h2 className="cp-display mt-3 text-[40px] font-bold leading-none">
+            {step === 1 ? 'Como você vai usar?' : 'Seus dados de acesso'}
+          </h2>
+          <p className="mt-3 text-[15px] text-[var(--muted)]">
             {step === 1
-              ? 'Selecione a modalidade de acesso'
+              ? 'Selecione a modalidade de acesso.'
               : 'Nome, e-mail e senha. No próximo passo você completa telefone, medidas e objetivo.'}
           </p>
         </div>
 
-        {/* Barra de Progresso Minimalista */}
-        <div className="mb-8 max-w-sm mx-auto">
-          <div className="flex items-center justify-between text-xs dark:text-zinc-500 text-slate-400 mb-3 uppercase tracking-wider">
-            <span>Passo {step} de {totalSteps}</span>
+        {/* Barra de progresso */}
+        <div className="mb-8">
+          <div className="cp-mono flex items-center justify-between text-[11px] uppercase tracking-[0.12em] text-[var(--dim)] mb-3">
+            <span>
+              Passo {step} de {totalSteps}
+            </span>
             <span>{Math.round(progressPct)}%</span>
           </div>
-          <div className="h-0.5 dark:bg-zinc-800 bg-slate-200 rounded-full w-full overflow-hidden">
+          <div className="h-[3px] rounded-full w-full overflow-hidden bg-[var(--line-2)]">
             <motion.div
-              className="h-full bg-[#000326] dark:bg-white"
+              className="h-full cp-brand-bar"
               initial={{ width: 0 }}
               animate={{ width: `${progressPct}%` }}
               transition={{ duration: 0.5, ease: 'easeInOut' }}
@@ -191,9 +205,7 @@ export function Register() {
           </div>
         </div>
 
-        {/* Transições Suaves entre Etapas */}
         <AnimatePresence mode="wait">
-          
           {/* --- Passo 1: Escolha do papel (Aluno / Profissional) --- */}
           {step === 1 && (
             <motion.div
@@ -201,61 +213,58 @@ export function Register() {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
-              className="grid md:grid-cols-2 gap-6"
+              className="grid sm:grid-cols-2 gap-4"
             >
-              {/* Card - Aluno */}
-              <button
-                onClick={() => { handleInputChange('userType', 'student'); setStep(2); }}
-                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#000137] bg-white transition-all duration-300 hover:border-[#000326]/25 dark:border-white/25 hover:shadow-2xl hover:shadow-[#000326]/10 overflow-hidden block"
-              >
-                {/* Linha indicadora superior sutil ao passar o mouse */}
-                <div className="absolute top-0 left-0 right-0 h-1 bg-[#000326] dark:bg-white opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="w-12 h-12 rounded border dark:border-zinc-800 border-slate-100 dark:bg-zinc-900 bg-slate-50 flex items-center justify-center mb-6">
-                  <Heart className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-[#000326] dark:text-white transition-colors" />
-                </div>
-                
-                <h2 className="dark:text-white text-slate-900 mb-3 font-medium text-lg">Acesso Estudante</h2>
-                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-8 font-light leading-relaxed">
-                  Gerenciamento de dieta e rotina de treinamento orientada, acompanhe seus resultados dinamicamente.
-                </p>
-                
-                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-[#000326] dark:text-[#C5C5CE] dark:text-[#000326] dark:text-white font-semibold group-hover:gap-4 transition-all">
-                  <span>Prosseguir</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </button>
+              {[
+                {
+                  type: 'student' as const,
+                  icon: Heart,
+                  color: 'var(--blue-2)',
+                  title: 'Sou aluno',
+                  text: 'Treino e dieta do dia, registros rápidos e a sua evolução em gráfico.',
+                },
+                {
+                  type: 'professional' as const,
+                  icon: Briefcase,
+                  color: 'var(--amber)',
+                  title: 'Sou profissional',
+                  text: 'Personal ou nutricionista: prescreva, acompanhe e organize sua carteira.',
+                },
+              ].map(({ type, icon: Icon, color, title, text }) => (
+                <button
+                  key={type}
+                  onClick={() => {
+                    handleInputChange('userType', type);
+                    setStep(2);
+                  }}
+                  className="cp-card group text-left p-6 overflow-hidden"
+                >
+                  <div
+                    aria-hidden
+                    className="absolute -top-20 -right-20 w-44 h-44 rounded-full blur-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-500"
+                    style={{ background: color }}
+                  />
+                  <span
+                    className="relative w-11 h-11 rounded-2xl grid place-items-center"
+                    style={{ background: `color-mix(in srgb, ${color} 16%, transparent)` }}
+                  >
+                    <Icon className="w-5 h-5" style={{ color }} />
+                  </span>
+                  <h3 className="relative cp-display mt-5 text-[22px] font-bold">{title}</h3>
+                  <p className="relative mt-2 text-[14px] leading-relaxed text-[var(--muted)]">{text}</p>
+                  <span className="relative cp-mono mt-6 inline-flex items-center gap-2 text-[11.5px] uppercase tracking-[0.14em] text-white transition-[gap] duration-300 group-hover:gap-3.5">
+                    Continuar
+                    <ArrowRight className="w-4 h-4" />
+                  </span>
+                </button>
+              ))}
 
-              {/* Card - Profissional */}
-              <button
-                onClick={() => { handleInputChange('userType', 'professional'); setStep(2); }}
-                className="group relative text-left p-8 rounded-2xl border dark:border-zinc-800 border-slate-200 dark:bg-[#000137] bg-white transition-all duration-300 hover:border-blue-500/30 hover:shadow-2xl hover:shadow-blue-500/5 overflow-hidden block"
-              >
-                <div className="absolute top-0 left-0 right-0 h-1 bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity" />
-                
-                <div className="w-12 h-12 rounded border dark:border-zinc-800 border-slate-100 dark:bg-zinc-900 bg-slate-50 flex items-center justify-center mb-6">
-                  <Briefcase className="w-5 h-5 dark:text-zinc-400 text-slate-500 group-hover:text-blue-500 transition-colors" />
-                </div>
-                
-                <h2 className="dark:text-white text-slate-900 mb-3 font-medium text-lg">Acesso Profissional</h2>
-                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-8 font-light leading-relaxed">
-                  Painel de gestão administrativa, prescrição clínica/esportiva e controle sistêmico de alunos e pacientes.
-                </p>
-                
-                <div className="flex items-center gap-3 text-xs uppercase tracking-widest text-blue-600 dark:text-blue-500 font-semibold group-hover:gap-4 transition-all">
-                  <span>Prosseguir</span>
-                  <ArrowRight className="w-4 h-4" />
-                </div>
-              </button>
-
-              <div className="md:col-span-2 text-center pt-8 border-t dark:border-zinc-800/80 border-slate-200 mt-2">
-                <p className="text-xs dark:text-zinc-500 text-slate-500 font-light">
-                  Conta já registrada?{' '}
-                  <button onClick={() => navigate('/login')} className="dark:text-white text-slate-900 font-medium hover:underline">
-                    Efetuar Autenticação
-                  </button>
-                </p>
-              </div>
+              <p className="sm:col-span-2 text-center pt-6 text-[14px] text-[var(--muted)]">
+                Já tem conta?{' '}
+                <button onClick={() => navigate('/login')} className="font-semibold text-white hover:underline">
+                  Entrar
+                </button>
+              </p>
             </motion.div>
           )}
 
@@ -266,130 +275,152 @@ export function Register() {
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
-              className="dark:bg-[#000137] bg-white rounded-2xl p-8 lg:p-10 border dark:border-zinc-800 border-slate-200 shadow-xl"
             >
-              <div className="flex items-center justify-between mb-8 pb-6 border-b dark:border-zinc-800 border-slate-100">
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded border flex items-center justify-center ${formData.userType === 'student' ? 'dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/10 bg-[#000326]/5/50 dark:bg-white/5' : 'dark:border-blue-500/20 border-blue-100 bg-blue-50/50 dark:bg-blue-900/10'}`}>
-                    {formData.userType === 'student' ? <Heart className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE]" /> : <Briefcase className="w-4 h-4 text-blue-600" />}
-                  </div>
+              <div className="flex items-center justify-between gap-4 p-4 mb-6 rounded-2xl border border-[var(--line)] bg-white/[0.03]">
+                <div className="flex items-center gap-3">
+                  <span
+                    className="w-10 h-10 rounded-xl grid place-items-center"
+                    style={{ background: 'rgba(255,255,255,0.06)' }}
+                  >
+                    {isStudent ? (
+                      <Heart className="w-4 h-4 text-[var(--blue-2)]" />
+                    ) : (
+                      <Briefcase className="w-4 h-4 text-[var(--amber)]" />
+                    )}
+                  </span>
                   <div>
-                    <h2 className="dark:text-white text-slate-900 font-medium tracking-tight text-lg">Requisitos de Segurança</h2>
-                    <p className="text-xs dark:text-zinc-500 text-slate-500 font-light mt-1">
-                      {formData.userType === 'student' ? 'Perfil: Estudante/Praticante' : 'Perfil: Especialista/Docente'}
-                    </p>
+                    <p className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Perfil</p>
+                    <p className="font-semibold">{isStudent ? 'Aluno' : 'Profissional'}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setStep(1)}
-                  className="text-xs text-slate-400 hover:text-slate-700 dark:hover:text-white transition-colors uppercase tracking-wider font-semibold border dark:border-zinc-800 border-slate-200 py-2 px-4 rounded hover:bg-slate-50 dark:hover:bg-zinc-900"
-                >
+                <button onClick={() => setStep(1)} className="cp-btn-ghost h-9 px-4 text-[13px]">
                   Alterar
                 </button>
               </div>
 
               {/* Exibe erro devolvido pela integração com o banco (ex: Email duplicado) */}
-              {backendError && (
-                <div className="mb-6 p-4 rounded bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 flex gap-3 text-red-600 dark:text-red-400 text-sm">
+              {backendError && emailTaken && (
+                <div className="mb-6 p-4 sm:p-5 rounded-2xl bg-[rgba(85,70,255,0.1)] border border-[rgba(140,130,255,0.35)] flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="flex gap-3 text-[14px] text-[var(--cream)]">
+                    <AlertCircle className="w-5 h-5 flex-shrink-0 text-[var(--brand-300)]" />
+                    <span>{backendError}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={goToLoginWithEmail}
+                    className="cp-btn-sm shrink-0 sm:ml-auto justify-center"
+                  >
+                    Fazer login
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              )}
+              {backendError && !emailTaken && (
+                <div className="mb-6 p-4 rounded-2xl bg-[rgba(255,93,108,0.08)] border border-[rgba(255,93,108,0.3)] flex gap-3 text-[#ff8a95] text-[14px]">
                   <AlertCircle className="w-5 h-5 flex-shrink-0" />
-                  <span className="font-light">{backendError}</span>
+                  <span>{backendError}</span>
                 </div>
               )}
 
-              <div className="space-y-6">
-                
+              <div className="space-y-5">
                 {/* Nome Completo */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
-                    Nome Completo
-                  </label>
+                  <FieldLabel htmlFor="reg-name">Nome completo</FieldLabel>
                   <div className="relative">
-                    <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
+                    <User className={iconCls} />
                     <input
+                      id="reg-name"
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Identificação formal"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.name ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
+                      placeholder="Como você quer ser chamado"
+                      autoComplete="name"
+                      aria-invalid={Boolean(errors.name)}
+                      className="cp-field"
                     />
                   </div>
-                  {errors.name && <p className="text-xs text-red-500 mt-2 font-medium">{errors.name}</p>}
+                  {errors.name && <p className="text-[12.5px] text-[#ff8a95] mt-2">{errors.name}</p>}
                 </div>
 
-                {/* E-mail Institucional / Pessoal */}
+                {/* E-mail */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
-                    Correio Eletrônico
-                  </label>
+                  <FieldLabel htmlFor="reg-email">E-mail</FieldLabel>
                   <div className="relative">
-                    <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
+                    <Mail className={iconCls} />
                     <input
+                      id="reg-email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
                       placeholder="seu@gmail.com"
                       autoComplete="email"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.email ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
+                      aria-invalid={Boolean(errors.email)}
+                      className="cp-field"
                     />
                   </div>
-                  {errors.email && <p className="text-xs text-red-500 mt-2 font-medium">{errors.email}</p>}
+                  {errors.email && <p className="text-[12.5px] text-[#ff8a95] mt-2">{errors.email}</p>}
                 </div>
 
                 {/* Senha */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
-                    Código Criptografado
-                  </label>
+                  <FieldLabel htmlFor="reg-password">Senha</FieldLabel>
                   <div className="relative">
-                    <Lock className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
+                    <Lock className={iconCls} />
                     <input
+                      id="reg-password"
                       type="password"
                       value={formData.password}
                       onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Exigência mínima de 6 caracteres"
-                      className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.password ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
+                      placeholder="Mínimo de 6 caracteres"
+                      autoComplete="new-password"
+                      aria-invalid={Boolean(errors.password)}
+                      className="cp-field"
                     />
                   </div>
-                  {errors.password && <p className="text-xs text-red-500 mt-2 font-medium">{errors.password}</p>}
+                  {errors.password && <p className="text-[12.5px] text-[#ff8a95] mt-2">{errors.password}</p>}
                 </div>
               </div>
 
-              {/* Disclaimer de coleta progressiva (Informa o usuário o motivo da redução de tela) */}
-              <div className="mt-6 p-4 rounded bg-slate-50 dark:bg-zinc-900/50 border dark:border-zinc-800 border-slate-100 flex gap-3 text-slate-600 dark:text-zinc-400 text-xs font-light">
-                 <Shield className="w-4 h-4 flex-shrink-0" />
-                 <p>Dados fisiológicos ou certificações profissionais serão solicitados em ambiente seguro posteriormente, visando simplificar sua entrada inicial.</p>
+              {/* Disclaimer de coleta progressiva */}
+              <div className="mt-6 p-4 rounded-2xl border border-[var(--line)] bg-white/[0.02] flex gap-3 text-[13px] text-[var(--muted)]">
+                <Shield className="w-4 h-4 flex-shrink-0 mt-0.5 text-[var(--teal)]" />
+                <p>
+                  Dados físicos ou registro profissional (CREF/CRN) são pedidos depois, já dentro do app, para deixar a
+                  entrada mais rápida.
+                </p>
               </div>
 
-              <div className="mt-8 pt-8 border-t dark:border-zinc-800/80 border-slate-100">
-                <button
-                  onClick={handleSubmit}
-                  disabled={loading}
-                  className="w-full py-3.5 rounded-lg text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm font-medium"
-                  style={{ background: formData.userType === 'student' ? '#000346' : '#1e40af' }}
-                >
+              <div className="mt-8">
+                <CTAButton type="button" block onClick={handleSubmit} disabled={loading}>
                   {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Estabelecendo conexão...
-                    </>
+                    <span className="inline-flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Criando conta...
+                    </span>
                   ) : (
-                    <>
-                      Confirmar e Autenticar
-                      <CheckCircle className="w-4 h-4" />
-                    </>
+                    'Criar conta'
                   )}
-                </button>
+                </CTAButton>
               </div>
 
-              <p className="text-xs dark:text-zinc-600 text-slate-400 text-center mt-6 font-light">
+              <p className="text-[12.5px] text-[var(--dim)] text-center mt-6">
                 Ao criar a conta, você concorda com os{' '}
                 <a
-                  href="/politica-de-privacidade.html"
+                  href="/termos"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="font-medium text-slate-700 dark:text-zinc-300 hover:underline"
+                  className="text-[var(--muted)] hover:text-white underline-offset-2 hover:underline"
                 >
-                  Termos e Política de Privacidade
+                  Termos de Uso
+                </a>{' '}
+                e a{' '}
+                <a
+                  href="/privacidade"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[var(--muted)] hover:text-white underline-offset-2 hover:underline"
+                >
+                  Política de Privacidade
                 </a>
                 .
               </p>
@@ -397,6 +428,6 @@ export function Register() {
           )}
         </AnimatePresence>
       </div>
-    </div>
+    </AuthShell>
   );
 }

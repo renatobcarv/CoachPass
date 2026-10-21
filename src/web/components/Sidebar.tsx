@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link, NavLink, useNavigate } from 'react-router';
+import { BrandLogo } from './brand/Brand';
 import {
   Home,
   Dumbbell,
@@ -8,7 +9,6 @@ import {
   User,
   Sun,
   Moon,
-  Zap,
   X,
   ChevronRight,
   LogOut,
@@ -91,12 +91,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
       >
         <div className="p-5 flex items-center justify-between">
           <Link to={navItems[0]?.to || '/'} className="group flex items-center gap-2.5" onClick={onMobileClose}>
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center bg-[#000326] transition-transform duration-300 group-hover:scale-105 dark:bg-white">
-              <Zap className="w-5 h-5 text-white dark:text-[#000326]" fill="currentColor" />
-            </div>
-            <div>
-              <span className="text-lg font-bold tracking-tight text-[#000326] dark:text-white">CoachPass</span>
-              <p className="text-xs text-[#6a6a7a] -mt-0.5 dark:text-[#C5C5CE]">Treino e nutrição</p>
+            <div className="flex flex-col gap-1.5">
+              <BrandLogo size={26} className="transition-transform duration-300 group-hover:-translate-y-px" />
+              <p className="text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">Treino e nutrição</p>
             </div>
           </Link>
           <button

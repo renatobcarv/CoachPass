@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { X, Mail, CheckCircle, AlertCircle, UserPlus } from 'lucide-react'
+import { X, Mail, AlertCircle, UserPlus } from 'lucide-react'
 import { motion, AnimatePresence } from 'motion/react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
@@ -111,140 +111,184 @@ export function AddPatientModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/75 backdrop-blur-md z-50"
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 0.95 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            initial={{ opacity: 0, y: 24, scale: 0.97 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 16, scale: 0.98 }}
+            transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+            className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 pointer-events-none"
           >
-            <div className="w-full max-w-md dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 shadow-2xl pointer-events-auto max-h-[90vh] flex flex-col">
-              <div className="flex items-center justify-between p-6 border-b dark:border-zinc-800 border-slate-200">
-                <div>
-                  <h3 className="dark:text-white text-slate-900 text-xl font-bold">
-                    Convidar {patientLabel}
-                  </h3>
-                  <p className="text-sm dark:text-zinc-400 text-slate-500 mt-1">
-                    O {patientLabel.toLowerCase()} precisa já ter conta CoachPass
-                  </p>
+            <div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="invite-title"
+              className="cp-modal w-full sm:max-w-md pointer-events-auto max-h-[92vh] flex flex-col"
+            >
+              <span aria-hidden className="cp-modal-bar" />
+              <div className="flex items-start justify-between gap-4 p-6 pb-5">
+                <div className="flex items-center gap-4">
+                  <span className="w-12 h-12 rounded-2xl grid place-items-center bg-[rgba(85,70,255,0.16)] border border-[rgba(140,130,255,0.3)]">
+                    <UserPlus className="w-5 h-5 text-[var(--brand-300)]" />
+                  </span>
+                  <div>
+                    <h3 id="invite-title" className="cp-display text-[22px] font-bold leading-tight">
+                      Convidar {patientLabel.toLowerCase()}
+                    </h3>
+                    <p className="text-[13.5px] text-[var(--muted)] mt-1">
+                      O {patientLabel.toLowerCase()} precisa já ter conta CoachPass
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={handleClose}
                   disabled={step === 'loading'}
-                  className="w-10 h-10 rounded-xl dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-500 hover:dark:bg-zinc-700 hover:bg-slate-200 flex items-center justify-center transition-colors disabled:opacity-50"
+                  aria-label="Fechar"
+                  className="w-9 h-9 shrink-0 rounded-full grid place-items-center border border-[var(--line-2)] text-[var(--muted)] hover:text-white hover:bg-white/[0.06] transition-colors disabled:opacity-50"
                 >
-                  <X className="w-5 h-5" />
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-6">
-                {step === 'success' && (
-                  <div className="text-center py-10">
-                    <div className="w-16 h-16 rounded-full bg-[#000326]/10 dark:bg-white/10 flex items-center justify-center mx-auto mb-4">
-                      <CheckCircle className="w-8 h-8 text-[#000326] dark:text-white" />
-                    </div>
-                    <h4 className="dark:text-white text-slate-900 text-lg font-semibold mb-2">
-                      Vínculo criado
-                    </h4>
-                    <p className="text-sm dark:text-zinc-400 text-slate-500">
-                      {patientLabel} encontrado e vinculado à sua conta.
-                    </p>
-                  </div>
-                )}
-
-                {step === 'error' && (
-                  <div className="text-center py-10">
-                    <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mx-auto mb-4">
-                      <AlertCircle className="w-8 h-8 text-red-500" />
-                    </div>
-                    <h4 className="dark:text-white text-slate-900 text-lg font-semibold mb-2">
-                      Não foi possível convidar
-                    </h4>
-                    <p className="text-sm dark:text-zinc-400 text-slate-500 mb-4">{errorMessage}</p>
-                    <button
-                      type="button"
-                      onClick={() => setStep('form')}
-                      className="px-4 py-2 rounded-xl text-sm font-semibold text-white bg-[#000326] dark:bg-white dark:text-[#000326]"
+              <div className="flex-1 overflow-y-auto px-6 pb-6">
+                <AnimatePresence mode="wait">
+                  {step === 'success' && (
+                    <motion.div
+                      key="success"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-8"
                     >
-                      Tentar novamente
-                    </button>
-                  </div>
-                )}
-
-                {(step === 'form' || step === 'loading') && (
-                  <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                    <div>
-                      <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2 font-medium">
-                        E-mail do {patientLabel.toLowerCase()} *
-                      </label>
-                      <div className="relative">
-                        <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                        <input
-                          type="email"
-                          {...register('email', {
-                            required: 'E-mail é obrigatório',
-                            pattern: {
-                              value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                              message: 'E-mail inválido',
-                            },
-                          })}
-                          placeholder="aluno@email.com"
-                          disabled={step === 'loading'}
-                          className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/20 disabled:opacity-50"
-                        />
-                      </div>
-                      {errors.email && (
-                        <p className="text-xs text-red-500 mt-1">{errors.email.message}</p>
-                      )}
-                    </div>
-
-                    <div className="rounded-xl p-4 border border-[#000326]/15 bg-[#000326]/5 dark:border-white/15 dark:bg-white/5">
-                      <p className="text-sm font-semibold text-[#000326] dark:text-white mb-1">
-                        Como funciona
+                      <motion.span
+                        initial={{ scale: 0.6, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        transition={{ type: 'spring', stiffness: 300, damping: 16 }}
+                        className="mx-auto w-20 h-20 rounded-full grid place-items-center cp-selected"
+                      >
+                        <svg viewBox="0 0 24 24" className="w-9 h-9" fill="none" stroke="currentColor" strokeWidth={2.6}>
+                          <motion.path
+                            d="M5 12.5l4.5 4.5L19 7.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            initial={{ pathLength: 0 }}
+                            animate={{ pathLength: 1 }}
+                            transition={{ duration: 0.5, delay: 0.15 }}
+                          />
+                        </svg>
+                      </motion.span>
+                      <h4 className="cp-display mt-5 text-[22px] font-bold">Vínculo criado</h4>
+                      <p className="mt-1.5 text-[14px] text-[var(--muted)]">
+                        {patientLabel} encontrado e vinculado à sua conta.
                       </p>
-                      <ul className="space-y-1 text-xs text-[#000326]/80 dark:text-[#C5C5CE]">
-                        <li>
-                          • Buscamos um usuário com role aluno e este e-mail
-                        </li>
-                        <li>• Se existir, criamos o vínculo profissional</li>
-                        <li>
-                          • Se não existir, peça para a pessoa se cadastrar no CoachPass primeiro
-                        </li>
-                      </ul>
-                    </div>
+                    </motion.div>
+                  )}
 
-                    <div className="flex gap-3 pt-1">
-                      <button
-                        type="button"
-                        onClick={handleClose}
-                        disabled={step === 'loading'}
-                        className="flex-1 py-3 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 font-semibold hover:dark:bg-zinc-800 hover:bg-slate-50 transition-colors disabled:opacity-50"
-                      >
-                        Cancelar
+                  {step === 'error' && (
+                    <motion.div
+                      key="error"
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-center py-8"
+                    >
+                      <span className="mx-auto w-20 h-20 rounded-full grid place-items-center bg-[rgba(255,93,108,0.12)] border border-[rgba(255,93,108,0.35)]">
+                        <AlertCircle className="w-9 h-9 text-[#ff8a95]" />
+                      </span>
+                      <h4 className="cp-display mt-5 text-[22px] font-bold">Não foi possível convidar</h4>
+                      <p className="mt-1.5 mb-6 text-[14px] text-[var(--muted)]">{errorMessage}</p>
+                      <button type="button" onClick={() => setStep('form')} className="cp-btn-sm mx-auto">
+                        Tentar novamente
                       </button>
-                      <button
-                        type="submit"
-                        disabled={step === 'loading'}
-                        className="flex-1 py-3 rounded-xl font-semibold text-white bg-[#000326] dark:bg-white dark:text-[#000326] transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2"
-                      >
-                        {step === 'loading' ? (
-                          <>
-                            <div className="w-4 h-4 border-2 border-white/30 border-t-white dark:border-[#000326]/30 dark:border-t-[#000326] rounded-full animate-spin" />
-                            Vinculando…
-                          </>
-                        ) : (
-                          <>
-                            <UserPlus className="w-4 h-4" />
-                            Convidar
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </form>
-                )}
+                    </motion.div>
+                  )}
+
+                  {(step === 'form' || step === 'loading') && (
+                    <motion.form
+                      key="form"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      onSubmit={handleSubmit(onSubmit)}
+                      className="space-y-5"
+                    >
+                      <div>
+                        <label
+                          htmlFor="invite-email"
+                          className="cp-mono block mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]"
+                        >
+                          E-mail do {patientLabel.toLowerCase()}
+                        </label>
+                        <div className="relative">
+                          <Mail className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--dim)] pointer-events-none" />
+                          <input
+                            id="invite-email"
+                            type="email"
+                            autoFocus
+                            {...register('email', {
+                              required: 'E-mail é obrigatório',
+                              pattern: {
+                                value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                                message: 'E-mail inválido',
+                              },
+                            })}
+                            placeholder={isProfessionalPersonal ? 'aluno@email.com' : 'paciente@email.com'}
+                            disabled={step === 'loading'}
+                            aria-invalid={Boolean(errors.email)}
+                            className="cp-field disabled:opacity-50"
+                          />
+                        </div>
+                        {errors.email && <p className="text-[12.5px] text-[#ff8a95] mt-2">{errors.email.message}</p>}
+                      </div>
+
+                      <div className="rounded-2xl p-4 border border-[var(--line)] bg-white/[0.02]">
+                        <p className="cp-kicker mb-3">Como funciona</p>
+                        <ol className="space-y-2.5">
+                          {[
+                            `Buscamos um ${patientLabel.toLowerCase()} com este e-mail`,
+                            'Se existir, criamos o vínculo profissional',
+                            'Se não existir, peça para a pessoa se cadastrar no CoachPass primeiro',
+                          ].map((t, i) => (
+                            <li key={t} className="flex gap-3 text-[13.5px] text-[var(--muted)]">
+                              <span className="cp-mono w-5 h-5 shrink-0 rounded-md grid place-items-center text-[10.5px] bg-white/[0.06] text-[var(--cream)]">
+                                {i + 1}
+                              </span>
+                              {t}
+                            </li>
+                          ))}
+                        </ol>
+                      </div>
+
+                      <div className="flex gap-3 pt-1">
+                        <button
+                          type="button"
+                          onClick={handleClose}
+                          disabled={step === 'loading'}
+                          className="cp-btn-ghost flex-1 justify-center h-12 disabled:opacity-50"
+                        >
+                          Cancelar
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={step === 'loading'}
+                          className="cp-selected flex-[1.3] h-12 rounded-full font-semibold flex items-center justify-center gap-2 transition hover:brightness-110 disabled:opacity-60"
+                        >
+                          {step === 'loading' ? (
+                            <>
+                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              Vinculando…
+                            </>
+                          ) : (
+                            <>
+                              <UserPlus className="w-4 h-4" />
+                              Convidar
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </motion.form>
+                  )}
+                </AnimatePresence>
               </div>
             </div>
           </motion.div>

@@ -1,6 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Bot, X, Send, Sparkles, ChevronDown, Zap } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ArrowUp, ChevronDown, Dumbbell, Flame, Salad, Sparkles, X } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { useAuth } from '../context/AuthContext';
+import { BrandLogo } from './brand/Brand';
 
 interface Message {
   id: string;
@@ -9,20 +11,11 @@ interface Message {
   time: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    role: 'ai',
-    text: 'Olá, Lucas! 👋 Sou sua IA de treino e dieta. Como posso te ajudar hoje? Posso sugerir exercícios alternativos, ajustar suas metas calóricas ou criar um plano personalizado.',
-    time: '10:30',
-  },
-];
-
 const quickReplies = [
-  'Substituir supino por outro exercício',
-  'Reduzir calorias hoje',
-  'Adicionar mais proteína',
-  'Treino para hoje sem equipamento',
+  { text: 'Substituir supino por outro exercício', icon: Dumbbell },
+  { text: 'Reduzir calorias hoje', icon: Flame },
+  { text: 'Adicionar mais proteína', icon: Salad },
+  { text: 'Treino para hoje sem equipamento', icon: Sparkles },
 ];
 
 const aiResponses = [
@@ -32,212 +25,241 @@ const aiResponses = [
   'Treino sem equipamento criado! Circuito: Flexão 4×15, Agachamento 4×20, Prancha 3×60s, Burpee 3×10. Duração: ~40 minutos. Devo adicionar ao seu plano?',
 ];
 
+const now = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+
+function AssistantAvatar({ size = 28 }: { size?: number }) {
+  return (
+    <span
+      className="cp-logo-white shrink-0 rounded-[10px] grid place-items-center cp-selected"
+      style={{ width: size, height: size }}
+    >
+      <BrandLogo size={Math.round(size * 0.42)} wordmark={false} />
+    </span>
+  );
+}
+
 export function AIChat() {
+  const { user } = useAuth();
+  const firstName = user?.name?.split(' ')[0];
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>(() => [
+    {
+      id: '1',
+      role: 'ai',
+      text: `Olá${firstName ? `, ${firstName}` : ''}! 👋 Sou sua IA de treino e dieta. Como posso te ajudar hoje? Posso sugerir exercícios alternativos, ajustar suas metas calóricas ou criar um plano personalizado.`,
+      time: now(),
+    },
+  ]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const responseIndex = useRef(0);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  const hasConversation = messages.some((m) => m.role === 'user');
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
   const sendMessage = (text: string) => {
-    if (!text.trim()) return;
+    if (!text.trim() || isTyping) return;
+    // Sugestão rápida → resposta correspondente; texto livre → rodízio das respostas de demonstração
+    const quickIndex = quickReplies.findIndex((q) => q.text === text);
 
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      role: 'user',
-      text,
-      time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-    };
-
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', text, time: now() }]);
     setInput('');
     setIsTyping(true);
 
     setTimeout(() => {
-      const idx = responseIndex.current % aiResponses.length;
-      responseIndex.current += 1;
-      const aiMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'ai',
-        text: aiResponses[idx],
-        time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
-      };
+      const idx = quickIndex >= 0 ? quickIndex : responseIndex.current % aiResponses.length;
+      if (quickIndex < 0) responseIndex.current += 1;
       setIsTyping(false);
-      setMessages((prev) => [...prev, aiMsg]);
+      setMessages((prev) => [
+        ...prev,
+        { id: (Date.now() + 1).toString(), role: 'ai', text: aiResponses[idx], time: now() },
+      ]);
     }, 1800);
   };
 
   return (
-    <>
-      {/* Floating button */}
-      {!isOpen && (
-        <motion.button
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 z-50 w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl shadow-[#000326]/40 cursor-pointer"
-          style={{
-            background: 'linear-gradient(135deg, #5a64b4, #3b82f6)',
-          }}
-        >
-          <Bot className="w-6 h-6 text-white" />
-          <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full flex items-center justify-center text-white text-xs" style={{ fontWeight: 700 }}>
-            1
-          </span>
-        </motion.button>
-      )}
-
-      {/* Chat Window */}
-      {isOpen && (
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9, y: 20 }}
-          animate={{ opacity: 1, scale: 1, y: 0 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
-          className="fixed bottom-6 right-6 z-50 w-80 sm:w-96 rounded-3xl overflow-hidden shadow-2xl dark:shadow-black/50 flex flex-col"
-          style={{
-            height: '520px',
-            background: 'var(--background)',
-            border: '1px solid',
-            borderColor: 'var(--border)',
-          }}
-        >
-          {/* Header */}
-          <div
-            className="p-4 flex items-center justify-between flex-shrink-0"
-            style={{
-              background: 'linear-gradient(135deg, #5a64b4, #3b82f6)',
-            }}
+    // display: contents → só herda as variáveis da marca, sem criar caixa
+    <div className="cp-brand" style={{ display: 'contents' }}>
+      <AnimatePresence>
+        {!isOpen && (
+          <motion.button
+            key="fab"
+            type="button"
+            initial={{ scale: 0.6, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.6, opacity: 0 }}
+            whileHover={{ y: -2 }}
+            whileTap={{ scale: 0.96 }}
+            onClick={() => setIsOpen(true)}
+            aria-label="Abrir assistente CoachPass"
+            className="cp-ai-fab cp-selected cp-logo-white fixed bottom-6 right-6 z-50 h-14 pl-4 pr-5 rounded-full flex items-center gap-2.5 cursor-pointer"
           >
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center backdrop-blur-sm">
-                <Zap className="w-5 h-5 text-white" fill="white" />
-              </div>
-              <div>
-                <p className="text-white text-sm" style={{ fontWeight: 700 }}>
-                  CoachPass Assistant
-                </p>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-white/80 rounded-full animate-pulse" />
-                  <p className="text-white/80 text-xs">Online agora</p>
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
-              >
-                <ChevronDown className="w-4 h-4" />
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
+            <BrandLogo size={18} wordmark={false} />
+            <span className="hidden sm:inline text-[14px] font-semibold">Assistente</span>
+            <span className="absolute -top-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-[var(--teal)] border-2 border-[#05060b]" />
+          </motion.button>
+        )}
 
-          {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-4 space-y-3 dark:bg-zinc-950 bg-slate-50">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex gap-2 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
-              >
-                {msg.role === 'ai' && (
-                  <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-[#000326] to-[#5a64b4] mt-auto">
-                    <Bot className="w-3.5 h-3.5 text-white" />
-                  </div>
-                )}
-                <div
-                  className={`max-w-[75%] rounded-2xl px-3 py-2.5 ${
-                    msg.role === 'user'
-                      ? 'bg-gradient-to-br from-[#000326] to-[#5a64b4] text-white rounded-tr-sm'
-                      : 'dark:bg-zinc-900 bg-white dark:text-zinc-100 text-slate-800 rounded-tl-sm dark:border-zinc-800 border border-slate-200'
-                  }`}
-                >
-                  <p className="text-sm leading-relaxed">{msg.text}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      msg.role === 'user' ? 'text-white/70' : 'dark:text-zinc-500 text-slate-400'
-                    }`}
-                  >
-                    {msg.time}
+        {isOpen && (
+          <motion.div
+            key="panel"
+            role="dialog"
+            aria-label="Assistente CoachPass"
+            initial={{ opacity: 0, y: 24, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.96 }}
+            transition={{ type: 'spring', damping: 26, stiffness: 300 }}
+            style={{ transformOrigin: 'bottom right' }}
+            className="cp-ai-fab cp-modal fixed z-50 bottom-3 right-3 left-3 sm:left-auto sm:bottom-6 sm:right-6 sm:w-[390px] h-[min(600px,calc(100svh-24px))] flex flex-col !rounded-[26px]"
+          >
+            <span aria-hidden className="cp-modal-bar shrink-0" />
+
+            {/* Cabeçalho */}
+            <div className="flex items-center justify-between gap-3 px-4 py-3.5 border-b border-[var(--line)] shrink-0">
+              <div className="flex items-center gap-3">
+                <AssistantAvatar size={38} />
+                <div>
+                  <p className="cp-display text-[16px] font-bold leading-tight">Assistente CoachPass</p>
+                  <p className="flex items-center gap-1.5 text-[12px] text-[var(--muted)]">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--teal)] animate-pulse" />
+                    Online agora
                   </p>
                 </div>
               </div>
-            ))}
-            {isTyping && (
-              <div className="flex gap-2">
-                <div className="w-7 h-7 rounded-lg flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-[#000326] to-[#5a64b4]">
-                  <Bot className="w-3.5 h-3.5 text-white" />
-                </div>
-                <div className="dark:bg-zinc-900 bg-white rounded-2xl rounded-tl-sm px-4 py-3 dark:border-zinc-800 border border-slate-200">
-                  <div className="flex gap-1.5 items-center">
-                    {[0, 1, 2].map((i) => (
-                      <div
-                        key={i}
-                        className="w-1.5 h-1.5 rounded-full bg-[#000326] dark:bg-white animate-bounce"
-                        style={{ animationDelay: `${i * 0.2}s` }}
-                      />
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Minimizar"
+                  className="w-8 h-8 rounded-full grid place-items-center text-[var(--muted)] hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  <ChevronDown className="w-4 h-4" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Fechar"
+                  className="w-8 h-8 rounded-full grid place-items-center text-[var(--muted)] hover:text-white hover:bg-white/[0.06] transition-colors"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Mensagens */}
+            <div className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
+              {messages.map((msg) => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                  className={`flex gap-2.5 ${msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'}`}
+                >
+                  {msg.role === 'ai' && <AssistantAvatar />}
+                  <div className={`max-w-[80%] ${msg.role === 'user' ? 'items-end' : 'items-start'} flex flex-col`}>
+                    <div
+                      className={`px-3.5 py-2.5 text-[14px] leading-relaxed ${
+                        msg.role === 'user'
+                          ? 'cp-selected rounded-[18px] rounded-br-md'
+                          : 'bg-white/[0.05] border border-[var(--line)] rounded-[18px] rounded-tl-md text-[var(--cream)]'
+                      }`}
+                    >
+                      {msg.text}
+                    </div>
+                    <span className="cp-mono mt-1 px-1 text-[10.5px] text-[var(--dim)]">{msg.time}</span>
+                  </div>
+                </motion.div>
+              ))}
+
+              {/* Sugestões iniciais */}
+              {!hasConversation && !isTyping && (
+                <div className="pt-1">
+                  <p className="cp-kicker mb-2.5 text-[10.5px]">Sugestões</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {quickReplies.map(({ text, icon: Icon }) => (
+                      <button
+                        key={text}
+                        type="button"
+                        onClick={() => sendMessage(text)}
+                        className="cp-spot relative text-left rounded-2xl p-3 border border-[var(--line)] bg-white/[0.02] hover:bg-white/[0.05] transition-colors"
+                      >
+                        <Icon className="w-4 h-4 text-[var(--brand-300)]" />
+                        <span className="mt-2 block text-[12.5px] leading-snug text-[var(--cream)]">{text}</span>
+                      </button>
                     ))}
                   </div>
                 </div>
+              )}
+
+              {isTyping && (
+                <div className="flex gap-2.5">
+                  <AssistantAvatar />
+                  <div className="bg-white/[0.05] border border-[var(--line)] rounded-[18px] rounded-tl-md px-4 py-3.5">
+                    <div className="flex gap-1.5 items-center">
+                      {[0, 1, 2].map((i) => (
+                        <motion.span
+                          key={i}
+                          className="w-1.5 h-1.5 rounded-full bg-[var(--brand-300)]"
+                          animate={{ y: [0, -4, 0], opacity: [0.5, 1, 0.5] }}
+                          transition={{ duration: 0.9, repeat: Infinity, delay: i * 0.15 }}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Sugestões rápidas durante a conversa */}
+            {hasConversation && (
+              <div className="px-4 pb-2 flex gap-2 overflow-x-auto shrink-0">
+                {quickReplies.map(({ text }) => (
+                  <button
+                    key={text}
+                    type="button"
+                    onClick={() => sendMessage(text)}
+                    className="shrink-0 h-8 px-3 rounded-full border border-[var(--line-2)] text-[12px] text-[var(--muted)] hover:text-white hover:border-[rgba(140,130,255,0.5)] transition-colors whitespace-nowrap"
+                  >
+                    {text}
+                  </button>
+                ))}
               </div>
             )}
-            <div ref={messagesEndRef} />
-          </div>
 
-          {/* Quick replies */}
-          <div className="px-3 py-2 dark:bg-zinc-950 bg-slate-50 flex gap-2 overflow-x-auto">
-            {quickReplies.slice(0, 2).map((reply) => (
-              <button
-                key={reply}
-                onClick={() => sendMessage(reply)}
-                className="flex-shrink-0 text-xs px-3 py-1.5 rounded-full dark:bg-zinc-800 bg-white dark:text-zinc-300 text-slate-600 dark:border-zinc-700 border border-slate-200 hover:border-[#000326] dark:hover:border-white hover:text-[#000326] dark:text-[#C5C5CE] dark:hover:text-[#5a64b4] dark:text-[#C5C5CE] transition-colors whitespace-nowrap"
-              >
-                {reply}
-              </button>
-            ))}
-          </div>
-
-          {/* Input */}
-          <div className="p-3 dark:bg-zinc-950 bg-white dark:border-zinc-800 border-t border-slate-200 flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
-              placeholder="Pergunte à IA..."
-              className="flex-1 text-sm px-3 py-2.5 rounded-xl dark:bg-zinc-900 bg-slate-100 dark:text-zinc-100 text-slate-800 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none dark:focus:ring-1 focus:ring-1 dark:focus:ring-[#000326] dark:ring-white/50 focus:ring-[#000326] dark:ring-white/50 border-0"
-            />
-            <button
-              onClick={() => sendMessage(input)}
-              disabled={!input.trim()}
-              className="w-10 h-10 rounded-xl flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-              style={{
-                background: input.trim() ? 'linear-gradient(135deg, #5a64b4, #3b82f6)' : undefined,
-                backgroundColor: !input.trim() ? '#374151' : undefined,
-              }}
-            >
-              <Send className="w-4 h-4 text-white" />
-            </button>
-          </div>
-        </motion.div>
-      )}
-    </>
+            {/* Campo */}
+            <div className="px-3 pt-2 pb-3 border-t border-[var(--line)] shrink-0">
+              <div className="flex items-center gap-2 rounded-full border border-[var(--line-2)] bg-white/[0.03] pl-4 pr-1.5 h-12 focus-within:border-[rgba(140,130,255,0.6)] transition-colors">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && sendMessage(input)}
+                  placeholder="Pergunte à IA…"
+                  aria-label="Mensagem para o assistente"
+                  className="flex-1 min-w-0 bg-transparent text-[14px] text-[var(--cream)] placeholder:text-[var(--dim)] focus:outline-none"
+                />
+                <button
+                  type="button"
+                  onClick={() => sendMessage(input)}
+                  disabled={!input.trim() || isTyping}
+                  aria-label="Enviar"
+                  className="cp-selected w-9 h-9 shrink-0 rounded-full grid place-items-center transition disabled:opacity-35 disabled:cursor-not-allowed"
+                >
+                  <ArrowUp className="w-4 h-4" strokeWidth={2.5} />
+                </button>
+              </div>
+              <p className="mt-2 text-center text-[10.5px] text-[var(--dim)]">
+                Respostas de demonstração · a IA não substitui seu profissional.
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
   );
 }

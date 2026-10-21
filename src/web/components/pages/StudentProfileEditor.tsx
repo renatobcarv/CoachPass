@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Save } from 'lucide-react'
+import { Check, Dumbbell, Flame } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
 import {
@@ -14,11 +14,8 @@ import {
   saveStudentProfile,
 } from '../../lib/studentApi'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
-
-const card =
-  'rounded-2xl border border-[#000326]/10 bg-white p-5 dark:border-white/10 dark:bg-[#000346]'
-const inputCls =
-  'w-full px-3 py-2.5 rounded-lg bg-[#f3f4f9] border border-[#000326]/10 text-[#000326] dark:bg-[#000137] dark:border-white/10 dark:text-white text-sm'
+import { CTAButton } from '../brand/Brand'
+import { Badge, Card, LoadingPage, Page, PageHeader } from '../student/ui'
 
 const equipmentOptions: { value: EquipmentAccess; label: string }[] = [
   { value: 'full_gym', label: 'Academia completa' },
@@ -152,150 +149,123 @@ export function StudentProfileEditor() {
   }
 
   if (loading) {
-    return <div className="p-8 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">Carregando perfil…</div>
+    return <LoadingPage />
   }
 
   const age = ageFromBirthDate(form.birthDate)
+  const set = <K extends keyof typeof form>(key: K, value: (typeof form)[K]) => setForm({ ...form, [key]: value })
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-3xl mx-auto space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-[#000326] dark:text-white">Meu perfil</h1>
-        <p className="mt-1 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
-          Dados usados para personalizar treinos e orientações. E-mail da conta: {user?.email}
-          {age != null ? ` · ${age} anos` : ''}
-          {form.goal ? ` · ${goalLabel(form.goal)}` : ''}
-          {profileId ? '' : ' · Perfil ainda não salvo'}
-        </p>
-      </div>
+    <Page>
+      <PageHeader kicker="Perfil" title="Seu perfil," accent="do seu jeito." />
 
-      <div className={`${card} space-y-4`}>
-        <h2 className="font-semibold text-[#000326] dark:text-white">Informações obrigatórias</h2>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Nome</span>
-            <input
-              className={inputCls}
-              value={form.displayName}
-              onChange={(e) => setForm({ ...form, displayName: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Telefone</span>
-            <input
-              className={inputCls}
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Nascimento</span>
-            <input
-              type="date"
-              className={inputCls}
-              value={form.birthDate}
-              onChange={(e) => setForm({ ...form, birthDate: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Sexo</span>
-            <select
-              className={inputCls}
-              value={form.sex}
-              onChange={(e) => setForm({ ...form, sex: e.target.value as StudentSex | '' })}
-            >
-              <option value="">Selecione</option>
-              <option value="male">Masculino</option>
-              <option value="female">Feminino</option>
-              <option value="other">Outro</option>
-              <option value="undisclosed">Prefiro não informar</option>
-            </select>
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Altura (cm)</span>
-            <input
-              type="number"
-              className={inputCls}
-              value={form.heightCm}
-              onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Peso (kg)</span>
-            <input
-              type="number"
-              step="0.1"
-              className={inputCls}
-              value={form.weightKg}
-              onChange={(e) => setForm({ ...form, weightKg: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1 sm:col-span-2">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Objetivo</span>
-            <select
-              className={inputCls}
-              value={form.goal}
-              onChange={(e) => setForm({ ...form, goal: e.target.value as StudentGoal | '' })}
-            >
-              <option value="">Selecione</option>
-              <option value="weight_loss">Emagrecimento</option>
-              <option value="hypertrophy">Hipertrofia</option>
-            </select>
-          </label>
+      {/* Cartão de identidade */}
+      <Card className="p-6 sm:p-7 mb-6 overflow-hidden">
+        <div className="relative flex flex-wrap items-center gap-5">
+          <span className="w-16 h-16 rounded-2xl grid place-items-center bg-[var(--ink-4)] border border-[var(--line-2)] text-[22px] font-bold">
+            {(form.displayName || user?.name || 'A')
+              .split(' ')
+              .map((p) => p[0])
+              .slice(0, 2)
+              .join('')
+              .toUpperCase()}
+          </span>
+          <div className="min-w-0">
+            <p className="cp-display text-[26px] font-bold leading-tight truncate">{form.displayName || 'Seu nome'}</p>
+            <p className="mt-1 text-[14px] text-[var(--muted)] truncate">{user?.email}</p>
+          </div>
+          <div className="flex flex-wrap gap-2 sm:ml-auto">
+            {age != null && <Badge>{age} anos</Badge>}
+            {form.goal && <Badge tone="blue">{goalLabel(form.goal)}</Badge>}
+            {!profileId && <Badge tone="amber">Perfil ainda não salvo</Badge>}
+          </div>
         </div>
-      </div>
+      </Card>
 
-      <div className={`${card} space-y-4`}>
-        <h2 className="font-semibold text-[#000326] dark:text-white">Complementares</h2>
-        <div className="grid sm:grid-cols-2 gap-3">
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">% Gordura</span>
-            <input
-              type="number"
-              step="0.1"
-              className={inputCls}
-              value={form.bodyFatPercent}
-              onChange={(e) => setForm({ ...form, bodyFatPercent: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Experiência</span>
-            <select
-              className={inputCls}
-              value={form.experienceLevel}
-              onChange={(e) =>
-                setForm({ ...form, experienceLevel: e.target.value as ExperienceLevel | '' })
-              }
-            >
-              <option value="">—</option>
-              <option value="beginner">Iniciante</option>
-              <option value="intermediate">Intermediário</option>
-              <option value="advanced">Avançado</option>
-            </select>
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Dias / semana</span>
-            <input
-              type="number"
-              min={1}
-              max={7}
-              className={inputCls}
-              value={form.trainingDaysPerWeek}
-              onChange={(e) => setForm({ ...form, trainingDaysPerWeek: e.target.value })}
-            />
-          </label>
-          <label className="text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Minutos / treino</span>
-            <input
-              type="number"
-              className={inputCls}
-              value={form.sessionMinutes}
-              onChange={(e) => setForm({ ...form, sessionMinutes: e.target.value })}
-            />
-          </label>
-        </div>
-        <div>
-          <p className="text-sm text-[#6a6a7a] dark:text-[#C5C5CE] mb-2">Equipamentos</p>
+      <div className="space-y-6">
+        <FormCard title="Dados pessoais" kicker="Obrigatório">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Nome">
+              <input className="cp-field pl-4" value={form.displayName} onChange={(e) => set('displayName', e.target.value)} />
+            </Field>
+            <Field label="Telefone">
+              <input className="cp-field pl-4" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+            </Field>
+            <Field label="Nascimento">
+              <input type="date" className="cp-field pl-4" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} />
+            </Field>
+            <Field label="Sexo">
+              <select
+                className="cp-field pl-4"
+                value={form.sex}
+                onChange={(e) => set('sex', e.target.value as StudentSex | '')}
+              >
+                <option value="">Selecione</option>
+                <option value="male">Masculino</option>
+                <option value="female">Feminino</option>
+                <option value="other">Outro</option>
+                <option value="undisclosed">Prefiro não informar</option>
+              </select>
+            </Field>
+          </div>
+        </FormCard>
+
+        <FormCard title="Corpo e objetivo" kicker="Obrigatório">
+          <div className="grid sm:grid-cols-2 gap-4">
+            <Field label="Altura (cm)">
+              <input type="number" className="cp-field pl-4" value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} />
+            </Field>
+            <Field label="Peso (kg)">
+              <input type="number" step="0.1" className="cp-field pl-4" value={form.weightKg} onChange={(e) => set('weightKg', e.target.value)} />
+            </Field>
+          </div>
+          <p className="cp-mono mt-6 mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">Objetivo</p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {(
+              [
+                { value: 'weight_loss', label: 'Emagrecimento', icon: Flame, color: 'var(--amber)' },
+                { value: 'hypertrophy', label: 'Hipertrofia', icon: Dumbbell, color: 'var(--blue-2)' },
+              ] as const
+            ).map(({ value, label, icon: Icon, color }) => (
+              <Choice key={value} active={form.goal === value} onClick={() => set('goal', value)}>
+                <Icon className="w-5 h-5" style={{ color }} />
+                {label}
+              </Choice>
+            ))}
+          </div>
+        </FormCard>
+
+        <FormCard title="Treino" kicker="Opcional">
+          <p className="cp-mono mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">Experiência</p>
+          <div className="grid grid-cols-3 gap-3">
+            {(
+              [
+                ['beginner', 'Iniciante'],
+                ['intermediate', 'Intermediário'],
+                ['advanced', 'Avançado'],
+              ] as const
+            ).map(([value, label]) => (
+              <Choice
+                key={value}
+                active={form.experienceLevel === value}
+                onClick={() => set('experienceLevel', form.experienceLevel === value ? '' : value)}
+              >
+                {label}
+              </Choice>
+            ))}
+          </div>
+          <div className="mt-6 grid sm:grid-cols-3 gap-4">
+            <Field label="% Gordura">
+              <input type="number" step="0.1" className="cp-field pl-4" value={form.bodyFatPercent} onChange={(e) => set('bodyFatPercent', e.target.value)} />
+            </Field>
+            <Field label="Dias / semana">
+              <input type="number" min={1} max={7} className="cp-field pl-4" value={form.trainingDaysPerWeek} onChange={(e) => set('trainingDaysPerWeek', e.target.value)} />
+            </Field>
+            <Field label="Minutos / treino">
+              <input type="number" className="cp-field pl-4" value={form.sessionMinutes} onChange={(e) => set('sessionMinutes', e.target.value)} />
+            </Field>
+          </div>
+          <p className="cp-mono mt-6 mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">Equipamentos</p>
           <div className="flex flex-wrap gap-2">
             {equipmentOptions.map((option) => {
               const active = form.equipmentAccess.includes(option.value)
@@ -304,48 +274,88 @@ export function StudentProfileEditor() {
                   key={option.value}
                   type="button"
                   onClick={() => toggleEquipment(option.value)}
-                  className={`px-3 py-1.5 rounded-full text-xs border ${
+                  aria-pressed={active}
+                  className={`inline-flex items-center gap-1.5 h-10 px-4 rounded-full text-[13.5px] border transition-colors ${
                     active
-                      ? 'border-[#000326] bg-[#000326]/10 dark:border-white dark:bg-white/10'
-                      : 'border-[#000326]/15 dark:border-white/10'
+                      ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.12)] text-white'
+                      : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white hover:bg-white/[0.05]'
                   }`}
                 >
+                  {active && <Check className="w-3.5 h-3.5 text-[var(--blue-2)]" strokeWidth={3} />}
                   {option.label}
                 </button>
               )
             })}
           </div>
-        </div>
-        {(
-          [
-            ['foodAllergies', 'Alergias'],
-            ['dietaryRestrictions', 'Restrições alimentares'],
-            ['medicalConditions', 'Condições médicas'],
-            ['injuries', 'Lesões'],
-            ['medications', 'Medicamentos'],
-          ] as const
-        ).map(([key, label]) => (
-          <label key={key} className="block text-sm space-y-1">
-            <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">{label}</span>
-            <textarea
-              className={`${inputCls} min-h-[72px]`}
-              value={form[key]}
-              onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-            />
-          </label>
-        ))}
+        </FormCard>
+
+        <FormCard title="Saúde e alimentação" kicker="Visível só para você e seus profissionais">
+          <div className="grid sm:grid-cols-2 gap-4">
+            {(
+              [
+                ['foodAllergies', 'Alergias'],
+                ['dietaryRestrictions', 'Restrições alimentares'],
+                ['medicalConditions', 'Condições médicas'],
+                ['injuries', 'Lesões'],
+                ['medications', 'Medicamentos'],
+              ] as const
+            ).map(([key, label]) => (
+              <Field key={key} label={label} className={key === 'medications' ? 'sm:col-span-2' : ''}>
+                <textarea className="cp-field" value={form[key]} onChange={(e) => set(key, e.target.value)} />
+              </Field>
+            ))}
+          </div>
+        </FormCard>
       </div>
 
-      <button
-        type="button"
-        disabled={saving}
-        onClick={handleSave}
-        className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#000326] text-white dark:bg-white dark:text-[#000326] font-medium disabled:opacity-50"
-      >
-        <Save className="w-4 h-4" />
-        {saving ? 'Salvando…' : 'Salvar perfil'}
-      </button>
-    </div>
+      {/* Barra de salvar fixa */}
+      <div className="sticky bottom-[84px] lg:bottom-6 z-20 mt-8">
+        <div className="flex items-center justify-between gap-4 rounded-2xl border border-[var(--line-2)] bg-[rgba(16,19,31,0.85)] backdrop-blur-xl px-4 sm:px-5 py-3 shadow-[0_20px_50px_-20px_rgba(0,0,0,0.8)]">
+          <p className="hidden sm:block text-[13.5px] text-[var(--muted)]">Alterações são salvas no seu perfil.</p>
+          <CTAButton type="button" onClick={handleSave} disabled={saving} className="ml-auto">
+            {saving ? 'Salvando…' : 'Salvar perfil'}
+          </CTAButton>
+        </div>
+      </div>
+    </Page>
+  )
+}
+
+function FormCard({ title, kicker, children }: { title: string; kicker?: string; children: React.ReactNode }) {
+  return (
+    <Card className="p-6 sm:p-7">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-5">
+        <h2 className="cp-display text-[20px] font-bold">{title}</h2>
+        {kicker && <span className="cp-mono text-[11px] uppercase tracking-[0.12em] text-[var(--dim)]">{kicker}</span>}
+      </div>
+      {children}
+    </Card>
+  )
+}
+
+function Field({ label, children, className = '' }: { label: string; children: React.ReactNode; className?: string }) {
+  return (
+    <label className={`block ${className}`}>
+      <span className="cp-mono block mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">{label}</span>
+      {children}
+    </label>
+  )
+}
+
+function Choice({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`h-14 rounded-2xl border flex items-center justify-center gap-2.5 text-[15px] font-semibold transition-[background,border-color,box-shadow] duration-300 ${
+        active
+          ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.12)] text-white'
+          : 'border-[var(--line-2)] bg-white/[0.025] text-[var(--muted)] hover:text-white hover:bg-white/[0.05]'
+      }`}
+    >
+      {children}
+    </button>
   )
 }
 
