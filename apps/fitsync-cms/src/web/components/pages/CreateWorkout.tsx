@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion } from 'motion/react';
 import {
   Dumbbell,
@@ -20,6 +20,18 @@ import { ExerciseModal } from '../ExerciseModal';
 import { getExerciseDetail, ExerciseDetail } from '../../data/exerciseData';
 import { exerciseLibrary, difficultyColors, Exercise } from '../../data/exerciseLibrary';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
+import {
+  WEEKDAYS,
+  createWorkout,
+  fetchLinkedPeople,
+  fetchWorkoutById,
+  updateWorkout,
+  type LinkedPerson,
+  type Weekday,
+} from '../../lib/professionalApi';
+import { relId } from '../../lib/studentApi';
+import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 
 interface WorkoutExercise {
   id: string;
@@ -31,27 +43,7 @@ interface WorkoutExercise {
   difficulty: string;
 }
 
-interface Student {
-  id: string;
-  name: string;
-  email: string;
-  avatar: string;
-}
-
-const mockStudents: Student[] = [
-  { id: '1', name: 'Lucas Silva', email: 'lucas@email.com', avatar: 'https://ui-avatars.com/api/?name=Lucas+Silva&background=10b981&color=fff' },
-  { id: '2', name: 'Maria Santos', email: 'maria@email.com', avatar: 'https://ui-avatars.com/api/?name=Maria+Santos&background=3b82f6&color=fff' },
-];
-
-const weekDays = [
-  { id: 'seg', label: 'Segunda', short: 'Seg' },
-  { id: 'ter', label: 'Terça', short: 'Ter' },
-  { id: 'qua', label: 'Quarta', short: 'Qua' },
-  { id: 'qui', label: 'Quinta', short: 'Qui' },
-  { id: 'sex', label: 'Sexta', short: 'Sex' },
-  { id: 'sab', label: 'Sábado', short: 'Sáb' },
-  { id: 'dom', label: 'Domingo', short: 'Dom' },
-];
+const weekDays = WEEKDAYS;
 
 const muscleGroups = [
   { name: 'Peito', color: '#5a64b4' },
@@ -65,9 +57,14 @@ const muscleGroups = [
 
 export function CreateWorkout() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const workoutId = searchParams.get('id');
+  const presetStudent = searchParams.get('student');
+  const { user } = useAuth();
+  const [students, setStudents] = useState<LinkedPerson[]>([]);
   const [workoutName, setWorkoutName] = useState('');
-  const [selectedDay, setSelectedDay] = useState('');
-  const [selectedStudent, setSelectedStudent] = useState('');
+  const [selectedDay, setSelectedDay] = useState<Weekday | ''>('');
+  const [selectedStudent, setSelectedStudent] = useState(presetStudent || '');
   const [selectedExercises, setSelectedExercises] = useState<WorkoutExercise[]>([]);
   const [saving, setSaving] = useState(false);
   const [selectedExerciseDetail, setSelectedExerciseDetail] = useState<ExerciseDetail | null>(null);
@@ -97,21 +94,78 @@ export function CreateWorkout() {
     if (detail) setSelectedExerciseDetail(detail);
   };
 
-  const handleSaveWorkout = () => {
-    if (!workoutName || !selectedDay || !selectedStudent || selectedExercises.length === 0) {
+  useEffect(() => {
+    if (!user?.accessToken || !user.id) return
+    fetchLinkedPeople(user.id, 'personal', user.accessToken, 'active')
+      .then(setStudents)
+      .catch(() => toast.error('Não foi possível carregar os alunos vinculados.'))
+  }, [user?.accessToken, user?.id])
+
+  useEffect(() => {
+    if (!user?.accessToken || !workoutId) return
+    fetchWorkoutById(workoutId, user.accessToken)
+      .then((doc) => {
+        setWorkoutName(doc.title)
+        setSelectedDay((doc.weekday as Weekday) || '')
+        setSelectedStudent(relId(doc.student) || presetStudent || '')
+        setSelectedExercises(
+          (doc.exercises || []).map((ex, index) => ({
+            id: ex.id || String(index),
+            name: ex.name,
+            sets: ex.sets || 3,
+            reps: ex.reps || '8-12',
+            muscle: ex.muscle || '',
+            equipment: '',
+            difficulty: '',
+          })),
+        )
+      })
+      .catch(() => toast.error('Não foi possível abrir o treino.'))
+  }, [user?.accessToken, workoutId, presetStudent])
+
+  const handleSaveWorkout = async () => {
+    if (!user?.accessToken || !workoutName || !selectedDay || !selectedStudent || selectedExercises.length === 0) {
       toast.error('Preencha todos os campos e adicione ao menos um exercício');
       return;
     }
 
+    const payload = {
+      student: selectedStudent,
+      title: workoutName.trim(),
+      weekday: selectedDay,
+      status: 'published' as const,
+      exercises: selectedExercises.map((ex) => ({
+        name: ex.name,
+        sets: ex.sets,
+        reps: ex.reps,
+        muscle: ex.muscle,
+      })),
+    }
+
     setSaving(true);
-    setTimeout(() => {
+    try {
+      if (workoutId) {
+        await updateWorkout(workoutId, payload, user.accessToken)
+        toast.success('Treino atualizado.');
+      } else {
+        await createWorkout(payload, user.accessToken)
+        toast.success('Treino publicado. O aluno vê em Meus Treinos.');
+      }
+      navigate(selectedStudent ? `/personal/aluno/${selectedStudent}` : '/personal');
+    } catch (err) {
+      const msg =
+        err instanceof PayloadApiError
+          ? extractPayloadMessage(err.data) || err.message
+          : err instanceof Error
+            ? err.message
+            : 'Não foi possível salvar o treino.'
+      toast.error(msg)
+    } finally {
       setSaving(false);
-      toast.success('Treino salvo e enviado para o aluno com sucesso!');
-      navigate('/personal');
-    }, 1500);
+    }
   };
 
-  const studentData = mockStudents.find((s) => s.id === selectedStudent);
+  const studentData = students.find((s) => s.userId === selectedStudent);
 
   // Filtrar exercícios
   const filteredExercises = (exerciseLibrary[selectedMuscle] || []).filter((exercise) => {
@@ -167,8 +221,8 @@ export function CreateWorkout() {
                   className="w-full px-3 py-2 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/30"
                 >
                   <option value="">Selecione...</option>
-                  {mockStudents.map((student) => (
-                    <option key={student.id} value={student.id}>
+                  {students.map((student) => (
+                    <option key={student.userId} value={student.userId}>
                       {student.name}
                     </option>
                   ))}
@@ -331,7 +385,7 @@ export function CreateWorkout() {
             <div className="dark:bg-zinc-900 bg-white rounded-3xl p-12 dark:border-zinc-800 border border-slate-200 text-center">
               <Search className="w-12 h-12 dark:text-zinc-700 text-slate-300 mx-auto mb-3" />
               <p className="dark:text-zinc-400 text-slate-500">
-                Nenhum exercício encontrado para "{searchTerm}"
+                Nenhum exercício encontrado para “{searchTerm}”
               </p>
             </div>
           )}

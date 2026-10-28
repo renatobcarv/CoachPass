@@ -11,13 +11,12 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
-import { projectId, publicAnonKey } from '@/lib/supabase/info';
 import { getPasswordErrors } from '@/lib/passwordPolicy';
 import { PasswordInput, PasswordRequirements } from '../PasswordField';
+import { deleteCurrentUser, exportMyData, fetchMeUser, patchCurrentUser } from '../../lib/professionalApi';
+import { PayloadApiError, extractPayloadMessage, USERS_API, postJson } from '@/lib/cms';
 
-const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-da3e276b`;
-
-type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'billing' | 'data';
+type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'data';
 
 interface NotificationSettings {
   email: boolean;
@@ -76,6 +75,9 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletePassword, setDeletePassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const [passwordChangedAt, setPasswordChangedAt] = useState<string | null>(null);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [passwordSubmitAttempted, setPasswordSubmitAttempted] = useState(false);
@@ -106,73 +108,120 @@ export function Settings() {
     profilePublic: false, showStats: true, shareProgress: true, analyticsEnabled: true,
   });
 
-  // Fetch settings from server
   useEffect(() => {
-    if (!user) return;
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${serverUrl}/settings/${user.id}`, {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-        });
-        if (res.ok) {
-          const { settings } = await res.json();
-          if (settings?.notifications) setNotifications(prev => ({ ...prev, ...settings.notifications }));
-          if (settings?.privacy) setPrivacy(prev => ({ ...prev, ...settings.privacy }));
+    if (!user?.accessToken) return
+    fetchMeUser(user.accessToken)
+      .then((doc) => {
+        if (!doc) return
+        setProfileForm((prev) => ({
+          ...prev,
+          name: doc.name || prev.name,
+          email: doc.email || prev.email,
+          whatsapp: doc.whatsapp || prev.whatsapp,
+          professionalId: doc.professionalId || prev.professionalId,
+          bio: doc.bio || '',
+          specialty: doc.specialties?.[0]?.value || '',
+          city: doc.city || '',
+          instagram: doc.instagram || '',
+        }))
+        setPasswordChangedAt(doc.passwordChangedAt || null)
+        const prefs = doc.preferences && typeof doc.preferences === 'object' ? doc.preferences : null
+        if (prefs && 'notifications' in prefs && prefs.notifications) {
+          setNotifications((prev) => ({ ...prev, ...(prefs.notifications as NotificationSettings) }))
         }
-      } catch (err) {
-        console.error('Erro ao buscar configurações:', err);
-      }
-    };
-    fetchSettings();
-  }, [user]);
+        if (prefs && 'privacy' in prefs && prefs.privacy) {
+          setPrivacy((prev) => ({ ...prev, ...(prefs.privacy as PrivacySettings) }))
+        }
+      })
+      .catch(() => undefined)
+  }, [user?.accessToken])
 
-  const saveSettings = async (section: string, data: any) => {
-    setSaving(true);
+  const saveSettings = async (section: string, data: NotificationSettings | PrivacySettings) => {
+    if (!user?.accessToken) return
+    setSaving(true)
     try {
-      const token = user?.accessToken || publicAnonKey;
-      await fetch(`${serverUrl}/settings/${user?.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ [section]: data }),
-      });
-      toast.success('Configurações salvas!');
+      await patchCurrentUser(
+        user.id,
+        { preferences: { notifications: section === 'notifications' ? data : notifications, privacy: section === 'privacy' ? data : privacy } },
+        user.accessToken,
+      )
+      toast.success('Configurações salvas.')
     } catch (err) {
-      console.error('Erro ao salvar:', err);
-      toast.info('Configurações salvas localmente!');
+      toast.error(err instanceof PayloadApiError ? extractPayloadMessage(err.data) || err.message : 'Falha ao salvar.')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
 
   const saveProfile = async () => {
-    setSaving(true);
+    if (!user?.accessToken) return
+    setSaving(true)
     try {
-      const token = user?.accessToken || publicAnonKey;
-      const res = await fetch(`${serverUrl}/profile/${user?.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      await patchCurrentUser(
+        user.id,
+        {
+          name: profileForm.name,
+          whatsapp: profileForm.whatsapp,
+          professionalId: profileForm.professionalId || undefined,
+          bio: profileForm.bio || undefined,
+          city: profileForm.city || undefined,
+          instagram: profileForm.instagram || undefined,
+          specialties: profileForm.specialty ? [{ value: profileForm.specialty }] : [],
         },
-        body: JSON.stringify(profileForm),
-      });
-      if (res.ok) {
-        updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-        toast.success('Perfil atualizado com sucesso!');
-      } else {
-        updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-        toast.success('Perfil salvo localmente!');
-      }
+        user.accessToken,
+      )
+      updateUser({
+        name: profileForm.name,
+        whatsapp: profileForm.whatsapp,
+        professionalId: profileForm.professionalId,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(profileForm.name || 'U')}&background=10b981&color=fff`,
+      })
+      toast.success('Perfil atualizado.')
     } catch (err) {
-      updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-      toast.success('Perfil salvo localmente!');
+      toast.error(err instanceof PayloadApiError ? extractPayloadMessage(err.data) || err.message : 'Falha ao salvar o perfil.')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
+  }
+
+  const handleExport = async () => {
+    if (!user?.accessToken) return
+    try {
+      const data = await exportMyData(user.accessToken)
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `coachpass-dados-${new Date().toISOString().split('T')[0]}.json`
+      a.click()
+      URL.revokeObjectURL(url)
+      toast.success('Dados exportados.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível exportar.')
+    }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (!user?.accessToken || !deletePassword) {
+      toast.error('Confirme com a senha atual.')
+      return
+    }
+    setDeleting(true)
+    try {
+      const login = await postJson<{ token: string }>(`${USERS_API}/login`, {
+        email: user.email,
+        password: deletePassword,
+      })
+      await deleteCurrentUser(user.id, login.token)
+      toast.success('Conta excluída.')
+      logout()
+      navigate('/login')
+    } catch (err) {
+      toast.error(err instanceof PayloadApiError ? extractPayloadMessage(err.data) || err.message : 'Não foi possível excluir a conta.')
+    } finally {
+      setDeleting(false)
+    }
+  }
 
   const closePasswordModal = () => {
     setShowPasswordModal(false);
@@ -220,7 +269,6 @@ export function Settings() {
     { id: 'notifications', label: 'Notificações', icon: Bell },
     { id: 'privacy', label: 'Privacidade', icon: Shield },
     { id: 'security', label: 'Segurança', icon: Lock },
-    { id: 'billing', label: 'Plano & Cobrança', icon: CreditCard },
     { id: 'data', label: 'Meus Dados', icon: Download },
   ];
 
@@ -555,57 +603,19 @@ export function Settings() {
                           </div>
                           <div className="text-left">
                             <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Alterar Senha</p>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">Última alteração há 30 dias</p>
+                            <p className="text-xs dark:text-zinc-500 text-slate-400">
+                              {passwordChangedAt
+                                ? `Última alteração em ${new Date(passwordChangedAt).toLocaleDateString('pt-BR')}`
+                                : 'Altere quando quiser'}
+                            </p>
                           </div>
                         </div>
                         <ChevronRight className="w-4 h-4 dark:text-zinc-600 text-slate-400 group-hover:dark:text-zinc-300 group-hover:text-slate-600 transition-colors" />
                       </button>
 
-                      {/* 2FA */}
-                      <div className="flex items-center justify-between p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
-                            <Smartphone className="w-5 h-5 text-[#5a64b4] dark:text-[#C5C5CE]" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Autenticação de 2 Fatores</p>
-                              <span className="text-xs px-1.5 py-0.5 rounded-md bg-slate-500/10 dark:text-zinc-500 text-slate-400" style={{ fontWeight: 600 }}>Em breve</span>
-                            </div>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">Adicione uma camada extra de segurança</p>
-                          </div>
-                        </div>
-                        <span className="text-xs dark:text-zinc-600 text-slate-400">Desativado</span>
-                      </div>
-
-                      {/* Active sessions */}
-                      <div className="p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <Laptop className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Sessões Ativas</p>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">Dispositivos conectados à sua conta</p>
-                          </div>
-                        </div>
-                        <div className="space-y-2 mt-2">
-                          {[
-                            { device: 'Chrome · Windows 11', location: 'São Paulo, BR', time: 'Agora', current: true },
-                            { device: 'Safari · iPhone 15', location: 'São Paulo, BR', time: 'Há 2 horas', current: false },
-                          ].map((s, i) => (
-                            <div key={i} className="flex items-center justify-between py-2">
-                              <div>
-                                <p className="text-xs dark:text-zinc-200 text-slate-700" style={{ fontWeight: 500 }}>{s.device}</p>
-                                <p className="text-xs dark:text-zinc-500 text-slate-400">{s.location} · {s.time}</p>
-                              </div>
-                              {s.current
-                                ? <span className="text-xs px-2 py-0.5 rounded-full bg-[#000326] text-white dark:bg-white/15 dark:text-white" style={{ fontWeight: 600 }}>Atual</span>
-                                : <button onClick={() => toast.success('Sessão encerrada')} className="text-xs text-red-400 hover:underline">Encerrar</button>}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
+                      <p className="text-xs dark:text-zinc-500 text-slate-400 px-1">
+                        Para encerrar a sessão atual, use Sair da conta. Autenticação em dois fatores não entra neste MVP.
+                      </p>
                     </div>
                   </div>
 
@@ -630,8 +640,7 @@ export function Settings() {
                 </div>
               )}
 
-              {/* ── BILLING TAB ── */}
-              {activeTab === 'billing' && (() => {
+              {false && (() => {
                 const hasPaidPlan =
                   user?.plan === 'monthly' || user?.plan === 'semester' || user?.plan === 'annual'
                 const planLabel =
@@ -822,30 +831,8 @@ export function Settings() {
                   <div className="space-y-4">
                     {[
                       {
-                        title: 'Exportar dados', desc: 'Baixe todos os seus dados em formato JSON',
-                        icon: Download, color: '#3b82f6', action: () => {
-                          const data = { user, exportDate: new Date().toISOString() };
-                          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url; a.download = `coachpass-dados-${new Date().toISOString().split('T')[0]}.json`;
-                          a.click(); toast.success('Dados exportados com sucesso!');
-                        }
-                      },
-                      {
-                        title: 'Histórico de treinos', desc: 'Exporte seu histórico completo de treinos em CSV',
-                        icon: Activity, color: '#5a64b4', action: () => toast.info('Exportação de treinos em breve')
-                      },
-                      {
-                        title: 'Histórico alimentar', desc: 'Baixe todos os registros do seu plano alimentar',
-                        icon: Star, color: '#f59e0b', action: () => toast.info('Exportação nutricional em breve')
-                      },
-                      {
-                        title: 'Limpar cache local', desc: 'Remove dados temporários armazenados no navegador',
-                        icon: RefreshCw, color: '#8b5cf6', action: () => {
-                          localStorage.removeItem('fitsync_cache');
-                          toast.success('Cache limpo com sucesso!');
-                        }
+                        title: 'Exportar dados', desc: 'Baixe perfil, treinos, planos e vínculos (sem senha ou token)',
+                        icon: Download, color: '#3b82f6', action: () => { void handleExport() }
                       },
                     ].map(({ title, desc, icon: Icon, color, action }) => (
                       <button
@@ -982,15 +969,22 @@ export function Settings() {
                   <AlertTriangle className="w-8 h-8 text-red-400" />
                 </div>
                 <h3 className="dark:text-white text-slate-900 text-lg mb-2" style={{ fontWeight: 700 }}>Excluir Conta?</h3>
-                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-6">
-                  Esta ação é <strong>irreversível</strong>. Todos os seus dados serão permanentemente apagados.
+                <p className="text-sm dark:text-zinc-400 text-slate-500 mb-4">
+                  Esta ação é <strong>irreversível</strong>. Confirme com a senha atual.
                 </p>
+                <PasswordInput
+                  value={deletePassword}
+                  onChange={(e) => setDeletePassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder="Senha atual"
+                  className="w-full pl-10 py-2.5 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white mb-4"
+                />
                 <div className="flex gap-3">
-                  <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 text-sm hover:dark:bg-zinc-800 transition-colors" style={{ fontWeight: 600 }}>
+                  <button onClick={() => { setShowDeleteConfirm(false); setDeletePassword(''); }} className="flex-1 py-2.5 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 text-sm hover:dark:bg-zinc-800 transition-colors" style={{ fontWeight: 600 }}>
                     Cancelar
                   </button>
-                  <button onClick={() => { toast.error('Exclusão de conta: entre em contato com o suporte.'); setShowDeleteConfirm(false); }} className="flex-1 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-sm hover:bg-red-500/20 transition-colors" style={{ fontWeight: 600 }}>
-                    Excluir
+                  <button disabled={deleting} onClick={() => void handleDeleteAccount()} className="flex-1 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-sm hover:bg-red-500/20 transition-colors disabled:opacity-50" style={{ fontWeight: 600 }}>
+                    {deleting ? 'Excluindo…' : 'Excluir'}
                   </button>
                 </div>
               </div>

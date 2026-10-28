@@ -170,7 +170,7 @@ export function AIChat() {
                 </p>
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 bg-white/80 rounded-full animate-pulse" />
-                  <p className="text-white/80 text-xs">Online agora</p>
+                  <p className="text-white/80 text-xs">Assistente com IA</p>
                 </div>
               </div>
             </div>

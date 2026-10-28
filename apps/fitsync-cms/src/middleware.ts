@@ -1,8 +1,51 @@
 import { NextResponse, type NextRequest } from 'next/server'
 
+import { clientIp, consumeRateLimit } from './lib/rateLimit'
+
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
+const RATE_LIMITS: Array<{ match: (pathname: string, method: string) => boolean; limit: number; name: string }> = [
+  {
+    name: 'login',
+    limit: 10,
+    match: (pathname, method) => method === 'POST' && pathname === '/api/users/login',
+  },
+  {
+    name: 'forgot',
+    limit: 5,
+    match: (pathname, method) => method === 'POST' && pathname === '/api/users/forgot-password',
+  },
+  {
+    name: 'invite',
+    limit: 10,
+    match: (pathname, method) => method === 'POST' && pathname === '/api/professional-links/invite',
+  },
+  {
+    name: 'ai',
+    limit: 20,
+    match: (pathname, method) => method === 'POST' && pathname.startsWith('/api/ai/'),
+  },
+]
+
 export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  const method = request.method.toUpperCase()
+  const ip = clientIp(request.headers)
+
+  for (const rule of RATE_LIMITS) {
+    if (!rule.match(pathname, method)) continue
+    const result = consumeRateLimit(`${rule.name}:${ip}`, rule.limit)
+    if (!result.ok) {
+      return NextResponse.json(
+        { error: 'Muitas tentativas. Aguarde um minuto e tente de novo.', code: 'RATE_LIMITED' },
+        {
+          status: 429,
+          headers: { 'Retry-After': String(result.retryAfterSec) },
+        },
+      )
+    }
+  }
+
   if (process.env.NODE_ENV !== 'production') return NextResponse.next()
 
   const hostname = request.nextUrl.hostname

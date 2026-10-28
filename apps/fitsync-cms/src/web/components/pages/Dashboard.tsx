@@ -17,6 +17,7 @@ import {
   ProfessionalLink,
   WorkoutDoc,
   fetchActiveProfessionalLinks,
+  fetchPendingProfessionalLinks,
   fetchAiQuota,
   fetchPublishedMealPlans,
   fetchPublishedWorkouts,
@@ -24,6 +25,7 @@ import {
   goalLabel,
   relName,
   fetchMyStudentProfile,
+  updateLinkStatus,
   StudentProfile,
 } from '../../lib/studentApi'
 
@@ -46,6 +48,8 @@ export function Dashboard() {
   const [loading, setLoading] = useState(true)
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [links, setLinks] = useState<ProfessionalLink[]>([])
+  const [invites, setInvites] = useState<ProfessionalLink[]>([])
+  const [inviteBusy, setInviteBusy] = useState<string | null>(null)
   const [workouts, setWorkouts] = useState<WorkoutDoc[]>([])
   const [mealPlans, setMealPlans] = useState<MealPlanDoc[]>([])
   const [quota, setQuota] = useState<AiQuota | null>(null)
@@ -75,9 +79,10 @@ export function Dashboard() {
       setLoading(true)
       setError(null)
       try {
-        const [profileDoc, linkDocs, workoutDocs, mealDocs, aiQuota] = await Promise.all([
+        const [profileDoc, linkDocs, pendingDocs, workoutDocs, mealDocs, aiQuota] = await Promise.all([
           fetchMyStudentProfile(user.id, user.accessToken),
           fetchActiveProfessionalLinks(user.id, user.accessToken),
+          fetchPendingProfessionalLinks(user.id, user.accessToken),
           fetchPublishedWorkouts(user.id, user.accessToken),
           fetchPublishedMealPlans(user.id, user.accessToken),
           fetchAiQuota(user.accessToken).catch(() => null),
@@ -85,6 +90,7 @@ export function Dashboard() {
         if (cancelled) return
         setProfile(profileDoc)
         setLinks(linkDocs)
+        setInvites(pendingDocs)
         setWorkouts(workoutDocs)
         setMealPlans(mealDocs)
         if (aiQuota) setQuota(aiQuota)
@@ -110,6 +116,25 @@ export function Dashboard() {
     setWorkouts(workoutDocs)
     if (aiQuota) setQuota(aiQuota)
   }, [user?.accessToken, user?.id])
+
+  const handleInvite = async (linkId: string, status: 'active' | 'revoked') => {
+    if (!user?.accessToken || inviteBusy) return
+    setInviteBusy(linkId)
+    try {
+      await updateLinkStatus(linkId, status, user.accessToken)
+      const [active, pending] = await Promise.all([
+        fetchActiveProfessionalLinks(user.id, user.accessToken),
+        fetchPendingProfessionalLinks(user.id, user.accessToken),
+      ])
+      setLinks(active)
+      setInvites(pending)
+      toast.success(status === 'active' ? 'Vínculo aceito.' : 'Convite recusado.')
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível atualizar o convite.')
+    } finally {
+      setInviteBusy(null)
+    }
+  }
 
   const handleGenerateWorkout = async () => {
     if (!user?.accessToken || generating) return
@@ -173,6 +198,48 @@ export function Dashboard() {
 
       {error && (
         <div className={`${card} text-sm text-red-600 dark:text-red-300`}>{error}</div>
+      )}
+
+      {invites.length > 0 && (
+        <section className={`${card} space-y-3`}>
+          <h2 className="font-semibold text-[#000326] dark:text-white">Convites pendentes</h2>
+          <p className="text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
+            Aceite para o profissional poder publicar treinos ou planos no seu painel.
+          </p>
+          {invites.map((invite) => (
+            <div
+              key={invite.id}
+              className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-xl border border-[#000326]/10 dark:border-white/10 p-3"
+            >
+              <div>
+                <p className="font-medium text-[#000326] dark:text-white">
+                  {relName(invite.professional, 'Profissional')}
+                </p>
+                <p className="text-xs text-[#8e8e9a] dark:text-[#C5C5CE]/70">
+                  {invite.professionalRole === 'nutritionist' ? 'Nutricionista' : 'Personal trainer'}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  disabled={inviteBusy === invite.id}
+                  onClick={() => void handleInvite(invite.id, 'revoked')}
+                  className="px-3 py-2 rounded-lg text-sm border border-[#000326]/15 dark:border-white/15 text-[#6a6a7a] dark:text-[#C5C5CE]"
+                >
+                  Recusar
+                </button>
+                <button
+                  type="button"
+                  disabled={inviteBusy === invite.id}
+                  onClick={() => void handleInvite(invite.id, 'active')}
+                  className="px-3 py-2 rounded-lg text-sm font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326]"
+                >
+                  Aceitar
+                </button>
+              </div>
+            </div>
+          ))}
+        </section>
       )}
 
       {(hasPersonal || hasNutritionist) && (
@@ -254,7 +321,7 @@ export function Dashboard() {
               onClick={() => void handleGenerateWorkout()}
               disabled={generating}
               aria-busy={generating}
-              className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left transition hover:border-[#000326]/40 dark:hover:border-white/40 disabled:cursor-wait disabled:opacity-70"
+              className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left transition hover:border-[#000326]/40 dark:hover:border-white/40 disabled:cursor-wait disabled:opacity-70 sm:col-span-2"
             >
               {generating ? (
                 <Loader2 className="w-5 h-5 animate-spin text-[#000326] dark:text-[#C5C5CE]" />
@@ -268,13 +335,6 @@ export function Dashboard() {
                   : `${remainingGenerations} de ${quotaLimit} gerações disponíveis neste mês`}
               </p>
             </button>
-            <div className="rounded-xl border border-[#000326]/15 dark:border-white/15 px-4 py-4 text-left opacity-70">
-              <Sparkles className="w-5 h-5 text-[#000326] dark:text-[#C5C5CE]" />
-              <p className="mt-3 font-semibold text-[#000326] dark:text-white">
-                Gerar sugestão alimentar com IA
-              </p>
-              <p className="mt-1 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">Em breve</p>
-            </div>
           </div>
           {aiError && (
             <p role="alert" className="text-sm text-red-600 dark:text-red-300">
@@ -346,7 +406,7 @@ export function Dashboard() {
           <div className={`${card} text-sm text-[#6a6a7a] dark:text-[#C5C5CE]`}>
             {hasNutritionist
               ? 'Seu nutricionista ainda não publicou um plano. Rascunhos não aparecem aqui.'
-              : 'Nenhum plano alimentar publicado. Quando um nutricionista publicar ou você gerar com IA, ele aparece aqui.'}
+              : 'Nenhum plano alimentar publicado. Quando um nutricionista publicar, ele aparece aqui.'}
           </div>
         ) : (
           mealPlans.slice(0, 3).map((plan) => (

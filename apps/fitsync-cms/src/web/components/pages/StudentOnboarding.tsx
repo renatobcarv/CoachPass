@@ -21,7 +21,9 @@ import {
   saveStudentProfile,
 } from '../../lib/studentApi'
 import { formatPhone } from '../../lib/phone'
+import { USERS_API, patchJson } from '@/lib/cms'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
+import { parseHeightCm, parseWeightKg } from '../../lib/measures'
 
 type FormState = {
   displayName: string
@@ -60,6 +62,7 @@ export function StudentOnboarding() {
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [bootstrapping, setBootstrapping] = useState(true)
+  const [healthConsent, setHealthConsent] = useState(false)
   const [form, setForm] = useState<FormState>({
     displayName: user?.name || '',
     phone: formatPhone(user?.whatsapp || ''),
@@ -147,8 +150,8 @@ export function StudentOnboarding() {
       form.displayName.trim() &&
         form.phone.trim() &&
         form.birthDate &&
-        form.heightCm &&
-        form.weightKg &&
+        parseHeightCm(form.heightCm).ok &&
+        parseWeightKg(form.weightKg).ok &&
         form.sex &&
         form.goal,
     )
@@ -165,6 +168,23 @@ export function StudentOnboarding() {
       setStep(1)
       return
     }
+    if (!healthConsent) {
+      toast.error('Aceite o uso dos dados de saúde para concluir o perfil.')
+      return
+    }
+
+    const height = parseHeightCm(form.heightCm)
+    const weight = parseWeightKg(form.weightKg)
+    if (!height.ok) {
+      toast.error(height.error)
+      setStep(1)
+      return
+    }
+    if (!weight.ok) {
+      toast.error(weight.error)
+      setStep(1)
+      return
+    }
 
     setLoading(true)
     try {
@@ -174,8 +194,8 @@ export function StudentOnboarding() {
           displayName: form.displayName.trim(),
           phone: form.phone.trim(),
           birthDate: form.birthDate,
-          heightCm: Number(form.heightCm),
-          weightKg: Number(form.weightKg),
+          heightCm: height.value,
+          weightKg: weight.value,
           sex: form.sex,
           goal: form.goal,
           bodyFatPercent: form.bodyFatPercent ? Number(form.bodyFatPercent) : null,
@@ -194,6 +214,11 @@ export function StudentOnboarding() {
         },
         user.accessToken,
       )
+      try {
+        await patchJson(`${USERS_API}/${user.id}`, { healthDataConsentAt: new Date().toISOString() }, user.accessToken)
+      } catch {
+        /* não bloqueia o onboarding */
+      }
       toast.success('Perfil salvo com sucesso.')
       navigate('/app', { replace: true })
     } catch (err) {
@@ -303,11 +328,12 @@ export function StudentOnboarding() {
                   <div className="relative">
                     <Ruler className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       className={`${inputCls} pl-10`}
                       value={form.heightCm}
                       onChange={(e) => setField('heightCm', e.target.value)}
-                      placeholder="175"
+                      placeholder="175 ou 1,75"
                       required
                     />
                   </div>
@@ -319,12 +345,12 @@ export function StudentOnboarding() {
                   <div className="relative">
                     <Weight className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
-                      type="number"
-                      step="0.1"
+                      type="text"
+                      inputMode="decimal"
                       className={`${inputCls} pl-10`}
                       value={form.weightKg}
                       onChange={(e) => setField('weightKg', e.target.value)}
-                      placeholder="75.5"
+                      placeholder="75,5"
                       required
                     />
                   </div>
@@ -498,6 +524,18 @@ export function StudentOnboarding() {
                   />
                 </div>
               ))}
+              <label className="flex items-start gap-2 text-xs dark:text-[#C5C5CE] text-[#6a6a7a]">
+                <input
+                  type="checkbox"
+                  checked={healthConsent}
+                  onChange={(e) => setHealthConsent(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Autorizo o tratamento dos dados de saúde informados (peso, lesões, restrições e medicamentos)
+                  para personalizar treinos e orientações no CoachPass.
+                </span>
+              </label>
               <div className="flex gap-3">
                 <button
                   type="button"

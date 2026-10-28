@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useParams, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   ArrowLeft,
@@ -8,7 +8,6 @@ import {
   X,
   Utensils,
   Search,
-  Sparkles,
   Apple,
   Beef,
   Wheat,
@@ -24,6 +23,16 @@ import {
   Calendar,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useAuth } from '../../context/AuthContext';
+import {
+  createMealPlan,
+  fetchLinkedPeople,
+  fetchMealPlanById,
+  updateMealPlan,
+  type LinkedPerson,
+} from '../../lib/professionalApi';
+import { fetchFoods, relId } from '../../lib/studentApi';
+import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 
 // ────────────────── DATA ──────────────────
 interface FoodItem {
@@ -179,15 +188,34 @@ interface ShoppingItem {
   displayMonthly: string;
 }
 
-const mockPatients = [
-  { id: '1', name: 'Ana Costa' },
-  { id: '2', name: 'Roberto Lima' },
-];
+function parseMealQuantity(raw?: string | null): number {
+  const match = String(raw || '').match(/(\d+(?:[.,]\d+)?)/)
+  if (!match) return 100
+  return Number(match[1].replace(',', '.'))
+}
 
-// ────────────────── COMPONENT ──────────────────
+function resolveFood(name: string): FoodItem {
+  const found = foodDatabase.find((item) => item.name.toLowerCase() === name.toLowerCase())
+  if (found) return found
+  return {
+    id: `custom-${name.toLowerCase().replace(/\s+/g, '-')}`,
+    name,
+    category: 'protein',
+    calories: 0,
+    protein: 0,
+    carbs: 0,
+    fat: 0,
+    unit: 'g',
+  }
+}
+
 export function CreateDietPlan() {
   const { patientId } = useParams();
+  const [searchParams] = useSearchParams();
+  const planId = searchParams.get('id');
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [patients, setPatients] = useState<LinkedPerson[]>([]);
 
   const [planName, setPlanName] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(patientId || '');
@@ -198,7 +226,6 @@ export function CreateDietPlan() {
   const [duration, setDuration] = useState(4);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [generatingAI, setGeneratingAI] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [shoppingDays, setShoppingDays] = useState(30);
 
@@ -208,8 +235,9 @@ export function CreateDietPlan() {
   const [activeMeal, setActiveMeal] = useState<string | null>('meal1');
   const [foodSearch, setFoodSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
+  const [catalog, setCatalog] = useState<FoodItem[]>(foodDatabase);
 
-  const filteredFoods = foodDatabase.filter((f) => {
+  const filteredFoods = catalog.filter((f) => {
     const matchSearch = f.name.toLowerCase().includes(foodSearch.toLowerCase());
     const matchCat = categoryFilter === 'all' || f.category === categoryFilter;
     return matchSearch && matchCat;
@@ -298,20 +326,115 @@ export function CreateDietPlan() {
 
   const totals = getTotals();
 
-  const handleGenerateAI = () => {
-    setGeneratingAI(true);
-    setTimeout(() => { setGeneratingAI(false); toast.success('Plano alimentar gerado pela IA com sucesso!'); }, 2000);
-  };
+  useEffect(() => {
+    if (!user?.accessToken || !user.id) return
+    fetchLinkedPeople(user.id, 'nutritionist', user.accessToken, 'active')
+      .then(setPatients)
+      .catch(() => toast.error('Não foi possível carregar os pacientes vinculados.'))
+    fetchFoods(user.accessToken)
+      .then((docs) => {
+        if (!docs.length) return
+        setCatalog(
+          docs.map((doc) => ({
+            id: doc.id,
+            name: doc.name,
+            category: doc.category,
+            calories: doc.calories,
+            protein: doc.protein,
+            carbs: doc.carbs,
+            fat: doc.fat,
+            unit: doc.unit || 'g',
+          })),
+        )
+      })
+      .catch(() => undefined)
+  }, [user?.accessToken, user?.id])
 
-  const handleSave = () => {
-    if (!planName || !selectedPatient) { toast.error('Preencha o nome do plano e selecione um paciente'); return; }
-    setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
-      toast.success('Plano alimentar salvo com sucesso!');
-      navigate(patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist');
-    }, 1500);
-  };
+  useEffect(() => {
+    if (!user?.accessToken || !planId) return
+    fetchMealPlanById(planId, user.accessToken)
+      .then((doc) => {
+        setPlanName(doc.title)
+        setNotes(doc.observations || '')
+        setSelectedPatient(relId(doc.student) || patientId || '')
+        const loaded = defaultMeals.map((slot) => {
+          const match = (doc.meals || []).find((meal) => meal.name.toLowerCase() === slot.name.toLowerCase())
+          return {
+            ...slot,
+            time: match?.time || slot.time,
+            foods: (match?.items || []).map((item, index) => ({
+              id: item.id || `${slot.id}-${index}`,
+              food: resolveFood(item.name),
+              quantity: parseMealQuantity(item.quantity),
+            })),
+          }
+        })
+        const extras = (doc.meals || []).filter(
+          (meal) => !defaultMeals.some((slot) => slot.name.toLowerCase() === meal.name.toLowerCase()),
+        )
+        setMeals([
+          ...loaded,
+          ...extras.map((meal, index) => ({
+            id: meal.id || `extra-${index}`,
+            name: meal.name,
+            time: meal.time || '12:00',
+            icon: '🍽️',
+            foods: (meal.items || []).map((item, itemIndex) => ({
+              id: item.id || `extra-${index}-${itemIndex}`,
+              food: resolveFood(item.name),
+              quantity: parseMealQuantity(item.quantity),
+            })),
+          })),
+        ])
+      })
+      .catch(() => toast.error('Não foi possível abrir o plano.'))
+  }, [user?.accessToken, planId, patientId])
+
+  const handleSave = async () => {
+    if (!user?.accessToken || !planName || !selectedPatient) {
+      toast.error('Preencha o nome do plano e selecione um paciente')
+      return
+    }
+    const payload = {
+      student: selectedPatient,
+      title: planName.trim(),
+      observations: notes.trim() || null,
+      status: 'published' as const,
+      meals: meals
+        .filter((meal) => meal.foods.length > 0)
+        .map((meal) => ({
+          name: meal.name,
+          time: meal.time,
+          calories: meal.foods.reduce((sum, item) => sum + Math.round((item.food.calories * item.quantity) / 100), 0),
+          items: meal.foods.map((item) => ({
+            name: item.food.name,
+            quantity: `${item.quantity}${item.food.unit}`,
+            calories: Math.round((item.food.calories * item.quantity) / 100),
+          })),
+        })),
+    }
+    setSaving(true)
+    try {
+      if (planId) {
+        await updateMealPlan(planId, payload, user.accessToken)
+        toast.success('Plano atualizado.')
+      } else {
+        await createMealPlan(payload, user.accessToken)
+        toast.success('Plano publicado. O paciente vê em Minha Dieta.')
+      }
+      navigate(selectedPatient ? `/nutritionist/paciente/${selectedPatient}` : '/nutritionist')
+    } catch (err) {
+      const msg =
+        err instanceof PayloadApiError
+          ? extractPayloadMessage(err.data) || err.message
+          : err instanceof Error
+            ? err.message
+            : 'Não foi possível salvar o plano.'
+      toast.error(msg)
+    } finally {
+      setSaving(false)
+    }
+  }
 
   const proteinTarget = Math.round((targetCalories * proteinPct) / 100 / 4);
   const carbsTarget = Math.round((targetCalories * carbsPct) / 100 / 4);
@@ -355,18 +478,6 @@ export function CreateDietPlan() {
                 </span>
               )}
             </button>
-            <button
-              onClick={handleGenerateAI}
-              disabled={generatingAI}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-70"
-              style={{ background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', boxShadow: '0 8px 20px rgba(139,92,246,0.3)', fontWeight: 600 }}
-            >
-              {generatingAI ? (
-                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Gerando...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" />Gerar com IA</>
-              )}
-            </button>
           </div>
         </div>
       </div>
@@ -390,7 +501,7 @@ export function CreateDietPlan() {
                   <select value={selectedPatient} onChange={(e) => setSelectedPatient(e.target.value)}
                     className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30">
                     <option value="">Selecione...</option>
-                    {mockPatients.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {patients.map((p) => <option key={p.userId} value={p.userId}>{p.name}</option>)}
                   </select>
                 </div>
               </div>

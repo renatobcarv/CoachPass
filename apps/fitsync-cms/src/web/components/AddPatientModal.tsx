@@ -74,18 +74,16 @@ export function AddPatientModal({
       }
 
       setStep('success')
+      const generic =
+        (typeof result?.message === 'string' && result.message.trim()) ||
+        'Se o e-mail pertencer a um aluno CoachPass, o convite ficará pendente.'
       onSuccess?.({
-        id: String(result.student?.id ?? result.link?.id ?? ''),
-        name: String(result.student?.name || data.email),
-        email: String(result.student?.email || data.email),
-        status: result.link?.status || 'pending',
+        id: '',
+        name: data.email,
+        email: data.email,
+        status: 'pending',
       })
-
-      toast.success(
-        result.alreadyLinked
-          ? 'Este aluno já está vinculado a você.'
-          : 'Vínculo criado. O aluno aparece como pendente.',
-      )
+      toast.success(generic)
 
       setTimeout(() => {
         handleClose()

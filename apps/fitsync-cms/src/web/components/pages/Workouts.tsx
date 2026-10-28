@@ -4,8 +4,11 @@ import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
 import {
   WorkoutDoc,
+  createWorkoutLog,
   fetchPublishedWorkouts,
+  fetchWorkoutLogs,
   generateWorkoutWithAi,
+  relId,
   relName,
 } from '../../lib/studentApi'
 
@@ -37,6 +40,10 @@ export function Workouts() {
   const [loading, setLoading] = useState(true)
   const [generating, setGenerating] = useState(false)
   const [workouts, setWorkouts] = useState<WorkoutDoc[]>([])
+  const [doneIds, setDoneIds] = useState<Set<string>>(new Set())
+  const [checkingId, setCheckingId] = useState<string | null>(null)
+  const [pendingCheckInId, setPendingCheckInId] = useState<string | null>(null)
+  const [rpe, setRpe] = useState(7)
   const [error, setError] = useState<string | null>(null)
 
   const reload = useCallback(async () => {
@@ -44,8 +51,12 @@ export function Workouts() {
       setLoading(false)
       return
     }
-    const docs = await fetchPublishedWorkouts(user.id, user.accessToken)
+    const [docs, logs] = await Promise.all([
+      fetchPublishedWorkouts(user.id, user.accessToken),
+      fetchWorkoutLogs(user.id, user.accessToken),
+    ])
     setWorkouts(docs)
+    setDoneIds(new Set(logs.filter((log) => log.status === 'completed').map((log) => relId(log.workout))))
   }, [user?.accessToken, user?.id])
 
   useEffect(() => {
@@ -86,6 +97,33 @@ export function Workouts() {
       toast.error(message)
     } finally {
       setGenerating(false)
+    }
+  }
+
+  const handleCheckIn = async (workout: WorkoutDoc) => {
+    if (!user?.accessToken || checkingId) return
+    setCheckingId(workout.id)
+    try {
+      await createWorkoutLog(
+        {
+          workout: workout.id,
+          status: 'completed',
+          rpe,
+          exercises: (workout.exercises || []).map((ex) => ({
+            name: ex.name,
+            setsCompleted: ex.sets || undefined,
+          })),
+        },
+        user.accessToken,
+      )
+      toast.success(`Treino marcado como feito · esforço ${rpe}/10`)
+      setDoneIds((prev) => new Set(prev).add(workout.id))
+      setPendingCheckInId(null)
+      setRpe(7)
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Não foi possível registrar o treino.')
+    } finally {
+      setCheckingId(null)
     }
   }
 
@@ -154,12 +192,59 @@ export function Workouts() {
                     .join(' · ')}
                 </p>
               </div>
-              {workout.splitLabel && (
-                <span className="rounded-lg px-2.5 py-1 text-xs font-medium bg-[#f3f4f9] text-[#000326] dark:bg-[#000137] dark:text-[#C5C5CE]">
-                  {workout.splitLabel}
-                </span>
-              )}
+              <div className="flex items-center gap-2">
+                {workout.splitLabel && (
+                  <span className="rounded-lg px-2.5 py-1 text-xs font-medium bg-[#f3f4f9] text-[#000326] dark:bg-[#000137] dark:text-[#C5C5CE]">
+                    {workout.splitLabel}
+                  </span>
+                )}
+                <button
+                  type="button"
+                  disabled={doneIds.has(workout.id) || checkingId === workout.id}
+                  onClick={() => {
+                    if (pendingCheckInId === workout.id) {
+                      setPendingCheckInId(null)
+                      return
+                    }
+                    setPendingCheckInId(workout.id)
+                    setRpe(7)
+                  }}
+                  className="rounded-lg px-2.5 py-1 text-xs font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] disabled:opacity-50"
+                >
+                  {doneIds.has(workout.id)
+                    ? 'Feito'
+                    : pendingCheckInId === workout.id
+                      ? 'Cancelar'
+                      : 'Marcar como feito'}
+                </button>
+              </div>
             </div>
+            {pendingCheckInId === workout.id && !doneIds.has(workout.id) && (
+              <div className="mt-3 rounded-xl px-3 py-3 bg-[#f3f4f9] dark:bg-[#000137] space-y-2">
+                <label htmlFor={`rpe-${workout.id}`} className="flex items-center justify-between text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">
+                  <span>Esforço percebido (RPE)</span>
+                  <span className="font-semibold text-[#000326] dark:text-white">{rpe}/10</span>
+                </label>
+                <input
+                  id={`rpe-${workout.id}`}
+                  type="range"
+                  min={1}
+                  max={10}
+                  step={1}
+                  value={rpe}
+                  onChange={(event) => setRpe(Number(event.target.value))}
+                  className="w-full accent-[#000326]"
+                />
+                <button
+                  type="button"
+                  disabled={checkingId === workout.id}
+                  onClick={() => void handleCheckIn(workout)}
+                  className="rounded-lg px-2.5 py-1 text-xs font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] disabled:opacity-50"
+                >
+                  {checkingId === workout.id ? 'Salvando…' : 'Confirmar check-in'}
+                </button>
+              </div>
+            )}
             {workout.observations && (
               <p className="mt-3 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">{workout.observations}</p>
             )}

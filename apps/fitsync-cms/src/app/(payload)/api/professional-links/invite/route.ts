@@ -7,6 +7,9 @@ import type { User } from '@/payload-types'
 
 export const dynamic = 'force-dynamic'
 
+const GENERIC_INVITE =
+  'Se o e-mail pertencer a um aluno CoachPass, ele receberá o convite.'
+
 type AuthUser = {
   id: User['id']
   role?: string
@@ -19,14 +22,14 @@ export async function POST(request: Request) {
   const { user } = await payload.auth({ headers })
 
   if (!user) {
-    return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
+    return NextResponse.json({ error: 'Não autenticado', code: 'UNAUTHENTICATED' }, { status: 401 })
   }
 
   const authUser = user as AuthUser
   const role = authUser.role
   if (role !== 'personal' && role !== 'nutritionist' && !authUser.isSuperAdmin) {
     return NextResponse.json(
-      { error: 'Apenas personal ou nutricionista podem convidar alunos.' },
+      { error: 'Apenas personal ou nutricionista podem convidar alunos.', code: 'FORBIDDEN' },
       { status: 403 },
     )
   }
@@ -35,14 +38,14 @@ export async function POST(request: Request) {
   try {
     body = await request.json()
   } catch {
-    return NextResponse.json({ error: 'JSON inválido' }, { status: 400 })
+    return NextResponse.json({ error: 'JSON inválido', code: 'INVALID_JSON' }, { status: 400 })
   }
 
   const email = String(body.email || '')
     .trim()
     .toLowerCase()
   if (!email || !email.includes('@')) {
-    return NextResponse.json({ error: 'Informe um e-mail válido.' }, { status: 400 })
+    return NextResponse.json({ error: 'Informe um e-mail válido.', code: 'INVALID_EMAIL' }, { status: 400 })
   }
 
   const professionalRole: 'personal' | 'nutritionist' =
@@ -59,19 +62,8 @@ export async function POST(request: Request) {
   })
 
   const student = students.docs[0]
-  if (!student) {
-    return NextResponse.json(
-      {
-        error:
-          'Nenhum aluno com este e-mail. O aluno precisa criar uma conta CoachPass antes do convite.',
-        code: 'STUDENT_NOT_FOUND',
-      },
-      { status: 404 },
-    )
-  }
-
-  if (String(student.id) === String(authUser.id)) {
-    return NextResponse.json({ error: 'Você não pode vincular a si mesmo.' }, { status: 400 })
+  if (!student || String(student.id) === String(authUser.id)) {
+    return NextResponse.json({ ok: true, queued: true, message: GENERIC_INVITE })
   }
 
   const existing = await payload.find({
@@ -90,20 +82,14 @@ export async function POST(request: Request) {
   })
 
   if (existing.docs[0]) {
-    const link = existing.docs[0]
     return NextResponse.json({
       ok: true,
       alreadyLinked: true,
-      link,
-      student: {
-        id: student.id,
-        name: (student as { name?: string }).name || email,
-        email: (student as { email?: string }).email || email,
-      },
+      message: GENERIC_INVITE,
     })
   }
 
-  const link = await payload.create({
+  await payload.create({
     collection: 'professional-links',
     data: {
       student: student.id,
@@ -114,14 +100,26 @@ export async function POST(request: Request) {
     overrideAccess: true,
   })
 
+  const appUrl = (
+    process.env.FITSYNC_FRONTEND_URL ||
+    process.env.PAYLOAD_PUBLIC_SERVER_URL ||
+    'http://localhost:3000'
+  ).replace(/\/$/, '')
+  const roleLabel = professionalRole === 'nutritionist' ? 'nutricionista' : 'personal trainer'
+  const professionalName = String((user as { name?: string }).name || roleLabel)
+  try {
+    await payload.sendEmail({
+      to: email,
+      subject: 'CoachPass — convite de vínculo',
+      html: `<p>Olá,</p><p>${professionalName} convidou você como ${roleLabel} no CoachPass.</p><p><a href="${appUrl}/login">Entrar e aceitar o convite</a></p>`,
+    })
+  } catch {
+    /* o vínculo já existe; Ethereal/SMTP ausente não deve enumerar o aluno */
+  }
+
   return NextResponse.json({
     ok: true,
     alreadyLinked: false,
-    link,
-    student: {
-      id: student.id,
-      name: (student as { name?: string }).name || email,
-      email: (student as { email?: string }).email || email,
-    },
+    message: GENERIC_INVITE,
   })
 }

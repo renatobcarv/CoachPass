@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import React, { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
@@ -18,9 +18,40 @@ import { toast } from 'sonner';
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 import { getPasswordErrors } from '@/lib/passwordPolicy';
 import { PasswordInput, PasswordRequirements } from '../PasswordField';
+import { CONSENT_VERSION } from '../../lib/consent';
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
+
+const REGISTER_DRAFT_KEY = 'coachpass_register_draft';
+
+type RegisterDraft = {
+  userType: UserType;
+  name: string;
+  email: string;
+  step: number;
+  consentAccepted: boolean;
+};
+
+function readRegisterDraft(): RegisterDraft | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = sessionStorage.getItem(REGISTER_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<RegisterDraft>;
+    const userType =
+      parsed.userType === 'student' || parsed.userType === 'professional' ? parsed.userType : null;
+    return {
+      userType,
+      name: typeof parsed.name === 'string' ? parsed.name : '',
+      email: typeof parsed.email === 'string' ? parsed.email : '',
+      step: parsed.step === 2 && userType ? 2 : 1,
+      consentAccepted: parsed.consentAccepted === true,
+    };
+  } catch {
+    return null;
+  }
+}
 
 // Os dados que precisamos para criar a conta na Auth. 
 // O restante dos dados (WhatsApp, CREF/CRN) será coletado no Onboarding.
@@ -35,15 +66,16 @@ export function Register() {
   const navigate = useNavigate();
   // Pega a função 'register' de dentro do nosso contexto de autenticação
   const { register: registerUser } = useAuth();
+  const [draft] = useState(readRegisterDraft);
   
   // Controle de qual etapa do cadastro o usuário está (1 ou 2)
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(draft?.step ?? 1);
   
-  // Guardamos as respostas do formulário aqui
+  // Guardamos as respostas do formulário aqui. A senha nunca entra no rascunho.
   const [formData, setFormData] = useState<RegisterData>({
-    userType: null,
-    name: '',
-    email: '',
+    userType: draft?.userType ?? null,
+    name: draft?.name ?? '',
+    email: draft?.email ?? '',
     password: '',
   });
   
@@ -52,6 +84,18 @@ export function Register() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [backendError, setBackendError] = useState<string | null>(null);
   const [submitAttempted, setSubmitAttempted] = useState(false);
+  const [consentAccepted, setConsentAccepted] = useState(draft?.consentAccepted ?? false);
+
+  useEffect(() => {
+    const next: RegisterDraft = {
+      userType: formData.userType,
+      name: formData.name,
+      email: formData.email,
+      step,
+      consentAccepted,
+    };
+    sessionStorage.setItem(REGISTER_DRAFT_KEY, JSON.stringify(next));
+  }, [formData.userType, formData.name, formData.email, step, consentAccepted]);
 
   // --- Funções Auxiliares ---
 
@@ -72,6 +116,7 @@ export function Register() {
     else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = 'E-mail em formato inválido';
     }
+    if (!consentAccepted) newErrors.consent = 'Confirme o aceite da política de privacidade.';
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
     else {
       const passwordErrors = getPasswordErrors(formData.password, {
@@ -100,8 +145,11 @@ export function Register() {
     try {
       await registerUser(formData.email.trim().toLowerCase(), formData.password, role, {
         name: formData.name,
+        consentAcceptedAt: new Date().toISOString(),
+        consentVersion: CONSENT_VERSION,
       });
 
+      sessionStorage.removeItem(REGISTER_DRAFT_KEY);
       toast.success('Conta criada em nossa plataforma.');
       
       if (role === 'student') {
@@ -259,7 +307,7 @@ export function Register() {
                 <p className="text-xs dark:text-zinc-500 text-slate-500 font-light">
                   Conta já registrada?{' '}
                   <button onClick={() => navigate('/login')} className="dark:text-white text-slate-900 font-medium hover:underline">
-                    Efetuar Autenticação
+                    Entrar
                   </button>
                 </p>
               </div>
@@ -281,9 +329,9 @@ export function Register() {
                     {formData.userType === 'student' ? <Heart className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE]" /> : <Briefcase className="w-4 h-4 text-blue-600" />}
                   </div>
                   <div>
-                    <h2 className="dark:text-white text-slate-900 font-medium tracking-tight text-lg">Requisitos de Segurança</h2>
+                    <h2 className="dark:text-white text-slate-900 font-medium tracking-tight text-lg">Seus dados</h2>
                     <p className="text-xs dark:text-zinc-500 text-slate-500 font-light mt-1">
-                      {formData.userType === 'student' ? 'Perfil: Estudante/Praticante' : 'Perfil: Especialista/Docente'}
+                      {formData.userType === 'student' ? 'Perfil: aluno' : 'Perfil: profissional'}
                     </p>
                   </div>
                 </div>
@@ -307,16 +355,17 @@ export function Register() {
                 
                 {/* Nome Completo */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                  <label htmlFor="register-name" className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
                     Nome Completo
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
+                      id="register-name"
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
-                      placeholder="Identificação formal"
+                      placeholder="Seu nome"
                       className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.name ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
                     />
                   </div>
@@ -325,16 +374,17 @@ export function Register() {
 
                 {/* E-mail Institucional / Pessoal */}
                 <div>
-                  <label className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
-                    Correio Eletrônico
+                  <label htmlFor="register-email" className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold">
+                    E-mail
                   </label>
                   <div className="relative">
                     <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-600 text-slate-400" />
                     <input
+                      id="register-email"
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
-                      placeholder="seu@gmail.com"
+                      placeholder="seu@email.com"
                       autoComplete="email"
                       className={`w-full pl-10 pr-4 py-3 rounded-lg dark:bg-zinc-900/50 bg-slate-50/50 border ${errors.email ? 'border-red-500 dark:border-red-500/50' : 'dark:border-zinc-800 border-slate-200'} dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:border-[#000346] dark:focus:border-[#C5C5CE] transition-all font-light text-sm`}
                     />
@@ -348,7 +398,7 @@ export function Register() {
                     htmlFor="register-password"
                     className="block text-xs dark:text-zinc-400 text-slate-600 mb-2 uppercase tracking-wider font-semibold"
                   >
-                    Senha de segurança
+                    Senha
                   </label>
                   <PasswordInput
                     id="register-password"
@@ -392,29 +442,33 @@ export function Register() {
                   {loading ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Estabelecendo conexão...
+                      Criando conta...
                     </>
                   ) : (
                     <>
-                      Confirmar e Autenticar
+                      Criar conta
                       <CheckCircle className="w-4 h-4" />
                     </>
                   )}
                 </button>
               </div>
 
-              <p className="text-xs dark:text-zinc-600 text-slate-400 text-center mt-6 font-light">
-                Ao criar a conta, você concorda com os{' '}
-                <a
-                  href="/politica-de-privacidade.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-slate-700 dark:text-zinc-300 hover:underline"
-                >
-                  Termos e Política de Privacidade
-                </a>
-                .
-              </p>
+              <label className="mt-6 flex items-start gap-2 text-xs dark:text-zinc-400 text-slate-500">
+                <input
+                  type="checkbox"
+                  checked={consentAccepted}
+                  onChange={(e) => setConsentAccepted(e.target.checked)}
+                  className="mt-0.5"
+                />
+                <span>
+                  Li e aceito os{' '}
+                  <Link to="/privacidade" className="font-medium text-slate-700 dark:text-zinc-300 hover:underline">
+                    Termos e a Política de Privacidade
+                  </Link>
+                  .
+                </span>
+              </label>
+              {errors.consent && <p className="text-xs text-red-500 mt-2">{errors.consent}</p>}
             </motion.div>
           )}
         </AnimatePresence>

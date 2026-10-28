@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 
 import { generateChatWithGemini, type ChatTurn } from '@/services/ai/geminiProvider'
+import { getChatQuota } from '@/services/ai/quota'
 
 export const dynamic = 'force-dynamic'
 
@@ -126,6 +127,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
   }
 
+  const quota = await getChatQuota(payload, user.id)
+  if (quota.blocked) {
+    return NextResponse.json(
+      { error: 'Limite diário do assistente atingido.', code: 'CHAT_QUOTA' },
+      { status: 402 },
+    )
+  }
+
   let body: unknown
   try {
     body = await request.json()
@@ -153,21 +162,36 @@ export async function POST(request: Request) {
     profile = (profiles.docs[0] as ProfileDoc | undefined) ?? null
   }
 
+  const pending = await payload.create({
+    collection: 'ai-generations',
+    data: { user: user.id, type: 'chat', status: 'pending', provider: 'gemini' },
+    overrideAccess: true,
+  })
+
   const result = await generateChatWithGemini({
     system: systemPrompt(role, name, profile),
     messages,
   })
 
   if (!result.ok) {
-    if (result.code === 'NO_KEY') {
-      return NextResponse.json({ error: result.error }, { status: 503 })
-    }
-    console.error('Falha no chat IA:', result.error)
-    return NextResponse.json(
-      { error: 'Não consegui responder agora. Tente de novo em instantes.' },
-      { status: 502 },
-    )
+    await payload.update({
+      collection: 'ai-generations',
+      id: pending.id,
+      data: { status: 'failed', errorMessage: result.code || 'provider' },
+      overrideAccess: true,
+    })
+    const code = result.code || 'PROVIDER'
+    console.error(`Falha no chat IA: ${code}`)
+    const status = code === 'NO_KEY' ? 503 : code === 'TIMEOUT' ? 504 : 502
+    return NextResponse.json({ error: result.error, code }, { status })
   }
 
-  return NextResponse.json({ reply: result.text })
+  await payload.update({
+    collection: 'ai-generations',
+    id: pending.id,
+    data: { status: 'succeeded', provider: 'gemini' },
+    overrideAccess: true,
+  })
+
+  return NextResponse.json({ reply: result.text, remaining: quota.remaining - 1 })
 }

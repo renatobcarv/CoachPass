@@ -41,7 +41,7 @@ export function Plans() {
         <div>
           <h1 className="text-2xl font-bold text-[#000326] dark:text-white">Planos CoachPass</h1>
           <p className="mt-2 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
-            Conta gratuita: 2 gerações de IA por mês. Os valores abaixo são provisórios e a
+            Todas as funções do app estão liberadas. Os valores abaixo são só vitrine — a
             assinatura ainda não processa pagamento.
           </p>
         </div>
@@ -58,13 +58,9 @@ export function Plans() {
                 <span className="text-sm font-normal text-[#8e8e9a]">{plan.period}</span>
               </p>
               <p className="mt-3 text-xs text-[#8e8e9a] dark:text-[#C5C5CE]/70">{plan.note}</p>
-              <button
-                type="button"
-                disabled
-                className="mt-4 w-full py-2.5 rounded-xl text-sm font-medium bg-[#000326]/40 text-white dark:bg-white/40 dark:text-[#000326] cursor-not-allowed"
-              >
-                Em breve
-              </button>
+              <p className="mt-4 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]">
+                Cobrança não entra neste MVP.
+              </p>
             </div>
           ))}
         </div>

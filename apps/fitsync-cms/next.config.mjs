@@ -1,16 +1,38 @@
 import { withPayload } from '@payloadcms/next/withPayload'
 
+const securityHeaders = [
+  { key: 'X-Content-Type-Options', value: 'nosniff' },
+  { key: 'X-Frame-Options', value: 'DENY' },
+  { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+  { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+  {
+    key: 'Content-Security-Policy-Report-Only',
+    value: [
+      "default-src 'self'",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      "style-src 'self' 'unsafe-inline'",
+      "img-src 'self' data: blob: https://ui-avatars.com https://i.ytimg.com",
+      "font-src 'self' data:",
+      "connect-src 'self'",
+      "frame-src 'self' https://www.youtube.com https://youtube.com",
+      "frame-ancestors 'none'",
+    ].join('; '),
+  },
+]
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  allowedDevOrigins: ['*.trycloudflare.com'],
-  // Warnings/erros legados de telas mock não devem bloquear o build nesta etapa.
+  output: 'standalone',
+  allowedDevOrigins: ['*.trycloudflare.com', '*.ngrok-free.dev', '*.ngrok.io'],
   eslint: {
-    ignoreDuringBuilds: true,
+    ignoreDuringBuilds: false,
   },
   typescript: {
     ignoreBuildErrors: false,
   },
-  // Your Next.js config here
+  async headers() {
+    return [{ source: '/:path*', headers: securityHeaders }]
+  },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

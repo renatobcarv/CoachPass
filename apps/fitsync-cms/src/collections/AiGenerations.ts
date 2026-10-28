@@ -1,7 +1,8 @@
 import type { CollectionConfig, Where } from 'payload'
 
+import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
 import { isSuperUser } from '../access/isSuper'
-import { userId, userRole } from '../access/roles'
+import { userId } from '../access/roles'
 
 export const AiGenerations: CollectionConfig = {
   slug: 'ai-generations',
@@ -20,6 +21,19 @@ export const AiGenerations: CollectionConfig = {
     update: ({ req }) => isSuperUser(req),
     delete: ({ req }) => isSuperUser(req),
   },
+  hooks: {
+    beforeValidate: [
+      ({ data, operation, req }) => {
+        if (!data) return data
+        if (operation === 'create' && req.user && !isSuperUser(req)) {
+          const actorId = toNumericRelationId(req.user.id)
+          if (actorId !== null) data.user = actorId
+        }
+        coerceNumericRelations(data, ['user'])
+        return data
+      },
+    ],
+  },
   fields: [
     {
       name: 'user',
@@ -35,6 +49,7 @@ export const AiGenerations: CollectionConfig = {
       options: [
         { label: 'Treino', value: 'workout' },
         { label: 'Plano alimentar', value: 'meal_plan' },
+        { label: 'Chat', value: 'chat' },
       ],
     },
     {

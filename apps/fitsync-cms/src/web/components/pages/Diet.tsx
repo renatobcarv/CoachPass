@@ -1,7 +1,13 @@
 import React, { useEffect, useState } from 'react'
 import { Apple, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { useAuth } from '../../context/AuthContext'
-import { MealPlanDoc, fetchPublishedMealPlans, relName } from '../../lib/studentApi'
+import {
+  MealPlanDoc,
+  fetchPublishedMealPlans,
+  generateMealPlanWithAi,
+  relName,
+} from '../../lib/studentApi'
 
 const card =
   'rounded-2xl border border-[#000326]/10 bg-white p-5 dark:border-white/10 dark:bg-[#000346]'
@@ -10,6 +16,7 @@ export function Diet() {
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
   const [plans, setPlans] = useState<MealPlanDoc[]>([])
+  const [generating, setGenerating] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
@@ -41,17 +48,29 @@ export function Diet() {
         <div>
           <h1 className="text-2xl font-bold text-[#000326] dark:text-white">Alimentação</h1>
           <p className="mt-1 text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
-            Somente planos publicados pelo nutricionista ou sugestões de IA.
+            Planos do nutricionista ou sugestão de IA (informativa, não é prescrição).
           </p>
         </div>
         <button
           type="button"
-          disabled
-          title="Geração com IA em breve"
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] opacity-60 cursor-not-allowed"
+          onClick={async () => {
+            if (!user?.accessToken || generating) return
+            setGenerating(true)
+            try {
+              const result = await generateMealPlanWithAi(user.accessToken)
+              toast.success(`Plano gerado. Restam ${result.remaining} gerações neste mês.`)
+              setPlans(await fetchPublishedMealPlans(user.id, user.accessToken))
+            } catch (err) {
+              toast.error(err instanceof Error ? err.message : 'Não foi possível gerar o plano.')
+            } finally {
+              setGenerating(false)
+            }
+          }}
+          disabled={generating || !user?.accessToken}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium bg-[#000326] text-white dark:bg-white dark:text-[#000326] disabled:opacity-60"
         >
-          <Sparkles className="w-4 h-4" />
-          Gerar sugestão com IA · Em breve
+          <Sparkles className={`w-4 h-4 ${generating ? 'animate-pulse' : ''}`} />
+          {generating ? 'Gerando…' : 'Gerar plano com IA'}
         </button>
       </div>
 
@@ -67,9 +86,7 @@ export function Diet() {
             Nenhum plano alimentar ainda
           </p>
           <p className="mt-1.5 text-sm text-[#6a6a7a] dark:text-[#C5C5CE] max-w-md mx-auto">
-            Quando um nutricionista publicar um plano — ou quando a sugestão com IA estiver
-            disponível — ele será listado aqui. Sugestões de IA são informativas e não substituem
-            prescrição clínica.
+            Quando um nutricionista publicar um plano, ele aparece aqui.
           </p>
         </div>
       )}

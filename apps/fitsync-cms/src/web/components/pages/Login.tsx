@@ -174,10 +174,11 @@ export function Login() {
           className="bg-white rounded-2xl p-6 border border-[#000326]/10 space-y-4 dark:bg-[#000137] dark:border-white/10"
         >
           <div>
-            <label className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">E-mail</label>
+            <label htmlFor="login-email" className="block text-sm text-[#000326] mb-2 dark:text-[#C5C5CE]">E-mail</label>
             <div className="relative">
               <Mail className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-[#8e8e9a]" />
               <input
+                id="login-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -235,7 +236,7 @@ export function Login() {
           </p>
           <div className="pt-2 border-t border-[#000326]/10 dark:border-white/10">
             <a
-              href="/politica-de-privacidade.html"
+              href="/privacidade"
               target="_blank"
               rel="noopener noreferrer"
               className="flex w-full items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-medium text-[#000326] border border-[#000326]/15 hover:bg-[#f3f4f9] dark:text-[#C5C5CE] dark:border-white/15 dark:hover:bg-white/5 transition-colors"

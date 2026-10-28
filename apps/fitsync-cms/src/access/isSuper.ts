@@ -5,7 +5,7 @@ type AuthUser = {
   role?: string
 }
 
-/** Master / super-admin: acesso total no CMS e reconhecido no app FitSync. */
+/** Master / super-admin: acesso total no CMS e reconhecido no app CoachPass. */
 export function isSuperUser(req: PayloadRequest): boolean {
   const u = req.user as AuthUser | undefined
   if (!u) return false

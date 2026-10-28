@@ -135,7 +135,7 @@ export async function createAiWorkoutForStudent(args: {
     return {
       ok: false,
       code: 'QUOTA_EXCEEDED',
-      message: 'Você atingiu o limite de 2 gerações gratuitas neste mês. Veja os planos.',
+      message: 'Você atingiu o limite de 2 gerações de treino neste mês.',
       remaining: 0,
     }
   }
@@ -172,7 +172,25 @@ export async function createAiWorkoutForStudent(args: {
     overrideAccess: true,
   })
 
+  const reserved = await getAiQuota(payload, userId)
+  if (reserved.used > reserved.limit) {
+    await payload.update({
+      collection: 'ai-generations',
+      id: pending.id,
+      data: { status: 'failed', provider: 'quota', errorMessage: 'QUOTA_EXCEEDED' },
+      overrideAccess: true,
+    })
+    return {
+      ok: false,
+      code: 'QUOTA_EXCEEDED',
+      message: 'Você atingiu o limite de 2 gerações de treino neste mês.',
+      remaining: 0,
+    }
+  }
+
   const { workouts, provider } = await generateWeekWorkouts(profile)
+  const disclaimer =
+    'Conteúdo gerado por IA. Não substitui avaliação presencial. Procure um profissional se houver dor ou desconforto.'
   const publishedAt = new Date().toISOString()
   const createdIds: Array<string | number> = []
 
@@ -186,7 +204,7 @@ export async function createAiWorkoutForStudent(args: {
           author: userId,
           status: 'published',
           source: 'ai',
-          observations: workout.observations,
+          observations: [workout.observations, disclaimer].filter(Boolean).join('\n\n'),
           weekday: toWeekday(workout.weekday),
           splitLabel: workout.splitLabel,
           publishedAt,

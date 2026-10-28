@@ -28,11 +28,17 @@ export interface User {
   accessToken?: string;
 }
 
+export type RegisterExtras = Partial<User> & {
+  consentAcceptedAt?: string;
+  consentVersion?: string;
+};
+
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<UserRole>;
-  register: (email: string, password: string, role: UserRole, additionalData?: Partial<User>) => Promise<void>;
+  register: (email: string, password: string, role: UserRole, additionalData?: RegisterExtras) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<UserRole>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
@@ -55,6 +61,7 @@ type PayloadUserDoc = {
   professionalId?: string;
   plan?: User['plan'];
   createdAt?: string;
+  avatarUrl?: string | null;
 };
 
 function buildUser(doc: PayloadUserDoc, accessToken: string): User {
@@ -63,13 +70,14 @@ function buildUser(doc: PayloadUserDoc, accessToken: string): User {
   const role: UserRole = isSuper
     ? 'master'
     : ((doc.role as UserRole) || 'student');
+  const savedAvatar = typeof doc.avatarUrl === 'string' ? doc.avatarUrl.trim() : '';
   return {
     id: String(doc.id),
     name,
     email: doc.email || '',
     role,
     isSuperAdmin: doc.isSuperAdmin === true || doc.role === 'master',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff`,
+    avatar: savedAvatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff`,
     whatsapp: doc.whatsapp,
     professionalId: doc.professionalId,
     plan: doc.plan,
@@ -91,7 +99,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const persistSession = useCallback((next: User | null) => {
     if (next?.accessToken) {
       localStorage.setItem(TOKEN_KEY, next.accessToken);
-      localStorage.setItem(USER_KEY, JSON.stringify(next));
+      const { accessToken: _token, ...safe } = next;
+      localStorage.setItem(USER_KEY, JSON.stringify(safe));
     } else {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
@@ -147,7 +156,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (data.user) {
           const u = buildUser(data.user, token);
           setUser(u);
-          localStorage.setItem(USER_KEY, JSON.stringify(u));
+          persistSession(u);
         } else {
           localStorage.removeItem(TOKEN_KEY);
           localStorage.removeItem(USER_KEY);
@@ -167,7 +176,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [persistSession]);
 
   // O evento storage só dispara nas outras abas; a aba que fez login/logout já atualizou o estado.
   useEffect(() => {
@@ -248,11 +257,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const resetPassword = async (token: string, password: string): Promise<UserRole> => {
+    try {
+      assertSecureTransport();
+      const data = await postJson<{
+        user?: PayloadUserDoc;
+        token?: string;
+      }>(`${USERS_API}/reset-password`, { token, password });
+
+      if (data.token && data.user) {
+        const built = buildUser(data.user, data.token);
+        setUser(built);
+        persistSession(built);
+        return built.role;
+      }
+
+      throw new Error('Senha redefinida. Entre com a nova senha.');
+    } catch (e) {
+      if (e instanceof Error && e.message.startsWith('Senha redefinida')) throw e;
+      const raw =
+        e instanceof PayloadApiError
+          ? extractPayloadMessage(e.data) || e.message
+          : e instanceof Error
+            ? e.message
+            : '';
+      throw new Error(raw || 'Link inválido ou expirado. Solicite uma nova recuperação.');
+    }
+  };
+
   const register = async (
     email: string,
     password: string,
     role: UserRole,
-    additionalData?: Partial<User>,
+    additionalData?: RegisterExtras,
   ) => {
     try {
       assertSecureTransport();
@@ -277,6 +314,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         whatsapp: additionalData?.whatsapp,
         professionalId: additionalData?.professionalId,
         plan: additionalData?.plan,
+        consentAcceptedAt: additionalData?.consentAcceptedAt,
+        consentVersion: additionalData?.consentVersion,
       });
 
       const normalizedEmail = email.trim().toLowerCase()
@@ -368,6 +407,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         loading,
         login,
         register,
+        resetPassword,
         changePassword,
         logout,
         updateUser,

@@ -17,15 +17,18 @@ import {
   ClipboardList,
   Calendar,
   Settings,
+  Wallet,
 } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { AuthedImage } from './AuthedImage';
 
 const studentNavItems = [
   { to: '/app', icon: Home, label: 'Início', exact: true },
   { to: '/app/treinos', icon: Dumbbell, label: 'Meus Treinos' },
   { to: '/app/dieta', icon: Apple, label: 'Minha Dieta' },
   { to: '/app/evolucao', icon: TrendingUp, label: 'Evolução' },
+  { to: '/app/financeiro', icon: Wallet, label: 'Pagamentos' },
   { to: '/app/perfil', icon: User, label: 'Perfil' },
   { to: '/app/configuracoes', icon: Settings, label: 'Configurações' },
 ];
@@ -35,6 +38,7 @@ const personalNavItems = [
   { to: '/personal/criar-treino', icon: Dumbbell, label: 'Criar Treino' },
   { to: '/personal/avaliacao', icon: ClipboardList, label: 'Avaliação Física' },
   { to: '/personal/agenda', icon: Calendar, label: 'Agenda & Sessões' },
+  { to: '/personal/financeiro', icon: Wallet, label: 'Financeiro' },
   { to: '/personal/perfil', icon: User, label: 'Perfil' },
   { to: '/personal/configuracoes', icon: Settings, label: 'Configurações' },
 ];
@@ -42,8 +46,9 @@ const personalNavItems = [
 const nutritionistNavItems = [
   { to: '/nutritionist', icon: Users, label: 'Meus Pacientes', exact: true },
   { to: '/nutritionist/criar-plano', icon: Utensils, label: 'Criar Plano Alimentar' },
+  { to: '/nutritionist/alimentos', icon: Apple, label: 'Alimentos' },
   { to: '/nutritionist/anamnese', icon: ClipboardList, label: 'Anamnese' },
-  { to: '/nutritionist/alimentos', icon: Apple, label: 'Base de Alimentos' },
+  { to: '/nutritionist/financeiro', icon: Wallet, label: 'Financeiro' },
   { to: '/nutritionist/perfil', icon: User, label: 'Perfil' },
   { to: '/nutritionist/configuracoes', icon: Settings, label: 'Configurações' },
 ];
@@ -204,8 +209,9 @@ export function Sidebar({ mobileOpen, onMobileClose }: SidebarProps) {
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className="w-10 h-10 rounded-full overflow-hidden ring-2 ring-[#000326]/15 dark:ring-white/20">
-                <img
-                  src={user?.avatar || 'https://ui-avatars.com/api/?name=User&background=000326&color=fff'}
+                <AuthedImage
+                  src={user?.avatar}
+                  token={user?.accessToken}
                   alt={user?.name || 'Usuário'}
                   className="w-full h-full object-cover"
                 />

@@ -1,0 +1,64 @@
+name: ci
+
+on:
+  push:
+    branches: [main, dev-mendes]
+  pull_request:
+
+defaults:
+  run:
+    working-directory: apps/fitsync-cms
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/fitsync-cms/package-lock.json
+      - run: npm ci
+      - run: npx tsc --noEmit
+      - run: npm run test:int
+      - name: migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+          PAYLOAD_DATABASE_PUSH: 'false'
+          PAYLOAD_PUBLIC_SERVER_URL: http://localhost:3000
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$PAYLOAD_SECRET" ]; then
+            echo "Secrets DATABASE_URL e PAYLOAD_SECRET ausentes; migrate:status não rodou."
+            exit 0
+          fi
+          npm run migrate:status
+      - run: npm run audit:ci
+        continue-on-error: true
+
+  e2e:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      PAYLOAD_SECRET: ${{ secrets.PAYLOAD_SECRET }}
+      DEMO_PASSWORD: ${{ secrets.DEMO_PASSWORD }}
+      PAYLOAD_PUBLIC_SERVER_URL: http://localhost:3000
+      PAYLOAD_DATABASE_PUSH: 'false'
+      CI: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/fitsync-cms/package-lock.json
+      - run: npm ci
+      - name: playwright
+        run: |
+          if [ -z "$DATABASE_URL" ] || [ -z "$PAYLOAD_SECRET" ]; then
+            echo "Secrets de banco ausentes; e2e não rodou."
+            exit 0
+          fi
+          npx playwright install --with-deps chromium
+          npm run test:e2e

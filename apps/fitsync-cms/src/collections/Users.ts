@@ -1,11 +1,14 @@
-import type { CollectionConfig, PayloadRequest } from 'payload'
+import type { CollectionConfig, PayloadRequest, Where } from 'payload'
 import { ValidationError } from 'payload'
-import { formatAdminURL } from 'payload/shared'
 
+import { linkedStudentIds } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
+import { userId, userRole } from '../access/roles'
 import { getPasswordErrors, type PasswordContext } from '../lib/passwordPolicy'
 
 const PASSWORD_OPERATIONS = new Set(['create', 'update', 'resetPassword'])
+const SELF_SERVICE_ROLES = new Set(['student', 'personal', 'nutritionist'])
+const PROFESSIONAL_ROLES = new Set(['personal', 'nutritionist'])
 
 async function passwordContextFor(
   operation: string,
@@ -46,18 +49,48 @@ async function passwordContextFor(
   }
 }
 
-function adminServerURL(req: PayloadRequest): string {
-  const config = req.payload.config
-  if (config.serverURL && config.serverURL !== '') {
-    return config.serverURL
-  }
+function frontendURL(req: PayloadRequest): string {
+  const fromEnv = process.env.FITSYNC_FRONTEND_URL || process.env.PAYLOAD_PUBLIC_SERVER_URL
+  if (fromEnv) return fromEnv.replace(/\/$/, '')
   const forwarded = req.headers.get('x-forwarded-proto')
   const host = req.headers.get('host') ?? 'localhost:3000'
-  if (forwarded) {
-    return `${forwarded}://${host}`
-  }
+  if (forwarded) return `${forwarded}://${host}`
   return `http://${host}`
 }
+
+async function readUsersAccess({ req }: { req: PayloadRequest }): Promise<boolean | Where> {
+  if (isSuperUser(req)) return true
+  const id = userId(req)
+  if (!id) return false
+  const role = userRole(req)
+  if (role === 'personal' || role === 'nutritionist') {
+    const studentIds = await linkedStudentIds(req, { status: 'active' })
+    return {
+      or: [{ id: { equals: id } }, ...(studentIds.length ? [{ id: { in: studentIds } }] : [])],
+    }
+  }
+  return { id: { equals: id } }
+}
+
+const USER_DEPENDENTS = [
+  { collection: 'ai-generations' as const, field: 'user' },
+  { collection: 'student-profiles' as const, field: 'user' },
+  { collection: 'professional-links' as const, field: 'student' },
+  { collection: 'professional-links' as const, field: 'professional' },
+  { collection: 'workouts' as const, field: 'student' },
+  { collection: 'workouts' as const, field: 'author' },
+  { collection: 'meal-plans' as const, field: 'student' },
+  { collection: 'meal-plans' as const, field: 'author' },
+  { collection: 'assessments' as const, field: 'student' },
+  { collection: 'assessments' as const, field: 'professional' },
+  { collection: 'sessions' as const, field: 'student' },
+  { collection: 'sessions' as const, field: 'professional' },
+  { collection: 'restrictions' as const, field: 'student' },
+  { collection: 'restrictions' as const, field: 'professional' },
+  { collection: 'anamneses' as const, field: 'student' },
+  { collection: 'anamneses' as const, field: 'professional' },
+  { collection: 'media' as const, field: 'owner' },
+]
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -70,26 +103,18 @@ export const Users: CollectionConfig = {
       sameSite: 'Lax',
     },
     forgotPassword: {
-      generateEmailSubject: () => 'FitSync — Redefinir senha do painel',
+      generateEmailSubject: () => 'CoachPass — Redefinir senha',
       generateEmailHTML: (args) => {
         const { req, token, user } = args ?? {}
-        if (!req || !token || !user?.email) {
-          return ''
-        }
-        const config = req.payload.config
-        const serverURL = adminServerURL(req)
-        const resetURL = formatAdminURL({
-          adminRoute: config.routes.admin,
-          path: `${config.admin.routes.reset}/${token}`,
-          serverURL,
-        })
+        if (!req || !token || !user?.email) return ''
+        const resetURL = `${frontendURL(req)}/redefinir-senha/${token}`
         return `
 <!DOCTYPE html>
 <html>
   <body style="font-family: system-ui, sans-serif; line-height: 1.5; color: #111;">
     <p>Olá,</p>
-    <p>Recebemos um pedido para redefinir a senha da conta <strong>${user.email}</strong> no painel administrativo FitSync.</p>
-    <p><a href="${resetURL}" style="color: #2563eb;">Definir nova senha</a></p>
+    <p>Recebemos um pedido para redefinir a senha da conta <strong>${user.email}</strong> no CoachPass.</p>
+    <p><a href="${resetURL}" style="color: #1e3a5f;">Definir nova senha</a></p>
     <p style="color: #666; font-size: 14px;">Se você não solicitou isso, pode ignorar este e-mail.</p>
     <p style="color: #999; font-size: 12px; word-break: break-all;">${resetURL}</p>
   </body>
@@ -98,21 +123,15 @@ export const Users: CollectionConfig = {
     },
   },
   access: {
-    // Cadastro público precisa funcionar mesmo com cookie/sessão residual no navegador.
-    // Elevação a master/super continua bloqueada no beforeValidate.
+    admin: ({ req }) => isSuperUser(req),
     create: () => true,
-    read: ({ req }) => {
-      if (isSuperUser(req)) return true
-      if (!req.user) return false
-      // Autenticado só lê a própria conta (vínculos usam collections dedicadas).
-      return { id: { equals: req.user.id } }
-    },
+    read: readUsersAccess,
     update: ({ req, id }) =>
       isSuperUser(req) || Boolean(req.user && String(req.user.id) === String(id)),
-    delete: ({ req }) => isSuperUser(req),
+    delete: ({ req, id }) =>
+      isSuperUser(req) || Boolean(req.user && String(req.user.id) === String(id)),
   },
   hooks: {
-    // Cobre cadastro, PATCH de senha e /reset-password (que não passa pela validação de campos).
     beforeOperation: [
       async ({ args, operation, req, collection }) => {
         if (!PASSWORD_OPERATIONS.has(operation)) return args
@@ -130,11 +149,12 @@ export const Users: CollectionConfig = {
             errors: errors.map((message) => ({ path: 'password', message })),
           })
         }
+        if (target.data) target.data.passwordChangedAt = new Date().toISOString()
         return args
       },
     ],
     beforeValidate: [
-      ({ data, operation, req, collection }) => {
+      async ({ data, operation, req, collection, originalDoc }) => {
         const bypass =
           req.context?.allowMasterCreate === true || req.context?.seedMaster === true
         if (!data || bypass || isSuperUser(req)) return data
@@ -143,42 +163,82 @@ export const Users: CollectionConfig = {
           if (data.role === 'master' || data.isSuperAdmin === true) {
             throw new ValidationError({
               collection: collection?.slug,
-              errors: [
-                {
-                  path: 'role',
-                  message: 'Conta master não pode ser criada pelo cadastro público.',
-                },
-              ],
+              errors: [{ path: 'role', message: 'Conta master não pode ser criada pelo cadastro público.' }],
             })
           }
           data.isSuperAdmin = false
-          if (data.role && !['student', 'personal', 'nutritionist'].includes(String(data.role))) {
+          if (data.role && !SELF_SERVICE_ROLES.has(String(data.role))) {
             data.role = 'student'
           }
         }
 
-        // No update, usuário comum não sobe para master/super; pode só ajustar personal/nutritionist/student.
         if (operation === 'update') {
           if (data.role === 'master' || data.isSuperAdmin === true) {
             throw new ValidationError({
               collection: collection?.slug,
-              errors: [
-                {
-                  path: 'role',
-                  message: 'Não é permitido elevar a conta a master por aqui.',
-                },
-              ],
+              errors: [{ path: 'role', message: 'Não é permitido elevar a conta a master por aqui.' }],
             })
           }
-          if (data.role && !['student', 'personal', 'nutritionist'].includes(String(data.role))) {
-            delete data.role
-          }
-          if ('isSuperAdmin' in data) {
-            delete data.isSuperAdmin
+          if ('isSuperAdmin' in data) delete data.isSuperAdmin
+
+          if (data.role) {
+            const currentRole = String(originalDoc?.role || userRole(req) || 'student')
+            const nextRole = String(data.role)
+            if (!SELF_SERVICE_ROLES.has(nextRole)) {
+              delete data.role
+            } else if (currentRole === 'student' && PROFESSIONAL_ROLES.has(nextRole)) {
+              throw new ValidationError({
+                collection: collection?.slug,
+                errors: [
+                  {
+                    path: 'role',
+                    message: 'Aluno não pode se tornar profissional por aqui. Crie a conta como profissional.',
+                  },
+                ],
+              })
+            }
           }
         }
 
         return data
+      },
+    ],
+    beforeDelete: [
+      async ({ req, id }) => {
+        const actorId = userId(req)
+        if (!isSuperUser(req) && String(actorId) !== String(id)) {
+          throw new ValidationError({
+            errors: [{ path: 'id', message: 'Você só pode excluir a própria conta.' }],
+          })
+        }
+      },
+    ],
+    afterDelete: [
+      async ({ req, id, context }) => {
+        if (context?.skipUserCascade) return
+        for (const { collection, field } of USER_DEPENDENTS) {
+          try {
+            const related = await req.payload.find({
+              collection,
+              where: { [field]: { equals: id } },
+              limit: 200,
+              depth: 0,
+              overrideAccess: true,
+              req,
+            })
+            for (const doc of related.docs) {
+              await req.payload.delete({
+                collection,
+                id: doc.id,
+                overrideAccess: true,
+                req,
+                context: { skipUserCascade: true },
+              })
+            }
+          } catch {
+            // Collection pode ainda não existir em ambientes antigos.
+          }
+        }
       },
     ],
   },
@@ -225,6 +285,32 @@ export const Users: CollectionConfig = {
       required: false,
     },
     {
+      name: 'bio',
+      type: 'textarea',
+      required: false,
+    },
+    {
+      name: 'specialties',
+      type: 'array',
+      required: false,
+      fields: [{ name: 'value', type: 'text', required: true }],
+    },
+    {
+      name: 'avatarUrl',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'city',
+      type: 'text',
+      required: false,
+    },
+    {
+      name: 'instagram',
+      type: 'text',
+      required: false,
+    },
+    {
       name: 'plan',
       type: 'select',
       required: false,
@@ -235,6 +321,35 @@ export const Users: CollectionConfig = {
         { label: 'Anual', value: 'annual' },
       ],
       defaultValue: 'free',
+    },
+    {
+      name: 'consentAcceptedAt',
+      type: 'date',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'consentVersion',
+      type: 'text',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'healthDataConsentAt',
+      type: 'date',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'passwordChangedAt',
+      type: 'date',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'preferences',
+      type: 'json',
+      required: false,
     },
   ],
 }

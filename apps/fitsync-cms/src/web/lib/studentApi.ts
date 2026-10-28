@@ -1,3 +1,4 @@
+import { toNumericRelationId } from '@/access/relationIds'
 import {
   STUDENT_PROFILES_API,
   PROFESSIONAL_LINKS_API,
@@ -5,11 +6,15 @@ import {
   MEAL_PLANS_API,
   USERS_API,
   AI_GENERATE_WORKOUT_API,
+  AI_GENERATE_MEAL_PLAN_API,
   AI_CHAT_API,
+  WORKOUT_LOGS_API,
+  FOODS_API,
   getJson,
   postJson,
   patchJson,
   qs,
+  extractPayloadMessage,
 } from '@/lib/cms'
 
 export type StudentGoal = 'weight_loss' | 'hypertrophy'
@@ -85,6 +90,7 @@ export type ProfessionalLink = {
 export type WorkoutDoc = {
   id: string
   title: string
+  student?: string | { id: string | number }
   status: 'draft' | 'published'
   source: 'professional' | 'ai'
   observations?: string | null
@@ -110,6 +116,7 @@ export type WorkoutDoc = {
 export type MealPlanDoc = {
   id: string
   title: string
+  student?: string | { id: string | number }
   status: 'draft' | 'published'
   source: 'professional' | 'ai'
   observations?: string | null
@@ -225,6 +232,30 @@ export async function fetchActiveProfessionalLinks(
   return data.docs
 }
 
+export async function fetchPendingProfessionalLinks(
+  studentId: string,
+  token: string,
+): Promise<ProfessionalLink[]> {
+  const data = await getJson<ListResponse<ProfessionalLink>>(
+    `${PROFESSIONAL_LINKS_API}${qs({
+      'where[and][0][student][equals]': studentId,
+      'where[and][1][status][equals]': 'pending',
+      depth: 1,
+      limit: 20,
+    })}`,
+    token,
+  )
+  return data.docs
+}
+
+export async function updateLinkStatus(
+  linkId: string,
+  status: 'active' | 'revoked',
+  token: string,
+): Promise<ProfessionalLink> {
+  return patchJson<ProfessionalLink>(`${PROFESSIONAL_LINKS_API}/${linkId}`, { status }, token)
+}
+
 export async function fetchPublishedWorkouts(
   studentId: string,
   token: string,
@@ -301,6 +332,84 @@ export async function generateWorkoutWithAi(token: string): Promise<GenerateWork
   return postJson<GenerateWorkoutResult>(AI_GENERATE_WORKOUT_API, {}, token)
 }
 
+export async function generateMealPlanWithAi(token: string): Promise<{
+  ok: true
+  mealPlanId: string | number
+  title: string
+  remaining: number
+  provider: string
+}> {
+  return postJson(AI_GENERATE_MEAL_PLAN_API, {}, token)
+}
+
+export type WorkoutLogDoc = {
+  id: string
+  workout?: string | { id: string | number; title?: string }
+  performedAt: string
+  status: 'completed' | 'partial' | 'skipped'
+  rpe?: number | null
+  notes?: string | null
+}
+
+export async function fetchWorkoutLogs(studentId: string, token: string): Promise<WorkoutLogDoc[]> {
+  const data = await getJson<ListResponse<WorkoutLogDoc>>(
+    `${WORKOUT_LOGS_API}${qs({
+      'where[student][equals]': studentId,
+      depth: 1,
+      limit: 50,
+      sort: '-performedAt',
+    })}`,
+    token,
+  )
+  return data.docs
+}
+
+export async function createWorkoutLog(
+  input: {
+    workout: string
+    status?: WorkoutLogDoc['status']
+    rpe?: number | null
+    notes?: string | null
+    exercises?: Array<{ name: string; setsCompleted?: number; load?: string }>
+  },
+  token: string,
+): Promise<WorkoutLogDoc> {
+  return postJson<WorkoutLogDoc>(
+    WORKOUT_LOGS_API,
+    {
+      workout: toNumericRelationId(input.workout) ?? input.workout,
+      performedAt: new Date().toISOString(),
+      status: input.status || 'completed',
+      rpe: input.rpe || undefined,
+      notes: input.notes || undefined,
+      exercises: input.exercises,
+    },
+    token,
+  )
+}
+
+export type FoodDoc = {
+  id: string
+  name: string
+  category: 'protein' | 'carb' | 'fat' | 'vegetable' | 'fruit' | 'dairy'
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  fiber?: number | null
+  sodium?: number | null
+  unit: string
+  portionLabel?: string | null
+  source: 'taco' | 'tbca' | 'usda' | 'manufacturer' | 'manual'
+}
+
+export async function fetchFoods(token: string, search = ''): Promise<FoodDoc[]> {
+  const params: Record<string, string | number> = { limit: 100, sort: 'name', depth: 0 }
+  if (search.trim()) params['where[name][like]'] = search.trim()
+  const data = await getJson<ListResponse<FoodDoc>>(`${FOODS_API}${qs(params)}`, token)
+  return data.docs
+}
+
 export type AiChatMessage = { role: 'user' | 'ai'; text: string }
 
 export async function sendAiChat(
@@ -308,6 +417,37 @@ export async function sendAiChat(
   messages: AiChatMessage[],
 ): Promise<{ reply: string }> {
   return postJson<{ reply: string }>(AI_CHAT_API, { messages }, token)
+}
+
+const AVATAR_MAX_BYTES = 2_000_000
+const AVATAR_MIME = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
+
+export async function uploadProfilePhoto(file: File, token: string): Promise<string> {
+  if (file.size > AVATAR_MAX_BYTES) throw new Error('A foto deve ter no máximo 2 MB.')
+  if (!AVATAR_MIME.has(file.type)) throw new Error('Envie uma foto JPG, PNG, WebP ou GIF.')
+  const body = new FormData()
+  body.append('file', file)
+  body.append('_payload', JSON.stringify({ alt: 'Foto de perfil' }))
+  const res = await fetch('/api/media', {
+    method: 'POST',
+    headers: { Authorization: `JWT ${token}` },
+    body,
+  })
+  const data = await res.json().catch(() => null)
+  if (!res.ok) {
+    throw new Error(extractPayloadMessage(data) || 'Não foi possível enviar a foto.')
+  }
+  const doc =
+    data && typeof data === 'object' && 'doc' in data
+      ? (data as { doc?: { url?: string } }).doc
+      : (data as { url?: string } | null)
+  const url = doc?.url
+  if (!url) throw new Error('O servidor não devolveu o endereço da foto.')
+  try {
+    return new URL(url, 'http://localhost').pathname
+  } catch {
+    return url
+  }
 }
 
 export { relId }

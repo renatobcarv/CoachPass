@@ -1,6 +1,6 @@
 # CoachPass — diagrama de classes
 
-O que está marcado como persistido já existe no Postgres. O restante é o domínio do produto e ainda não grava no banco.
+O que está marcado como persistido já existe no Postgres. Fora do MVP: financeiro, alimentos TACO, check-in de treino e dieta por IA.
 
 ```mermaid
 classDiagram
@@ -13,6 +13,11 @@ classDiagram
     +isSuperAdmin
     +whatsapp
     +professionalId
+    +bio
+    +specialties
+    +avatarUrl
+    +city
+    +consentAcceptedAt
     +plan
     +createdAt
     +updatedAt
@@ -75,12 +80,14 @@ classDiagram
   }
 
   class Avaliacao {
+    <<persistido assessments>>
     +peso
     +medidas
     +parq
   }
 
   class SessaoAgendada {
+    <<persistido sessions>>
     +data
     +horario
     +status
@@ -98,9 +105,17 @@ classDiagram
   }
 
   class Anamnese {
+    <<persistido anamneses>>
     +saude
     +alimentar
     +objetivos
+  }
+
+  class Restricao {
+    <<persistido restrictions>>
+    +tipo
+    +severidade
+    +ativa
   }
 
   User "1" --> "*" Session : sessoes
@@ -115,6 +130,7 @@ classDiagram
   Treino "1" --> "*" Exercicio
   Personal "1" --> "*" Avaliacao
   Personal "1" --> "*" SessaoAgendada
+  Personal "1" --> "*" Restricao
   Nutricionista "1" --> "*" PlanoAlimentar
   Nutricionista "1" --> "*" Consulta
   Nutricionista "1" --> "*" Anamnese

@@ -74,6 +74,13 @@ export interface Config {
     workouts: Workout;
     'meal-plans': MealPlan;
     'ai-generations': AiGeneration;
+    assessments: Assessment;
+    sessions: Session;
+    restrictions: Restriction;
+    anamneses: Anamnesis;
+    'workout-logs': WorkoutLog;
+    foods: Food;
+    transactions: Transaction;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +95,13 @@ export interface Config {
     workouts: WorkoutsSelect<false> | WorkoutsSelect<true>;
     'meal-plans': MealPlansSelect<false> | MealPlansSelect<true>;
     'ai-generations': AiGenerationsSelect<false> | AiGenerationsSelect<true>;
+    assessments: AssessmentsSelect<false> | AssessmentsSelect<true>;
+    sessions: SessionsSelect<false> | SessionsSelect<true>;
+    restrictions: RestrictionsSelect<false> | RestrictionsSelect<true>;
+    anamneses: AnamnesesSelect<false> | AnamnesesSelect<true>;
+    'workout-logs': WorkoutLogsSelect<false> | WorkoutLogsSelect<true>;
+    foods: FoodsSelect<false> | FoodsSelect<true>;
+    transactions: TransactionsSelect<false> | TransactionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -141,7 +155,30 @@ export interface User {
   role?: ('master' | 'student' | 'personal' | 'nutritionist') | null;
   whatsapp?: string | null;
   professionalId?: string | null;
+  bio?: string | null;
+  specialties?:
+    | {
+        value: string;
+        id?: string | null;
+      }[]
+    | null;
+  avatarUrl?: string | null;
+  city?: string | null;
+  instagram?: string | null;
   plan?: ('free' | 'monthly' | 'semester' | 'annual') | null;
+  consentAcceptedAt?: string | null;
+  consentVersion?: string | null;
+  healthDataConsentAt?: string | null;
+  passwordChangedAt?: string | null;
+  preferences?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
   email: string;
@@ -149,6 +186,7 @@ export interface User {
   resetPasswordExpiration?: string | null;
   salt?: string | null;
   hash?: string | null;
+  resetPasswordRequestedAt?: string | null;
   loginAttempts?: number | null;
   lockUntil?: string | null;
   sessions?:
@@ -168,6 +206,7 @@ export interface User {
 export interface Media {
   id: number;
   alt: string;
+  owner?: (number | null) | User;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -219,6 +258,8 @@ export interface ProfessionalLink {
   professional: number | User;
   professionalRole: 'personal' | 'nutritionist';
   status: 'pending' | 'active' | 'revoked';
+  acceptedAt?: string | null;
+  revokedAt?: string | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -297,7 +338,7 @@ export interface MealPlan {
 export interface AiGeneration {
   id: number;
   user: number | User;
-  type: 'workout' | 'meal_plan';
+  type: 'workout' | 'meal_plan' | 'chat';
   status: 'pending' | 'succeeded' | 'failed' | 'blocked';
   provider?: string | null;
   errorMessage?: string | null;
@@ -305,6 +346,171 @@ export interface AiGeneration {
    * ID do workout ou meal-plan gerado
    */
   resultId?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assessments".
+ */
+export interface Assessment {
+  id: number;
+  kind: 'physical' | 'consultation';
+  student: number | User;
+  professional: number | User;
+  date: string;
+  weightKg?: number | null;
+  bodyFatPercent?: number | null;
+  muscleMassKg?: number | null;
+  visceralFat?: number | null;
+  bmr?: number | null;
+  hydrationPercent?: number | null;
+  circumferences?: {
+    chest?: number | null;
+    waist?: number | null;
+    hip?: number | null;
+    arm?: number | null;
+    thigh?: number | null;
+  };
+  restingHeartRate?: number | null;
+  bloodPressure?: string | null;
+  adherenceScore?: number | null;
+  energyScore?: number | null;
+  sleepScore?: number | null;
+  parq?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  notes?: string | null;
+  nextDate?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sessions".
+ */
+export interface Session {
+  id: number;
+  student: number | User;
+  professional: number | User;
+  date: string;
+  time?: string | null;
+  durationMin?: number | null;
+  type: 'training' | 'assessment' | 'consultation' | 'followup';
+  location?: string | null;
+  status: 'scheduled' | 'completed' | 'cancelled';
+  recurring?: boolean | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "restrictions".
+ */
+export interface Restriction {
+  id: number;
+  student: number | User;
+  professional: number | User;
+  type: 'injury' | 'medical' | 'dietary' | 'other';
+  title: string;
+  description?: string | null;
+  severity: 'low' | 'moderate' | 'high';
+  startDate?: string | null;
+  endDate?: string | null;
+  medicalClearance?: boolean | null;
+  active?: boolean | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anamneses".
+ */
+export interface Anamnesis {
+  id: number;
+  student: number | User;
+  professional: number | User;
+  answers?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status: 'draft' | 'completed';
+  completedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workout-logs".
+ */
+export interface WorkoutLog {
+  id: number;
+  student: number | User;
+  workout: number | Workout;
+  performedAt: string;
+  status: 'completed' | 'partial' | 'skipped';
+  rpe?: number | null;
+  notes?: string | null;
+  exercises?:
+    | {
+        name: string;
+        setsCompleted?: number | null;
+        load?: string | null;
+        notes?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "foods".
+ */
+export interface Food {
+  id: number;
+  name: string;
+  category: 'protein' | 'carb' | 'fat' | 'vegetable' | 'fruit' | 'dairy';
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  fiber?: number | null;
+  sodium?: number | null;
+  unit: string;
+  portionLabel?: string | null;
+  source: 'taco' | 'tbca' | 'usda' | 'manufacturer' | 'manual';
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions".
+ */
+export interface Transaction {
+  id: number;
+  professional: number | User;
+  student: number | User;
+  description: string;
+  amount: number;
+  kind: 'charge' | 'payment' | 'expense';
+  status: 'pending' | 'paid' | 'overdue' | 'cancelled';
+  dueDate?: string | null;
+  paidAt?: string | null;
+  notes?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -359,6 +565,34 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ai-generations';
         value: number | AiGeneration;
+      } | null)
+    | ({
+        relationTo: 'assessments';
+        value: number | Assessment;
+      } | null)
+    | ({
+        relationTo: 'sessions';
+        value: number | Session;
+      } | null)
+    | ({
+        relationTo: 'restrictions';
+        value: number | Restriction;
+      } | null)
+    | ({
+        relationTo: 'anamneses';
+        value: number | Anamnesis;
+      } | null)
+    | ({
+        relationTo: 'workout-logs';
+        value: number | WorkoutLog;
+      } | null)
+    | ({
+        relationTo: 'foods';
+        value: number | Food;
+      } | null)
+    | ({
+        relationTo: 'transactions';
+        value: number | Transaction;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -412,7 +646,22 @@ export interface UsersSelect<T extends boolean = true> {
   role?: T;
   whatsapp?: T;
   professionalId?: T;
+  bio?: T;
+  specialties?:
+    | T
+    | {
+        value?: T;
+        id?: T;
+      };
+  avatarUrl?: T;
+  city?: T;
+  instagram?: T;
   plan?: T;
+  consentAcceptedAt?: T;
+  consentVersion?: T;
+  healthDataConsentAt?: T;
+  passwordChangedAt?: T;
+  preferences?: T;
   updatedAt?: T;
   createdAt?: T;
   email?: T;
@@ -420,6 +669,7 @@ export interface UsersSelect<T extends boolean = true> {
   resetPasswordExpiration?: T;
   salt?: T;
   hash?: T;
+  resetPasswordRequestedAt?: T;
   loginAttempts?: T;
   lockUntil?: T;
   sessions?:
@@ -436,6 +686,7 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  owner?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -485,6 +736,8 @@ export interface ProfessionalLinksSelect<T extends boolean = true> {
   professional?: T;
   professionalRole?: T;
   status?: T;
+  acceptedAt?: T;
+  revokedAt?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -565,6 +818,150 @@ export interface AiGenerationsSelect<T extends boolean = true> {
   provider?: T;
   errorMessage?: T;
   resultId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "assessments_select".
+ */
+export interface AssessmentsSelect<T extends boolean = true> {
+  kind?: T;
+  student?: T;
+  professional?: T;
+  date?: T;
+  weightKg?: T;
+  bodyFatPercent?: T;
+  muscleMassKg?: T;
+  visceralFat?: T;
+  bmr?: T;
+  hydrationPercent?: T;
+  circumferences?:
+    | T
+    | {
+        chest?: T;
+        waist?: T;
+        hip?: T;
+        arm?: T;
+        thigh?: T;
+      };
+  restingHeartRate?: T;
+  bloodPressure?: T;
+  adherenceScore?: T;
+  energyScore?: T;
+  sleepScore?: T;
+  parq?: T;
+  notes?: T;
+  nextDate?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "sessions_select".
+ */
+export interface SessionsSelect<T extends boolean = true> {
+  student?: T;
+  professional?: T;
+  date?: T;
+  time?: T;
+  durationMin?: T;
+  type?: T;
+  location?: T;
+  status?: T;
+  recurring?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "restrictions_select".
+ */
+export interface RestrictionsSelect<T extends boolean = true> {
+  student?: T;
+  professional?: T;
+  type?: T;
+  title?: T;
+  description?: T;
+  severity?: T;
+  startDate?: T;
+  endDate?: T;
+  medicalClearance?: T;
+  active?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anamneses_select".
+ */
+export interface AnamnesesSelect<T extends boolean = true> {
+  student?: T;
+  professional?: T;
+  answers?: T;
+  status?: T;
+  completedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "workout-logs_select".
+ */
+export interface WorkoutLogsSelect<T extends boolean = true> {
+  student?: T;
+  workout?: T;
+  performedAt?: T;
+  status?: T;
+  rpe?: T;
+  notes?: T;
+  exercises?:
+    | T
+    | {
+        name?: T;
+        setsCompleted?: T;
+        load?: T;
+        notes?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "foods_select".
+ */
+export interface FoodsSelect<T extends boolean = true> {
+  name?: T;
+  category?: T;
+  calories?: T;
+  protein?: T;
+  carbs?: T;
+  fat?: T;
+  fiber?: T;
+  sodium?: T;
+  unit?: T;
+  portionLabel?: T;
+  source?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "transactions_select".
+ */
+export interface TransactionsSelect<T extends boolean = true> {
+  professional?: T;
+  student?: T;
+  description?: T;
+  amount?: T;
+  kind?: T;
+  status?: T;
+  dueDate?: T;
+  paidAt?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

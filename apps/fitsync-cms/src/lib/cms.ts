@@ -8,7 +8,17 @@ export const PROFESSIONAL_LINKS_INVITE_API = `${CMS_BASE_URL}/api/professional-l
 export const WORKOUTS_API = `${CMS_BASE_URL}/api/workouts`
 export const MEAL_PLANS_API = `${CMS_BASE_URL}/api/meal-plans`
 export const AI_GENERATE_WORKOUT_API = `${CMS_BASE_URL}/api/ai/generate-workout`
+export const AI_GENERATE_MEAL_PLAN_API = `${CMS_BASE_URL}/api/ai/generate-meal-plan`
 export const AI_CHAT_API = `${CMS_BASE_URL}/api/ai/chat`
+export const WORKOUT_LOGS_API = `${CMS_BASE_URL}/api/workout-logs`
+export const FOODS_API = `${CMS_BASE_URL}/api/foods`
+export const TRANSACTIONS_API = `${CMS_BASE_URL}/api/transactions`
+export const ASSESSMENTS_API = `${CMS_BASE_URL}/api/assessments`
+export const SESSIONS_API = `${CMS_BASE_URL}/api/sessions`
+export const RESTRICTIONS_API = `${CMS_BASE_URL}/api/restrictions`
+export const ANAMNESES_API = `${CMS_BASE_URL}/api/anamneses`
+export const ME_EXPORT_API = `${CMS_BASE_URL}/api/me/export`
+export const HEALTH_API = `${CMS_BASE_URL}/api/health`
 
 const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
 
@@ -45,6 +55,8 @@ function notifySessionInvalid(status: number, authToken?: string | null): void {
 const PAYLOAD_MESSAGES_PT: Record<string, string> = {
   'You are not allowed to perform this action.': 'Você não tem permissão para esta ação.',
   'You are not allowed to perform this action': 'Você não tem permissão para esta ação.',
+  'This field is required.': 'Preencha os campos obrigatórios.',
+  'This field is required': 'Preencha os campos obrigatórios.',
 }
 
 export class PayloadApiError extends Error {
@@ -141,6 +153,21 @@ export async function patchJson<T>(
       Authorization: `JWT ${authToken}`,
     },
     body: JSON.stringify(body),
+  })
+  const data = (await res.json().catch(() => ({}))) as unknown
+  if (!res.ok) {
+    notifySessionInvalid(res.status, authToken)
+    throw new PayloadApiError(res.status, data)
+  }
+  return data as T
+}
+
+export async function deleteJson<T>(url: string, authToken: string): Promise<T> {
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: {
+      Authorization: `JWT ${authToken}`,
+    },
   })
   const data = (await res.json().catch(() => ({}))) as unknown
   if (!res.ok) {

@@ -12,9 +12,12 @@ import {
   fetchMyStudentProfile,
   goalLabel,
   saveStudentProfile,
+  uploadProfilePhoto,
 } from '../../lib/studentApi'
 import { formatPhone } from '../../lib/phone'
-import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
+import { parseHeightCm, parseWeightKg } from '../../lib/measures'
+import { AuthedImage } from '../AuthedImage'
+import { USERS_API, patchJson, PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 
 const card =
   'rounded-2xl border border-[#000326]/10 bg-white p-5 dark:border-white/10 dark:bg-[#000346]'
@@ -35,6 +38,8 @@ export function StudentProfileEditor() {
   const [saving, setSaving] = useState(false)
   const [profileId, setProfileId] = useState<string | null>(null)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [avatarSrc, setAvatarSrc] = useState(user?.avatar || '')
+  const [uploadingPhoto, setUploadingPhoto] = useState(false)
   const [form, setForm] = useState({
     displayName: user?.name || '',
     phone: formatPhone(user?.whatsapp || ''),
@@ -105,6 +110,31 @@ export function StudentProfileEditor() {
     }
   }, [user?.accessToken, user?.id])
 
+  const handlePhoto = async (file: File) => {
+    if (!user?.accessToken) {
+      toast.error('Sessão expirada. Entre novamente.')
+      return
+    }
+    setUploadingPhoto(true)
+    try {
+      const url = await uploadProfilePhoto(file, user.accessToken)
+      await patchJson(`${USERS_API}/${user.id}`, { avatarUrl: url }, user.accessToken)
+      updateUser({ avatar: url })
+      setAvatarSrc(url)
+      toast.success('Foto atualizada.')
+    } catch (err) {
+      const msg =
+        err instanceof PayloadApiError
+          ? extractPayloadMessage(err.data) || err.message
+          : err instanceof Error
+            ? err.message
+            : 'Não foi possível enviar a foto.'
+      toast.error(msg)
+    } finally {
+      setUploadingPhoto(false)
+    }
+  }
+
   const toggleEquipment = (value: EquipmentAccess) => {
     setForm((prev) => ({
       ...prev,
@@ -123,6 +153,17 @@ export function StudentProfileEditor() {
       toast.error('Preencha os campos obrigatórios.')
       return
     }
+    const height = parseHeightCm(form.heightCm)
+    const weight = parseWeightKg(form.weightKg)
+    if (!height.ok) {
+      toast.error(height.error)
+      return
+    }
+    if (!weight.ok) {
+      toast.error(weight.error)
+      return
+    }
+
     setSaving(true)
     try {
       const saved = await saveStudentProfile(
@@ -131,8 +172,8 @@ export function StudentProfileEditor() {
           displayName: form.displayName.trim(),
           phone: form.phone.trim(),
           birthDate: form.birthDate,
-          heightCm: Number(form.heightCm),
-          weightKg: Number(form.weightKg),
+          heightCm: height.value,
+          weightKg: weight.value,
           sex: form.sex,
           goal: form.goal,
           bodyFatPercent: form.bodyFatPercent ? Number(form.bodyFatPercent) : null,
@@ -191,6 +232,32 @@ export function StudentProfileEditor() {
         </div>
       )}
 
+      <div className={`${card} flex items-center gap-4`}>
+        <div className="w-16 h-16 rounded-full overflow-hidden ring-2 ring-[#000326]/15 dark:ring-white/20 shrink-0">
+          <AuthedImage
+            src={avatarSrc || user?.avatar}
+            token={user?.accessToken}
+            alt={user?.name || 'Foto de perfil'}
+            className="w-full h-full object-cover"
+          />
+        </div>
+        <label className="text-sm space-y-1">
+          <span className="font-semibold text-[#000326] dark:text-white">Foto</span>
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            disabled={uploadingPhoto}
+            className="block text-xs text-[#6a6a7a] dark:text-[#C5C5CE]"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) void handlePhoto(file)
+            }}
+          />
+          <span className="block text-xs text-[#8e8e9a]">JPG, PNG, WebP ou GIF, até 2 MB.</span>
+        </label>
+      </div>
+
       <div className={`${card} space-y-4`}>
         <h2 className="font-semibold text-[#000326] dark:text-white">Informações obrigatórias</h2>
         <div className="grid sm:grid-cols-2 gap-3">
@@ -241,7 +308,9 @@ export function StudentProfileEditor() {
           <label className="text-sm space-y-1">
             <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Altura (cm)</span>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
+              placeholder="175 ou 1,75"
               className={inputCls}
               value={form.heightCm}
               onChange={(e) => setForm({ ...form, heightCm: e.target.value })}
@@ -250,8 +319,9 @@ export function StudentProfileEditor() {
           <label className="text-sm space-y-1">
             <span className="text-[#6a6a7a] dark:text-[#C5C5CE]">Peso (kg)</span>
             <input
-              type="number"
-              step="0.1"
+              type="text"
+              inputMode="decimal"
+              placeholder="75,5"
               className={inputCls}
               value={form.weightKg}
               onChange={(e) => setForm({ ...form, weightKg: e.target.value })}

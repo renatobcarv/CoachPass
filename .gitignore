@@ -12,5 +12,7 @@ test-results/
 playwright-report/
 blob-report/
 playwright/.cache/
+apps/fitsync-cms/backups/
 *.tsbuildinfo
 next-env.d.ts
+.docs/

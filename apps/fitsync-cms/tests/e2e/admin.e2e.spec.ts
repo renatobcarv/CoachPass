@@ -1,41 +1,31 @@
-import { test, expect, Page } from '@playwright/test'
+import { test, expect } from '@playwright/test'
 import { login } from '../helpers/login'
-import { seedTestUser, cleanupTestUser, testUser } from '../helpers/seedUser'
 
-test.describe('Admin Panel', () => {
-  let page: Page
+const masterEmail = process.env.MASTER_EMAIL || ''
+const masterPassword = process.env.MASTER_PASSWORD || ''
+const demoPassword = process.env.DEMO_PASSWORD || ''
 
-  test.beforeAll(async ({ browser }, testInfo) => {
-    await seedTestUser()
-
-    const context = await browser.newContext()
-    page = await context.newPage()
-
-    await login({ page, user: testUser })
+test.describe('Admin só master', () => {
+  test('aluno demo não entra no dashboard Payload', async ({ page }) => {
+    test.skip(!demoPassword, 'DEMO_PASSWORD ausente')
+    await page.goto('/admin/login')
+    const email = page.locator('#field-email')
+    if (await email.count()) {
+      await email.fill('aluno@coachpass.app')
+      await page.locator('#field-password').fill(demoPassword)
+      await page.locator('button[type="submit"]').click()
+      await page.waitForTimeout(1500)
+    }
+    await expect(page.locator('span[title="Dashboard"]')).toHaveCount(0)
+    await expect(page).not.toHaveURL(/\/admin\/collections\/users$/)
   })
 
-  test.afterAll(async () => {
-    await cleanupTestUser()
-  })
-
-  test('can navigate to dashboard', async () => {
-    await page.goto('http://localhost:3000/admin')
-    await expect(page).toHaveURL('http://localhost:3000/admin')
-    const dashboardArtifact = page.locator('span[title="Dashboard"]').first()
-    await expect(dashboardArtifact).toBeVisible()
-  })
-
-  test('can navigate to list view', async () => {
-    await page.goto('http://localhost:3000/admin/collections/users')
-    await expect(page).toHaveURL('http://localhost:3000/admin/collections/users')
-    const listViewArtifact = page.locator('h1', { hasText: 'Users' }).first()
-    await expect(listViewArtifact).toBeVisible()
-  })
-
-  test('can open user create view', async () => {
-    await page.goto('http://localhost:3000/admin/collections/users/create')
-    await expect(page).toHaveURL('http://localhost:3000/admin/collections/users/create')
-    const emailField = page.locator('input[name="email"]')
-    await expect(emailField).toBeVisible()
+  test('master entra no admin', async ({ page }) => {
+    test.skip(!masterEmail || !masterPassword, 'MASTER_EMAIL/MASTER_PASSWORD ausentes')
+    await login({
+      page,
+      user: { email: masterEmail, password: masterPassword },
+    })
+    await expect(page.locator('span[title="Dashboard"]').first()).toBeVisible()
   })
 })

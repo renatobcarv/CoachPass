@@ -1,14 +1,19 @@
 /**
  * Cria ou atualiza o usuário master (super-admin).
  * Uso: npx tsx src/scripts/ensureMasterUser.ts
- * Variáveis: MASTER_EMAIL, MASTER_PASSWORD (defina no .env ou no shell)
+ * Variáveis: MASTER_EMAIL, MASTER_PASSWORD (obrigatória)
  */
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config.js'
 
 const email = (process.env.MASTER_EMAIL || 'master@fitsync.local').trim().toLowerCase()
-const password = process.env.MASTER_PASSWORD || 'Painel#Seguro!MudeEsta2026'
+const password = process.env.MASTER_PASSWORD
+
+if (!password) {
+  console.error('[seed:master] Defina MASTER_PASSWORD no .env')
+  process.exit(1)
+}
 
 async function main() {
   const payload = await getPayload({ config })
@@ -32,8 +37,9 @@ async function main() {
         name: (doc as { name?: string }).name || 'Master Admin',
       },
       overrideAccess: true,
+      context: { seedMaster: true },
     })
-    console.log(`[fitsync] Usuário master atualizado: ${email}`)
+    console.log(`[coachpass] Usuário master atualizado: ${email}`)
     return
   }
 
@@ -49,13 +55,12 @@ async function main() {
     overrideAccess: true,
     context: { seedMaster: true },
   })
-  console.log(`[fitsync] Usuário master criado: ${email}`)
-  console.log('[fitsync] Altere MASTER_PASSWORD no .env e rode de novo, ou troque a senha no admin.')
+  console.log(`[coachpass] Usuário master criado: ${email}`)
 }
 
 main()
   .then(() => process.exit(0))
-  .catch((e) => {
-    console.error(e)
+  .catch((error) => {
+    console.error(error)
     process.exit(1)
   })
