@@ -1,5 +1,7 @@
 import type { CollectionConfig, Where } from 'payload'
-import { ValidationError } from 'payload'
+import { APIError, ValidationError } from 'payload'
+
+import { getStudentCapacity, PLAN_LIMIT_CODE, planLimitMessage } from '../lib/proCapacity'
 
 import { expectedProfessionalRole } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
@@ -138,6 +140,19 @@ export const ProfessionalLinks: CollectionConfig = {
         }
 
         coerceNumericRelations(data, relations)
+        return data
+      },
+    ],
+    beforeChange: [
+      // Limite de alunos do plano (vale para a rota de convite e para a API direta)
+      async ({ data, operation, req }) => {
+        if (operation !== 'create' || isSuperUser(req) || req.context?.seedDemo) return data
+        const professional = toNumericRelationId(data.professional)
+        if (!professional) return data
+        const capacity = await getStudentCapacity(req.payload, professional, req)
+        if (!capacity.canAdd) {
+          throw new APIError(planLimitMessage(capacity), 402, { code: PLAN_LIMIT_CODE, ...capacity }, true)
+        }
         return data
       },
     ],

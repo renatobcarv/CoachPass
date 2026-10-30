@@ -330,6 +330,58 @@ export const Users: CollectionConfig = {
       ],
       defaultValue: 'free',
     },
+    // Plano do profissional (limite de alunos). Só muda pela rota /api/pro/plan ou pelo admin.
+    {
+      name: 'proTier',
+      type: 'select',
+      label: 'Plano profissional',
+      required: false,
+      defaultValue: 'free',
+      options: [
+        { label: 'Grátis (5 alunos)', value: 'free' },
+        { label: 'Pro (40 alunos)', value: 'pro' },
+        { label: 'Elite (ilimitado)', value: 'elite' },
+      ],
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    {
+      name: 'billingCycle',
+      type: 'select',
+      label: 'Ciclo de cobrança',
+      required: false,
+      options: [
+        { label: 'Mensal', value: 'monthly' },
+        { label: 'Anual', value: 'annual' },
+      ],
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    {
+      name: 'trialEndsAt',
+      type: 'date',
+      label: 'Fim do teste grátis',
+      required: false,
+      admin: { description: 'Vazio = plano pago ativo. Data passada = volta para o Grátis.' },
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    {
+      name: 'trialUsed',
+      type: 'checkbox',
+      label: 'Já usou o teste grátis',
+      defaultValue: false,
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
     {
       name: 'consentAcceptedAt',
       type: 'date',

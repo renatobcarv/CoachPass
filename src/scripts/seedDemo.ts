@@ -47,6 +47,8 @@ async function upsertUser(
     specialties: data.specialties?.map((value) => ({ value })),
     city: data.city,
     avatarUrl: data.avatarUrl,
+    // Profissionais demo ficam no Pro pago (têm mais de 5 alunos); contas reais começam no Grátis
+    ...(data.role === 'student' ? {} : { proTier: 'pro' as const, trialEndsAt: null, trialUsed: false }),
   }
   if (found.docs[0]) {
     return payload.update({

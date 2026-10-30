@@ -166,6 +166,13 @@ export interface User {
   city?: string | null;
   instagram?: string | null;
   plan?: ('free' | 'monthly' | 'semester' | 'annual') | null;
+  proTier?: ('free' | 'pro' | 'elite') | null;
+  billingCycle?: ('monthly' | 'annual') | null;
+  /**
+   * Vazio = plano pago ativo. Data passada = volta para o Grátis.
+   */
+  trialEndsAt?: string | null;
+  trialUsed?: boolean | null;
   consentAcceptedAt?: string | null;
   consentVersion?: string | null;
   healthDataConsentAt?: string | null;
@@ -657,6 +664,10 @@ export interface UsersSelect<T extends boolean = true> {
   city?: T;
   instagram?: T;
   plan?: T;
+  proTier?: T;
+  billingCycle?: T;
+  trialEndsAt?: T;
+  trialUsed?: T;
   consentAcceptedAt?: T;
   consentVersion?: T;
   healthDataConsentAt?: T;

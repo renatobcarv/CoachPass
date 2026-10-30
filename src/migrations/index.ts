@@ -3,6 +3,7 @@ import * as migration_20261021_033808_domain_etapa2 from './20261021_033808_doma
 import * as migration_20261021_090000_users_plan_default from './20261021_090000_users_plan_default';
 import * as migration_20261021_144500_domain_etapa3 from './20261021_144500_domain_etapa3';
 import * as migration_20261030_034603_domain_etapa4 from './20261030_034603_domain_etapa4';
+import * as migration_20261030_041106_pro_plans from './20261030_041106_pro_plans';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20261030_034603_domain_etapa4.up,
     down: migration_20261030_034603_domain_etapa4.down,
-    name: '20261030_034603_domain_etapa4'
+    name: '20261030_034603_domain_etapa4',
+  },
+  {
+    up: migration_20261030_041106_pro_plans.up,
+    down: migration_20261030_041106_pro_plans.down,
+    name: '20261030_041106_pro_plans'
   },
 ];

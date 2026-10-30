@@ -4,6 +4,7 @@ import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 
 import type { User } from '@/payload-types'
+import { getStudentCapacity, PLAN_LIMIT_CODE, planLimitMessage } from '@/lib/proCapacity'
 
 export const dynamic = 'force-dynamic'
 
@@ -46,6 +47,17 @@ export async function POST(request: Request) {
     .toLowerCase()
   if (!email || !email.includes('@')) {
     return NextResponse.json({ error: 'Informe um e-mail válido.', code: 'INVALID_EMAIL' }, { status: 400 })
+  }
+
+  // Limite do plano antes de procurar o aluno (não revela se o e-mail existe)
+  if (!authUser.isSuperAdmin) {
+    const capacity = await getStudentCapacity(payload, authUser.id)
+    if (!capacity.canAdd) {
+      return NextResponse.json(
+        { error: planLimitMessage(capacity), code: PLAN_LIMIT_CODE, ...capacity },
+        { status: 402 },
+      )
+    }
   }
 
   const professionalRole: 'personal' | 'nutritionist' =
