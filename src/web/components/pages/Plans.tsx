@@ -1,8 +1,14 @@
-import React from 'react'
-import { Link } from 'react-router'
+import React, { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate } from 'react-router'
 import { MotionConfig } from 'motion/react'
 import { ArrowLeft, Sparkles } from 'lucide-react'
+import { toast } from 'sonner'
 import { Backdrop, Grain, Logo, Reveal, SplitWords } from '../brand/Brand'
+import { useAuth } from '../../context/AuthContext'
+import { ProPricing } from '../pricing/ProPricing'
+import { chooseProPlan, fetchProPlan, trialDaysLeft, type ProPlanStatus } from '../../lib/proPlanApi'
+import { PRO_PLANS, type BillingCycle, type ProTier } from '@/lib/proPlans'
+import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 
 const plans = [
   {
@@ -30,8 +36,125 @@ const plans = [
 
 const featured = 'annual'
 
-/** Página visual provisória (sem gateway). Benefícios pagos não são liberados pelo clique. */
+/** Profissionais (e visitantes) veem os planos por número de alunos; aluno vê os planos de IA. */
 export function Plans() {
+  const { user } = useAuth()
+  if (user?.role === 'student') return <StudentPlans />
+  return <ProfessionalPlans />
+}
+
+function ProfessionalPlans() {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const isPro = user?.role === 'personal' || user?.role === 'nutritionist' || user?.role === 'master'
+  const audience = user?.role === 'nutritionist' ? 'nutritionist' : 'personal'
+  const home = !user ? '/' : user.role === 'nutritionist' ? '/nutritionist' : user.role === 'personal' ? '/personal' : '/app'
+  const [status, setStatus] = useState<ProPlanStatus | null>(null)
+  const [busy, setBusy] = useState<ProTier | null>(null)
+
+  const load = useCallback(async () => {
+    if (!isPro || !user?.accessToken) return
+    try {
+      setStatus(await fetchProPlan(user.accessToken))
+    } catch {
+      /* sem status a tabela funciona como vitrine */
+    }
+  }, [isPro, user?.accessToken])
+
+  useEffect(() => {
+    void load()
+  }, [load])
+
+  const choose = async (tier: ProTier, cycle: BillingCycle) => {
+    if (!user?.accessToken || !isPro) {
+      navigate('/cadastro')
+      return
+    }
+    setBusy(tier)
+    try {
+      const next = await chooseProPlan(tier, cycle, user.accessToken)
+      setStatus(next)
+      const left = trialDaysLeft(next.trialEndsAt)
+      toast.success(
+        tier === 'free'
+          ? 'Você está no Grátis.'
+          : `${PRO_PLANS[tier].name} liberado${left ? ` por ${left} dias de teste` : ''}.`,
+      )
+    } catch (err) {
+      const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : ''
+      toast.error(msg || 'Não foi possível mudar o plano agora.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const left = trialDaysLeft(status?.trialEndsAt ?? null)
+  const who = audience === 'nutritionist' ? 'pacientes' : 'alunos'
+
+  return (
+    <MotionConfig reducedMotion="user">
+      <div className="cp-brand relative min-h-screen overflow-hidden">
+        <Grain />
+        <Backdrop variant="soft" />
+        <div className="relative max-w-[1160px] mx-auto px-4 sm:px-8 py-8">
+          <div className="flex items-center justify-between">
+            <Logo to={home} />
+            <Link to={home} className="inline-flex items-center gap-2 text-[14px] text-[var(--muted)] hover:text-white transition-colors">
+              <ArrowLeft className="w-4 h-4" />
+              {user ? 'Voltar ao painel' : 'Voltar'}
+            </Link>
+          </div>
+
+          <div className="mt-14 max-w-3xl">
+            <p className="cp-kicker">Planos para profissionais</p>
+            <h1 className="cp-display mt-4 text-[clamp(38px,5.6vw,76px)] font-bold leading-[0.98]">
+              <SplitWords text="Pague pelo tamanho" immediate />{' '}
+              <SplitWords text="da sua carteira." immediate delay={0.2} className="text-[var(--brand-300)]" />
+            </h1>
+            <Reveal delay={0.35}>
+              <p className="mt-5 text-[16px] text-[var(--muted)]">
+                Todos os recursos liberados em qualquer plano. Comece grátis com até {PRO_PLANS.free.studentLimit} {who} e
+                suba só quando a carteira crescer.
+              </p>
+            </Reveal>
+            {status && (
+              <p className="cp-mono mt-6 inline-flex flex-wrap items-center gap-2 rounded-full border border-[var(--line-2)] px-4 py-2 text-[12.5px]">
+                <span className="text-[var(--muted)]">Seu plano:</span>
+                <strong>{PRO_PLANS[status.tier].name}</strong>
+                <span className="text-[var(--dim)]">·</span>
+                <span>
+                  {status.used}
+                  {status.limit !== null ? ` de ${status.limit}` : ''} {who}
+                </span>
+                {status.onTrial && left !== null && (
+                  <>
+                    <span className="text-[var(--dim)]">·</span>
+                    <span className="text-[var(--amber)]">teste termina em {left} {left === 1 ? 'dia' : 'dias'}</span>
+                  </>
+                )}
+              </p>
+            )}
+          </div>
+
+          <div className="mt-12">
+            <ProPricing
+              audience={audience}
+              usedStudents={status?.used ? Math.max(status.used, 1) : undefined}
+              currentTier={status?.tier}
+              trialUsed={status?.trialUsed}
+              onTrial={status?.onTrial}
+              busyTier={busy}
+              onChoose={choose}
+            />
+          </div>
+        </div>
+      </div>
+    </MotionConfig>
+  )
+}
+
+/** Planos de IA do aluno — página visual provisória (sem gateway). */
+function StudentPlans() {
   return (
     <MotionConfig reducedMotion="user">
       <div className="cp-brand relative min-h-screen overflow-hidden">

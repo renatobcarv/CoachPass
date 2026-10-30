@@ -931,3 +931,53 @@
   -webkit-appearance: none;
   margin: 0;
 }
+
+/* Régua da calculadora de planos: trilho sólido, parte preenchida na cor da marca */
+.cp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+}
+.cp-range::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to right, var(--brand-500) var(--pct, 0%), var(--line-2) var(--pct, 0%));
+}
+.cp-range::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--line-2);
+}
+.cp-range::-moz-range-progress {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--brand-500);
+}
+.cp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 6px solid var(--brand-500);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+  transition: transform 0.15s var(--ease);
+}
+.cp-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: var(--paper);
+  border: 6px solid var(--brand-500);
+}
+.cp-range:active::-webkit-slider-thumb {
+  transform: scale(1.12);
+}
+.cp-range:focus-visible {
+  outline: 2px solid var(--brand-300);
+  outline-offset: 6px;
+  border-radius: 999px;
+}

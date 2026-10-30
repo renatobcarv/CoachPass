@@ -2,6 +2,7 @@ import React from 'react'
 import { Apple, Calendar, ClipboardList, Dumbbell, LayoutDashboard, User, Users, Utensils } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AppShell, type ShellNavItem } from '../brand/AppShell'
+import { PlanMeter } from '../pricing/PlanMeter'
 
 const personalNav: ShellNavItem[] = [
   { to: '/personal', icon: LayoutDashboard, label: 'Painel', short: 'Painel', exact: true },
@@ -32,12 +33,15 @@ export function ProShell() {
       subtitle={isNutri ? 'Painel da nutricionista' : 'Painel do personal'}
       shellClass="cp-pro-shell"
       aside={
-        credential ? (
-          <div className="rounded-2xl p-4 border border-[var(--line-2)] bg-white/[0.025]">
-            <p className="cp-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--dim)]">Registro</p>
-            <p className="mt-1 text-[14px] font-semibold">{credential}</p>
-          </div>
-        ) : null
+        <div className="space-y-3">
+          <PlanMeter />
+          {credential && (
+            <div className="rounded-2xl p-4 border border-[var(--line-2)] bg-white/[0.025]">
+              <p className="cp-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--dim)]">Registro</p>
+              <p className="mt-1 text-[14px] font-semibold">{credential}</p>
+            </div>
+          )}
+        </div>
       }
     />
   )

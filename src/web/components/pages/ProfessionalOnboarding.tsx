@@ -18,10 +18,13 @@ import { USERS_API, patchJson, postJson, PayloadApiError, extractPayloadMessage 
 import { saveProProfile } from '../../lib/proProfile'
 import { credentialError, maskPhoneBR, phoneError } from '../../lib/validation'
 import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
+import { ProPricing } from '../pricing/ProPricing'
+import { chooseProPlan } from '../../lib/proPlanApi'
+import { PRO_PLANS, TRIAL_DAYS, type BillingCycle, type ProTier } from '@/lib/proPlans'
 
 type ProfessionalType = 'personal' | 'nutritionist'
 
-type StepId = 'area' | 'credential' | 'phone' | 'specialties' | 'experience' | 'clients' | 'workplaces' | 'priorities' | 'review'
+type StepId = 'area' | 'credential' | 'phone' | 'specialties' | 'experience' | 'clients' | 'workplaces' | 'priorities' | 'plan' | 'review'
 
 const SPECIALTIES: Record<ProfessionalType, string[]> = {
   personal: [
@@ -50,6 +53,14 @@ const SPECIALTIES: Record<ProfessionalType, string[]> = {
 
 const EXPERIENCE = ['Menos de 1 ano', '1 a 3 anos', '3 a 5 anos', '5 a 10 anos', 'Mais de 10 anos']
 const CLIENTS = ['Estou começando', '1 a 10', '11 a 30', '31 a 60', 'Mais de 60']
+// Ponto de partida da calculadora de planos a partir da resposta da carteira
+const CLIENTS_ESTIMATE: Record<string, number> = {
+  'Estou começando': 3,
+  '1 a 10': 8,
+  '11 a 30': 20,
+  '31 a 60': 45,
+  'Mais de 60': 70,
+}
 
 const WORKPLACES: Record<ProfessionalType, string[]> = {
   personal: ['Academia', 'Estúdio próprio', 'Domicílio', 'Online', 'Ao ar livre', 'Empresas'],
@@ -77,6 +88,7 @@ export function ProfessionalOnboarding() {
     workplaces: [] as string[],
     priorities: [] as string[],
   })
+  const [plan, setPlan] = useState<{ tier: ProTier; cycle: BillingCycle } | null>(null)
 
   const handleComplete = async () => {
     if (!user?.accessToken || !user.id) {
@@ -129,7 +141,20 @@ export function ProfessionalOnboarding() {
       // Respostas complementares do quiz (sem campo no backend ainda): personalizam o painel
       saveProProfile(user.id, extra)
 
-      toast.success('Validação profissional concluída.')
+      // Plano pago abre o teste grátis; o grátis já é o padrão da conta
+      let planMsg = ''
+      if (plan && plan.tier !== 'free') {
+        try {
+          const status = await chooseProPlan(plan.tier, plan.cycle, token)
+          const until = status.trialEndsAt ? new Date(status.trialEndsAt).toLocaleDateString('pt-BR') : ''
+          planMsg = ` Teste do ${PRO_PLANS[plan.tier].name} liberado${until ? ` até ${until}` : ''}.`
+        } catch (err) {
+          const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : ''
+          toast.warning(msg || 'Não foi possível iniciar o teste agora. Você pode ativar em Planos.')
+        }
+      }
+
+      toast.success(`Perfil profissional pronto.${planMsg}`)
       navigate(role === 'nutritionist' ? '/nutritionist' : '/personal', { replace: true })
     } catch (err) {
       const msg =
@@ -162,6 +187,12 @@ export function ProfessionalOnboarding() {
     { id: 'clients', kicker: 'Carteira', title: `Quantos ${who} você acompanha hoje?`, optional: true },
     { id: 'workplaces', kicker: 'Atendimento', title: 'Onde você atende?', hint: 'Marque todos que se aplicam.', optional: true },
     { id: 'priorities', kicker: 'Objetivo no CoachPass', title: 'O que você quer organizar primeiro?', hint: 'Usamos isso para destacar o que importa no seu painel.', optional: true },
+    {
+      id: 'plan',
+      kicker: 'Plano',
+      title: 'Escolha como quer começar',
+      hint: `Todos os recursos em todos os planos. O Grátis comporta até ${PRO_PLANS.free.studentLimit} ${who}; os pagos têm ${TRIAL_DAYS} dias grátis, sem cartão.`,
+    },
     { id: 'review', kicker: 'Revisão', title: 'Tudo certo por aqui?' },
   ]
 
@@ -175,6 +206,7 @@ export function ProfessionalOnboarding() {
     if (id === 'area') return Boolean(data.professionalType)
     if (id === 'credential') return !credentialError(data.credential, type)
     if (id === 'phone') return !phoneError(data.phone, false)
+    if (id === 'plan') return Boolean(plan)
     if (id === 'review')
       return Boolean(data.professionalType) && !credentialError(data.credential, type) && !phoneError(data.phone, false)
     return true
@@ -398,8 +430,22 @@ export function ProfessionalOnboarding() {
           </div>
         )
       }
+      case 'plan':
+        return (
+          <ProPricing
+            audience={type}
+            initialStudents={CLIENTS_ESTIMATE[extra.clients] ?? 8}
+            selectedTier={plan?.tier ?? null}
+            onChoose={(tier, cycle) => pickAndAdvance(() => setPlan({ tier, cycle }))}
+          />
+        )
       case 'review': {
         const at = (id: StepId) => () => goTo(STEPS.findIndex((s) => s.id === id))
+        const planLabel = plan
+          ? plan.tier === 'free'
+            ? `Grátis · até ${PRO_PLANS.free.studentLimit} ${who}`
+            : `${PRO_PLANS[plan.tier].name} · ${TRIAL_DAYS} dias grátis (${plan.cycle === 'annual' ? 'anual' : 'mensal'})`
+          : '—'
         const rows: [string, string, StepId][] = [
           ['Área', isNutri ? 'Nutricionista' : 'Personal Trainer', 'area'],
           [isNutri ? 'CRN' : 'CREF', data.credential || '—', 'credential'],
@@ -409,6 +455,7 @@ export function ProfessionalOnboarding() {
           [isNutri ? 'Pacientes' : 'Alunos', extra.clients || '—', 'clients'],
           ['Atende em', extra.workplaces.join(', ') || '—', 'workplaces'],
           ['Prioridades', extra.priorities.join(', ') || '—', 'priorities'],
+          ['Plano', planLabel, 'plan'],
         ]
         return (
           <div className="rounded-3xl border border-[var(--line-2)] bg-white/[0.025] px-5 sm:px-7 py-2">
@@ -468,7 +515,7 @@ export function ProfessionalOnboarding() {
         </header>
 
         <main className="relative z-10 flex-1 flex items-center px-4 sm:px-8 py-10">
-          <div className="w-full max-w-[680px] mx-auto">
+          <div className={`w-full mx-auto ${current.id === 'plan' ? 'max-w-[1100px]' : 'max-w-[680px]'}`}>
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={current.id}
@@ -510,13 +557,16 @@ export function ProfessionalOnboarding() {
 
                 <div className="mt-9">{renderStep()}</div>
 
-                <div className="mt-10 flex flex-wrap items-center gap-4">
+                {/* Na etapa de plano os próprios cards são os botões */}
+                <div className={`mt-10 flex flex-wrap items-center gap-4 ${current.id === 'plan' ? 'hidden' : ''}`}>
                   <CTAButton type="button" onClick={next} disabled={!valid(current.id) || loading}>
                     {loading
                       ? 'Salvando…'
                       : current.id === 'review'
                         ? 'Continuar para o painel'
-                        : current.optional && !hasValue(current.id)
+                        : current.id === 'plan' && !plan
+                          ? 'Escolha um plano'
+                          : current.optional && !hasValue(current.id)
                           ? 'Pular'
                           : 'Continuar'}
                   </CTAButton>

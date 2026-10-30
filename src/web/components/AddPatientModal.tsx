@@ -1,10 +1,18 @@
 import React, { useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { X, Mail, AlertCircle, UserPlus } from 'lucide-react'
+import { X, Mail, AlertCircle, UserPlus, ArrowRight } from 'lucide-react'
+import { Link } from 'react-router'
 import { motion, AnimatePresence } from 'motion/react'
 import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
-import { PROFESSIONAL_LINKS_INVITE_API, extractPayloadMessage } from '@/lib/cms'
+import { PROFESSIONAL_LINKS_INVITE_API, PayloadApiError, extractPayloadMessage } from '@/lib/cms'
+import { PRO_PLANS, TRIAL_DAYS, formatBRL, type ProTier } from '@/lib/proPlans'
+import { chooseProPlan, fetchProPlan } from '../lib/proPlanApi'
+
+type LimitInfo = { tier: ProTier; limit: number | null; used: number }
+
+/** Próximo plano que resolve o limite atual. */
+const nextTier = (tier: ProTier): ProTier => (tier === 'free' ? 'pro' : 'elite')
 
 interface AddPatientModalProps {
   isOpen: boolean
@@ -24,8 +32,12 @@ export function AddPatientModal({
   onSuccess,
 }: AddPatientModalProps) {
   const { user } = useAuth()
-  const [step, setStep] = useState<'form' | 'loading' | 'success' | 'error'>('form')
+  const [step, setStep] = useState<'form' | 'loading' | 'success' | 'error' | 'limit'>('form')
   const [errorMessage, setErrorMessage] = useState('')
+  const [limitInfo, setLimitInfo] = useState<LimitInfo | null>(null)
+  const [trialUsed, setTrialUsed] = useState(false)
+  const [upgrading, setUpgrading] = useState(false)
+  const [pendingEmail, setPendingEmail] = useState('')
 
   const {
     register,
@@ -65,6 +77,17 @@ export function AddPatientModal({
 
       const result = await response.json().catch(() => ({}))
 
+      // Carteira cheia: oferece o próximo plano em vez de um erro seco
+      if (response.status === 402 && result?.code === 'PLAN_LIMIT') {
+        setLimitInfo({ tier: result.tier, limit: result.limit, used: result.used })
+        setPendingEmail(data.email)
+        setStep('limit')
+        fetchProPlan(user.accessToken)
+          .then((s) => setTrialUsed(s.trialUsed && !s.onTrial))
+          .catch(() => undefined)
+        return
+      }
+
       if (!response.ok) {
         const message =
           (typeof result?.error === 'string' && result.error) ||
@@ -96,6 +119,22 @@ export function AddPatientModal({
       setErrorMessage(message)
       setStep('error')
       toast.error('Erro ao enviar convite')
+    }
+  }
+
+  // Libera o teste do próximo plano e reenvia o convite que travou
+  const upgradeAndInvite = async () => {
+    if (!user?.accessToken || !limitInfo) return
+    setUpgrading(true)
+    try {
+      await chooseProPlan(nextTier(limitInfo.tier), 'annual', user.accessToken)
+      toast.success(`${PRO_PLANS[nextTier(limitInfo.tier)].name} liberado por ${TRIAL_DAYS} dias.`)
+      await onSubmit({ email: pendingEmail })
+    } catch (err) {
+      const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : ''
+      toast.error(msg || 'Não foi possível liberar o plano agora.')
+    } finally {
+      setUpgrading(false)
     }
   }
 
@@ -183,6 +222,49 @@ export function AddPatientModal({
                       <p className="mt-1.5 text-[14px] text-[var(--muted)]">
                         {patientLabel} encontrado e vinculado à sua conta.
                       </p>
+                    </motion.div>
+                  )}
+
+                  {step === 'limit' && limitInfo && (
+                    <motion.div key="limit" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="py-2">
+                      <p className="cp-kicker">Carteira cheia</p>
+                      <h4 className="cp-display mt-2 text-[24px] font-bold leading-tight">
+                        Você lotou o plano {PRO_PLANS[limitInfo.tier].name}.
+                      </h4>
+                      <p className="mt-2 text-[14px] text-[var(--muted)]">
+                        Seus {limitInfo.used} {patientLabel.toLowerCase()}s continuam com você. Para convidar{' '}
+                        <strong className="text-white">{pendingEmail}</strong>, suba de plano.
+                      </p>
+
+                      {/* Medidor cheio: deixa o limite visível sem drama */}
+                      <div className="mt-5">
+                        <div className="cp-mono flex justify-between text-[11.5px] text-[var(--muted)]">
+                          <span>{patientLabel}s</span>
+                          <span>
+                            {limitInfo.used} / {limitInfo.limit}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 h-2 rounded-full bg-[var(--line-2)] overflow-hidden">
+                          <div className="h-full w-full rounded-full bg-[var(--amber)]" />
+                        </div>
+                      </div>
+
+                      <UpgradeOffer
+                        tier={nextTier(limitInfo.tier)}
+                        who={patientLabel.toLowerCase()}
+                        trialUsed={trialUsed}
+                        upgrading={upgrading}
+                        onUpgrade={upgradeAndInvite}
+                      />
+
+                      <div className="mt-4 flex items-center justify-between text-[13.5px]">
+                        <button type="button" onClick={() => setStep('form')} className="text-[var(--muted)] hover:text-white">
+                          Voltar
+                        </button>
+                        <Link to="/planos" className="text-[var(--brand-300)] hover:text-white">
+                          Comparar todos os planos
+                        </Link>
+                      </div>
                     </motion.div>
                   )}
 
@@ -295,5 +377,50 @@ export function AddPatientModal({
         </>
       )}
     </AnimatePresence>
+  )
+}
+
+function UpgradeOffer({
+  tier,
+  who,
+  trialUsed,
+  upgrading,
+  onUpgrade,
+}: {
+  tier: ProTier
+  who: string
+  trialUsed: boolean
+  upgrading: boolean
+  onUpgrade: () => void
+}) {
+  const up = PRO_PLANS[tier]
+  const btn =
+    'mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-full bg-[var(--paper-ink)] text-[15px] font-semibold text-white transition hover:bg-[var(--brand-700)] active:scale-[0.98] disabled:opacity-60'
+  return (
+    <div className="cp-paper mt-5 rounded-2xl p-5">
+      <div className="flex items-baseline justify-between gap-3">
+        <p className="cp-display text-[20px] font-bold">{up.name}</p>
+        <p className="cp-display text-[20px] font-bold">
+          {formatBRL(up.annualMonthly)}
+          <span className="text-[13px] font-normal text-[var(--paper-muted)]">/mês no anual</span>
+        </p>
+      </div>
+      <p className="mt-1 text-[13.5px] text-[var(--paper-muted)]">
+        {up.studentLimit === null ? `${who}s ilimitados` : `Até ${up.studentLimit} ${who}s`} · todos os recursos
+      </p>
+      {trialUsed ? (
+        <Link to="/planos" className={btn}>
+          Ver planos <ArrowRight className="h-4 w-4" />
+        </Link>
+      ) : (
+        <button type="button" onClick={onUpgrade} disabled={upgrading} className={btn}>
+          {upgrading ? 'Liberando…' : `Testar ${TRIAL_DAYS} dias grátis e convidar`}
+          {!upgrading && <ArrowRight className="h-4 w-4" />}
+        </button>
+      )}
+      <p className="mt-2 text-center text-[12px] text-[var(--paper-muted)]">
+        {trialUsed ? 'Seu teste grátis já foi usado.' : 'Sem cartão. Se não assinar, volta para o Grátis.'}
+      </p>
+    </div>
   )
 }
