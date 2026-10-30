@@ -16,6 +16,12 @@ const RATE_LIMITS: Array<{ match: (pathname: string, method: string) => boolean;
     match: (pathname, method) => method === 'POST' && pathname === '/api/users/forgot-password',
   },
   {
+    // Cadastro público: evita criação de contas em massa (e de testes grátis)
+    name: 'signup',
+    limit: 5,
+    match: (pathname, method) => method === 'POST' && pathname === '/api/users',
+  },
+  {
     name: 'invite',
     limit: 10,
     match: (pathname, method) => method === 'POST' && pathname === '/api/professional-links/invite',

@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { USERS_API, PayloadApiError, extractPayloadMessage, patchJson, postJson } from '@/lib/cms';
+import { deleteCurrentUser, exportMyData } from '../../lib/professionalApi';
 import { PasswordStrength } from '../forms/PasswordInput';
 import { credentialError, isStrongEnough, maskPhoneBR, nameError, phoneError } from '../../lib/validation';
 
@@ -102,6 +103,47 @@ export function Settings() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [exporting, setExporting] = useState(false);
+
+  // Exclusão definitiva (LGPD): a API apaga a conta e os dados ligados a ela
+  const handleDeleteAccount = async () => {
+    if (!user?.accessToken || !user.id) return;
+    setDeleting(true);
+    try {
+      await deleteCurrentUser(String(user.id), user.accessToken);
+      setShowDeleteConfirm(false);
+      toast.success('Sua conta e seus dados foram excluídos.');
+      logout();
+      navigate('/', { replace: true });
+    } catch (err) {
+      const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : '';
+      toast.error(msg || 'Não foi possível excluir a conta agora. Tente de novo.');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // Exportação real (LGPD): busca no servidor tudo o que está ligado à conta
+  const handleExportData = async () => {
+    if (!user?.accessToken) return;
+    setExporting(true);
+    try {
+      const data = await exportMyData(user.accessToken);
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `coachpass-dados-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Seus dados foram exportados.');
+    } catch {
+      toast.error('Não foi possível exportar agora. Tente de novo.');
+    } finally {
+      setExporting(false);
+    }
+  };
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [passwordForm, setPasswordForm] = useState({ current: '', new: '', confirm: '' });
   const [showCurrent, setShowCurrent] = useState(false);
@@ -945,23 +987,9 @@ export function Settings() {
                   <div className="space-y-4">
                     {[
                       {
-                        title: 'Exportar dados', desc: 'Baixe todos os seus dados em formato JSON',
-                        icon: Download, color: '#3b82f6', action: () => {
-                          const data = { user, exportDate: new Date().toISOString() };
-                          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-                          const url = URL.createObjectURL(blob);
-                          const a = document.createElement('a');
-                          a.href = url; a.download = `coachpass-dados-${new Date().toISOString().split('T')[0]}.json`;
-                          a.click(); toast.success('Dados exportados com sucesso!');
-                        }
-                      },
-                      {
-                        title: 'Histórico de treinos', desc: 'Exporte seu histórico completo de treinos em CSV',
-                        icon: Activity, color: '#5a64b4', action: () => toast.info('Exportação de treinos em breve')
-                      },
-                      {
-                        title: 'Histórico alimentar', desc: 'Baixe todos os registros do seu plano alimentar',
-                        icon: Star, color: '#f59e0b', action: () => toast.info('Exportação nutricional em breve')
+                        title: exporting ? 'Exportando…' : 'Exportar meus dados',
+                        desc: 'Perfil, treinos, registros, dietas, avaliações e vínculos em um arquivo JSON',
+                        icon: Download, color: '#3b82f6', action: () => { if (!exporting) void handleExportData(); }
                       },
                       {
                         title: 'Limpar cache local', desc: 'Remove dados temporários armazenados no navegador',
@@ -1099,8 +1127,8 @@ export function Settings() {
                   <button onClick={() => setShowDeleteConfirm(false)} className="flex-1 py-2.5 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 text-sm hover:dark:bg-zinc-800 transition-colors" style={{ fontWeight: 600 }}>
                     Cancelar
                   </button>
-                  <button onClick={() => { toast.error('Exclusão de conta: entre em contato com o suporte.'); setShowDeleteConfirm(false); }} className="flex-1 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-sm hover:bg-red-500/20 transition-colors" style={{ fontWeight: 600 }}>
-                    Excluir
+                  <button onClick={() => void handleDeleteAccount()} disabled={deleting} className="flex-1 py-2.5 rounded-xl bg-red-500/10 text-red-400 border border-red-500/30 text-sm hover:bg-red-500/20 transition-colors disabled:opacity-60" style={{ fontWeight: 600 }}>
+                    {deleting ? 'Excluindo…' : 'Excluir'}
                   </button>
                 </div>
               </div>

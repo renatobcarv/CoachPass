@@ -3,6 +3,8 @@ import { ArrowUp, ChevronDown, Dumbbell, Flame, Salad, Sparkles, X } from 'lucid
 import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 import { BrandLogo } from './brand/Brand';
+import { sendAiChat } from '../lib/studentApi';
+import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 
 interface Message {
   id: string;
@@ -16,13 +18,6 @@ const quickReplies = [
   { text: 'Reduzir calorias hoje', icon: Flame },
   { text: 'Adicionar mais proteína', icon: Salad },
   { text: 'Treino para hoje sem equipamento', icon: Sparkles },
-];
-
-const aiResponses = [
-  'Ótima escolha! Posso substituir o supino por flexões declinadas ou crucifixo com halteres. Qual você prefere? Ambos trabalham o peitoral de forma eficaz.',
-  'Entendido! Vou reduzir suas calorias de 2.800 para 2.400 kcal hoje. Removi a colação da tarde. Isso mantém sua proteína em 180g e cut de 400kcal.',
-  'Perfeito! Adicionei um shake de proteína pós-treino (30g proteína) e um ovo cozido à sua colação. Total de proteína ajustado para 220g/dia.',
-  'Treino sem equipamento criado! Circuito: Flexão 4×15, Agachamento 4×20, Prancha 3×60s, Burpee 3×10. Duração: ~40 minutos. Devo adicionar ao seu plano?',
 ];
 
 const now = () => new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
@@ -53,31 +48,47 @@ export function AIChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const responseIndex = useRef(0);
   const hasConversation = messages.some((m) => m.role === 'user');
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, isTyping]);
 
-  const sendMessage = (text: string) => {
-    if (!text.trim() || isTyping) return;
-    // Sugestão rápida → resposta correspondente; texto livre → rodízio das respostas de demonstração
-    const quickIndex = quickReplies.findIndex((q) => q.text === text);
+  const addAi = (text: string) =>
+    setMessages((prev) => [...prev, { id: `${Date.now()}-ai`, role: 'ai', text, time: now() }]);
 
-    setMessages((prev) => [...prev, { id: Date.now().toString(), role: 'user', text, time: now() }]);
+  // Resposta real do assistente (/api/ai/chat, com cota diária e contexto do perfil)
+  const sendMessage = async (text: string) => {
+    const clean = text.trim();
+    if (!clean || isTyping) return;
+    if (!user?.accessToken) {
+      addAi('Entre na sua conta para conversar com o assistente.');
+      return;
+    }
+
+    const userMsg: Message = { id: `${Date.now()}-user`, role: 'user', text: clean, time: now() };
+    const history = [...messages, userMsg];
+    setMessages(history);
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const idx = quickIndex >= 0 ? quickIndex : responseIndex.current % aiResponses.length;
-      if (quickIndex < 0) responseIndex.current += 1;
+    try {
+      const { reply } = await sendAiChat(
+        user.accessToken,
+        history.map((m) => ({ role: m.role, text: m.text })),
+      );
+      addAi(reply);
+    } catch (err) {
+      const code = err instanceof PayloadApiError ? (err.data as { code?: string } | null)?.code : undefined;
+      const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : '';
+      addAi(
+        code === 'CHAT_QUOTA'
+          ? 'Você atingiu o limite de conversas de hoje. Amanhã o assistente volta a responder.'
+          : msg || 'Não consegui responder agora. Tente de novo em instantes.',
+      );
+    } finally {
       setIsTyping(false);
-      setMessages((prev) => [
-        ...prev,
-        { id: (Date.now() + 1).toString(), role: 'ai', text: aiResponses[idx], time: now() },
-      ]);
-    }, 1800);
+    }
   };
 
   return (

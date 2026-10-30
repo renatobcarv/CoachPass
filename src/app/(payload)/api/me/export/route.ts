@@ -21,10 +21,11 @@ async function docsFor(
     | 'transactions',
   where: Where,
 ) {
+  // Sem paginação: a exportação (LGPD) precisa trazer tudo, não só os primeiros registros
   const result = await payload.find({
     collection,
     where,
-    limit: 200,
+    pagination: false,
     depth: 0,
     overrideAccess: true,
   })
@@ -47,6 +48,8 @@ export async function GET() {
   delete safeUser.sessions
   delete safeUser.collection
   delete safeUser._strategy
+  delete safeUser.loginAttempts
+  delete safeUser.lockUntil
 
   const [profiles, linksAsStudent, linksAsPro, workouts, mealPlans, generations, assessments, sessions, restrictions, anamneses, workoutLogs, transactions] =
     await Promise.all([

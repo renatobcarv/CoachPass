@@ -277,6 +277,10 @@ export interface ProfessionalLink {
   acceptedAt?: string | null;
   revokedAt?: string | null;
   notes?: string | null;
+  /**
+   * Preenchido pelo servidor ao criar o convite.
+   */
+  professionalName?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -765,6 +769,7 @@ export interface ProfessionalLinksSelect<T extends boolean = true> {
   acceptedAt?: T;
   revokedAt?: T;
   notes?: T;
+  professionalName?: T;
   updatedAt?: T;
   createdAt?: T;
 }

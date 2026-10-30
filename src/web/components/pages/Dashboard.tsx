@@ -27,6 +27,7 @@ import {
   StudentProfile,
 } from '../../lib/studentApi'
 import { CTAButton } from '../brand/Brand'
+import { PendingInvites } from '../student/PendingInvites'
 import {
   Badge,
   Card,
@@ -56,6 +57,8 @@ export function Dashboard() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [loading, setLoading] = useState(true)
+  // Muda quando um convite é aceito, para recarregar vínculos, treinos e planos
+  const [reloadKey, setReloadKey] = useState(0)
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [links, setLinks] = useState<ProfessionalLink[]>([])
   const [workouts, setWorkouts] = useState<WorkoutDoc[]>([])
@@ -109,7 +112,7 @@ export function Dashboard() {
     return () => {
       cancelled = true
     }
-  }, [user?.accessToken, user?.id])
+  }, [user?.accessToken, user?.id, reloadKey])
 
   const todayKey = todayWeekday()
   const todaysWorkout = workouts.find((w) => w.weekday === todayKey) || null
@@ -150,6 +153,8 @@ export function Dashboard() {
       />
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
+
+      <PendingInvites onAccepted={() => setReloadKey((k) => k + 1)} />
 
       {/* Destaque: treino do dia + IA */}
       <div className="grid lg:grid-cols-[1.6fr_1fr] gap-4">
@@ -330,7 +335,9 @@ export function Dashboard() {
                 <div className="min-w-0">
                   <p className="cp-mono text-[10.5px] uppercase tracking-[0.14em] text-[var(--muted)]">{role}</p>
                   {link ? (
-                    <p className="mt-0.5 font-semibold text-[16px] truncate">{relName(link.professional, fallback)}</p>
+                    <p className="mt-0.5 font-semibold text-[16px] truncate">
+                      {link.professionalName || relName(link.professional, fallback)}
+                    </p>
                   ) : (
                     <p className="mt-0.5 text-[14px] text-[var(--dim)]">{empty}</p>
                   )}

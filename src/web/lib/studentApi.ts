@@ -85,6 +85,8 @@ export type ProfessionalLink = {
         email?: string
       }
   notes?: string | null
+  /** Preenchido pelo servidor: o aluno não lê a conta do profissional */
+  professionalName?: string | null
 }
 
 export type WorkoutDoc = {

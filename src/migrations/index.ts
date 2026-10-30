@@ -6,6 +6,7 @@ import * as migration_20261030_034603_domain_etapa4 from './20261030_034603_doma
 import * as migration_20261030_041106_pro_plans from './20261030_041106_pro_plans';
 import * as migration_20261030_044608_abacate_billing from './20261030_044608_abacate_billing';
 import * as migration_20261030_051312_workout_log_optional_workout from './20261030_051312_workout_log_optional_workout';
+import * as migration_20261030_052008_link_professional_name from './20261030_052008_link_professional_name';
 
 export const migrations = [
   {
@@ -46,6 +47,11 @@ export const migrations = [
   {
     up: migration_20261030_051312_workout_log_optional_workout.up,
     down: migration_20261030_051312_workout_log_optional_workout.down,
-    name: '20261030_051312_workout_log_optional_workout'
+    name: '20261030_051312_workout_log_optional_workout',
+  },
+  {
+    up: migration_20261030_052008_link_professional_name.up,
+    down: migration_20261030_052008_link_professional_name.down,
+    name: '20261030_052008_link_professional_name'
   },
 ];

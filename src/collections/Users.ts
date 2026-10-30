@@ -217,6 +217,22 @@ export const Users: CollectionConfig = {
             const nextRole = String(data.role)
             if (!SELF_SERVICE_ROLES.has(nextRole)) {
               delete data.role
+            } else if (
+              PROFESSIONAL_ROLES.has(currentRole) &&
+              nextRole !== currentRole &&
+              String(originalDoc?.professionalId || '').trim()
+            ) {
+              // A área (personal/nutri) é escolhida no onboarding; depois do registro (CREF/CRN)
+              // não muda pela API — personal + nutri na mesma conta é recurso do Elite
+              throw new ValidationError({
+                collection: collection?.slug,
+                errors: [
+                  {
+                    path: 'role',
+                    message: 'A área profissional não pode ser trocada depois do cadastro do registro.',
+                  },
+                ],
+              })
             } else if (currentRole === 'student' && PROFESSIONAL_ROLES.has(nextRole)) {
               throw new ValidationError({
                 collection: collection?.slug,

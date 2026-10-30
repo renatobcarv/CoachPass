@@ -155,6 +155,27 @@ export const ProfessionalLinks: CollectionConfig = {
         }
         return data
       },
+      // Nome de quem convidou: o aluno não lê a conta do profissional, mas precisa saber quem é
+      async ({ data, operation, req, originalDoc }) => {
+        if (operation === 'update') {
+          data.professionalName = originalDoc?.professionalName ?? null
+          return data
+        }
+        const professional = toNumericRelationId(data.professional)
+        if (!professional) {
+          data.professionalName = null
+          return data
+        }
+        const pro = await req.payload.findByID({
+          collection: 'users',
+          id: professional,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })
+        data.professionalName = pro?.name || null
+        return data
+      },
     ],
   },
   fields: [
@@ -209,6 +230,14 @@ export const ProfessionalLinks: CollectionConfig = {
       name: 'notes',
       type: 'textarea',
       required: false,
+    },
+    {
+      name: 'professionalName',
+      type: 'text',
+      label: 'Nome do profissional',
+      required: false,
+      // Sempre definido pelo servidor (hook); o valor enviado pelo cliente é ignorado
+      admin: { readOnly: true, description: 'Preenchido pelo servidor ao criar o convite.' },
     },
   ],
 }
