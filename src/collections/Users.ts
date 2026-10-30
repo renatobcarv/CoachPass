@@ -382,6 +382,85 @@ export const Users: CollectionConfig = {
         update: ({ req }) => isSuperUser(req),
       },
     },
+    // Assinatura no AbacatePay (preenchida pelo servidor a partir da API/webhook)
+    {
+      type: 'collapsible',
+      label: 'Assinatura (AbacatePay)',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'subscriptionStatus',
+          type: 'select',
+          label: 'Status da assinatura',
+          defaultValue: 'none',
+          options: [
+            { label: 'Sem assinatura', value: 'none' },
+            { label: 'Aguardando pagamento', value: 'pending' },
+            { label: 'Ativa', value: 'active' },
+            { label: 'Cancelada', value: 'cancelled' },
+          ],
+          access: {
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+        {
+          name: 'paidUntil',
+          type: 'date',
+          label: 'Pago até',
+          admin: { description: 'Fim do ciclo pago. Depois dele (+ folga de cobrança) volta para o Grátis.' },
+          access: {
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+        {
+          name: 'checkoutTier',
+          type: 'select',
+          label: 'Plano do último checkout',
+          options: [
+            { label: 'Pro', value: 'pro' },
+            { label: 'Elite', value: 'elite' },
+          ],
+          access: {
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+        {
+          name: 'abacateCheckoutId',
+          type: 'text',
+          label: 'Checkout (bill_)',
+          index: true,
+          access: {
+            read: ({ req }) => isSuperUser(req),
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+        {
+          name: 'abacateSubscriptionId',
+          type: 'text',
+          label: 'Assinatura (subs_)',
+          index: true,
+          access: {
+            read: ({ req }) => isSuperUser(req),
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+        {
+          name: 'abacateCustomerId',
+          type: 'text',
+          label: 'Cliente (cust_)',
+          access: {
+            read: ({ req }) => isSuperUser(req),
+            create: ({ req }) => isSuperUser(req),
+            update: ({ req }) => isSuperUser(req),
+          },
+        },
+      ],
+    },
     {
       name: 'consentAcceptedAt',
       type: 'date',

@@ -18,9 +18,9 @@ import { USERS_API, patchJson, postJson, PayloadApiError, extractPayloadMessage 
 import { saveProProfile } from '../../lib/proProfile'
 import { credentialError, maskPhoneBR, phoneError } from '../../lib/validation'
 import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
-import { ProPricing } from '../pricing/ProPricing'
-import { chooseProPlan } from '../../lib/proPlanApi'
-import { PRO_PLANS, TRIAL_DAYS, type BillingCycle, type ProTier } from '@/lib/proPlans'
+import { ProPricing, type PlanAction } from '../pricing/ProPricing'
+import { chooseProPlan, subscribeProPlan } from '../../lib/proPlanApi'
+import { PRO_PLANS, TRIAL_DAYS, formatBRL, type ProTier } from '@/lib/proPlans'
 
 type ProfessionalType = 'personal' | 'nutritionist'
 
@@ -88,7 +88,7 @@ export function ProfessionalOnboarding() {
     workplaces: [] as string[],
     priorities: [] as string[],
   })
-  const [plan, setPlan] = useState<{ tier: ProTier; cycle: BillingCycle } | null>(null)
+  const [plan, setPlan] = useState<{ tier: ProTier; action: PlanAction } | null>(null)
 
   const handleComplete = async () => {
     if (!user?.accessToken || !user.id) {
@@ -141,11 +141,26 @@ export function ProfessionalOnboarding() {
       // Respostas complementares do quiz (sem campo no backend ainda): personalizam o painel
       saveProProfile(user.id, extra)
 
-      // Plano pago abre o teste grátis; o grátis já é o padrão da conta
-      let planMsg = ''
-      if (plan && plan.tier !== 'free') {
+      // Assinar agora: vai direto para o checkout do AbacatePay
+      if (plan && plan.tier !== 'free' && plan.action === 'subscribe') {
         try {
-          const status = await chooseProPlan(plan.tier, plan.cycle, token)
+          const res = await subscribeProPlan(plan.tier, token)
+          if (res.url) {
+            toast.success('Perfil pronto. Abrindo o pagamento…')
+            window.location.href = res.url
+            return
+          }
+        } catch (err) {
+          const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : ''
+          toast.warning(msg || 'Não foi possível abrir o pagamento agora. Você pode assinar em Planos.')
+        }
+      }
+
+      // Teste grátis do plano pago; o grátis já é o padrão da conta
+      let planMsg = ''
+      if (plan && plan.tier !== 'free' && plan.action === 'trial') {
+        try {
+          const status = await chooseProPlan(plan.tier, token)
           const until = status.trialEndsAt ? new Date(status.trialEndsAt).toLocaleDateString('pt-BR') : ''
           planMsg = ` Teste do ${PRO_PLANS[plan.tier].name} liberado${until ? ` até ${until}` : ''}.`
         } catch (err) {
@@ -436,7 +451,7 @@ export function ProfessionalOnboarding() {
             audience={type}
             initialStudents={CLIENTS_ESTIMATE[extra.clients] ?? 8}
             selectedTier={plan?.tier ?? null}
-            onChoose={(tier, cycle) => pickAndAdvance(() => setPlan({ tier, cycle }))}
+            onAction={(tier, action) => pickAndAdvance(() => setPlan({ tier, action }))}
           />
         )
       case 'review': {
@@ -444,7 +459,9 @@ export function ProfessionalOnboarding() {
         const planLabel = plan
           ? plan.tier === 'free'
             ? `Grátis · até ${PRO_PLANS.free.studentLimit} ${who}`
-            : `${PRO_PLANS[plan.tier].name} · ${TRIAL_DAYS} dias grátis (${plan.cycle === 'annual' ? 'anual' : 'mensal'})`
+            : plan.action === 'subscribe'
+              ? `${PRO_PLANS[plan.tier].name} · ${formatBRL(PRO_PLANS[plan.tier].monthly, true)}/mês (pagamento a seguir)`
+              : `${PRO_PLANS[plan.tier].name} · ${TRIAL_DAYS} dias grátis, sem cartão`
           : '—'
         const rows: [string, string, StepId][] = [
           ['Área', isNutri ? 'Nutricionista' : 'Personal Trainer', 'area'],
@@ -563,7 +580,9 @@ export function ProfessionalOnboarding() {
                     {loading
                       ? 'Salvando…'
                       : current.id === 'review'
-                        ? 'Continuar para o painel'
+                        ? plan?.action === 'subscribe' && plan.tier !== 'free'
+                          ? 'Continuar para o pagamento'
+                          : 'Continuar para o painel'
                         : current.id === 'plan' && !plan
                           ? 'Escolha um plano'
                           : current.optional && !hasValue(current.id)

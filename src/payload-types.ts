@@ -173,6 +173,15 @@ export interface User {
    */
   trialEndsAt?: string | null;
   trialUsed?: boolean | null;
+  subscriptionStatus?: ('none' | 'pending' | 'active' | 'cancelled') | null;
+  /**
+   * Fim do ciclo pago. Depois dele (+ folga de cobrança) volta para o Grátis.
+   */
+  paidUntil?: string | null;
+  checkoutTier?: ('pro' | 'elite') | null;
+  abacateCheckoutId?: string | null;
+  abacateSubscriptionId?: string | null;
+  abacateCustomerId?: string | null;
   consentAcceptedAt?: string | null;
   consentVersion?: string | null;
   healthDataConsentAt?: string | null;
@@ -668,6 +677,12 @@ export interface UsersSelect<T extends boolean = true> {
   billingCycle?: T;
   trialEndsAt?: T;
   trialUsed?: T;
+  subscriptionStatus?: T;
+  paidUntil?: T;
+  checkoutTier?: T;
+  abacateCheckoutId?: T;
+  abacateSubscriptionId?: T;
+  abacateCustomerId?: T;
   consentAcceptedAt?: T;
   consentVersion?: T;
   healthDataConsentAt?: T;

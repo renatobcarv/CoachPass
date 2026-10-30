@@ -13,10 +13,8 @@ export type ProPlan = {
   tagline: string
   /** null = ilimitado */
   studentLimit: number | null
-  /** Preço em reais por mês */
+  /** Preço em reais por mês (cobrança mensal no AbacatePay) */
   monthly: number
-  /** Preço mensal equivalente no anual */
-  annualMonthly: number
   perks: string[]
 }
 
@@ -29,7 +27,6 @@ export const PRO_PLANS: Record<ProTier, ProPlan> = {
     tagline: 'Para começar a organizar os primeiros alunos.',
     studentLimit: 5,
     monthly: 0,
-    annualMonthly: 0,
     perks: ['Até 5 alunos ativos', 'Todos os recursos do painel', 'App do aluno sem custo para ele'],
   },
   pro: {
@@ -37,8 +34,7 @@ export const PRO_PLANS: Record<ProTier, ProPlan> = {
     name: 'Pro',
     tagline: 'Para quem vive da consultoria e quer crescer a carteira.',
     studentLimit: 40,
-    monthly: 79,
-    annualMonthly: 59,
+    monthly: 19.9,
     perks: ['Até 40 alunos ativos', 'Todos os recursos do painel', 'Suporte por e-mail em até 24h'],
   },
   elite: {
@@ -46,8 +42,7 @@ export const PRO_PLANS: Record<ProTier, ProPlan> = {
     name: 'Elite',
     tagline: 'Para estúdios e carteiras grandes, sem teto.',
     studentLimit: null,
-    monthly: 149,
-    annualMonthly: 119,
+    monthly: 29.9,
     perks: ['Alunos ilimitados', 'Suporte prioritário no WhatsApp', 'Migração assistida dos seus alunos'],
   },
 }
@@ -61,17 +56,25 @@ export function isProTier(v: unknown): v is ProTier {
 type PlanFields = {
   proTier?: string | null
   trialEndsAt?: string | null
+  paidUntil?: string | null
   role?: string | null
   isSuperAdmin?: boolean | null
 }
 
-/** Plano que vale agora: teste vencido volta para o grátis. Super usuário não tem limite. */
+/** Folga após o vencimento enquanto o AbacatePay tenta cobrar de novo (renovação com falha). */
+export const PAYMENT_GRACE_DAYS = 4
+
+/** Plano que vale agora: teste ou período pago vencido volta para o grátis. Super usuário não tem limite. */
 export function effectiveTier(user: PlanFields | null | undefined, now = new Date()): ProTier {
   if (!user) return 'free'
   if (user.isSuperAdmin || user.role === 'master') return 'elite'
   const tier = isProTier(user.proTier) ? user.proTier : 'free'
   if (tier === 'free') return 'free'
   if (user.trialEndsAt && new Date(user.trialEndsAt).getTime() < now.getTime()) return 'free'
+  if (user.paidUntil) {
+    const graceEnd = new Date(user.paidUntil).getTime() + PAYMENT_GRACE_DAYS * 86_400_000
+    if (graceEnd < now.getTime()) return 'free'
+  }
   return tier
 }
 
@@ -86,15 +89,15 @@ export function recommendTier(students: number): ProTier {
   return 'elite'
 }
 
-export function priceFor(tier: ProTier, cycle: BillingCycle): number {
-  const plan = PRO_PLANS[tier]
-  return cycle === 'annual' ? plan.annualMonthly : plan.monthly
+export function priceFor(tier: ProTier): number {
+  return PRO_PLANS[tier].monthly
 }
 
-/** Quanto se economiza por ano escolhendo o anual. */
-export function annualSavings(tier: ProTier): number {
-  const plan = PRO_PLANS[tier]
-  return (plan.monthly - plan.annualMonthly) * 12
+/** Plano pelo valor cobrado (centavos), para conferir o que o AbacatePay ativou. */
+export function tierFromAmount(cents: number | null | undefined): ProTier | null {
+  if (!cents) return null
+  const hit = PRO_TIERS.find((t) => t !== 'free' && Math.round(PRO_PLANS[t].monthly * 100) === cents)
+  return hit ?? null
 }
 
 export function formatBRL(value: number, cents = false): string {

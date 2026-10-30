@@ -7,7 +7,7 @@ import { toast } from 'sonner'
 import { useAuth } from '../context/AuthContext'
 import { PROFESSIONAL_LINKS_INVITE_API, PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 import { PRO_PLANS, TRIAL_DAYS, formatBRL, type ProTier } from '@/lib/proPlans'
-import { chooseProPlan, fetchProPlan } from '../lib/proPlanApi'
+import { chooseProPlan, fetchProPlan, subscribeProPlan } from '../lib/proPlanApi'
 
 type LimitInfo = { tier: ProTier; limit: number | null; used: number }
 
@@ -36,6 +36,7 @@ export function AddPatientModal({
   const [errorMessage, setErrorMessage] = useState('')
   const [limitInfo, setLimitInfo] = useState<LimitInfo | null>(null)
   const [trialUsed, setTrialUsed] = useState(false)
+  const [subscribed, setSubscribed] = useState(false)
   const [upgrading, setUpgrading] = useState(false)
   const [pendingEmail, setPendingEmail] = useState('')
 
@@ -83,7 +84,10 @@ export function AddPatientModal({
         setPendingEmail(data.email)
         setStep('limit')
         fetchProPlan(user.accessToken)
-          .then((s) => setTrialUsed(s.trialUsed && !s.onTrial))
+          .then((s) => {
+            setTrialUsed(s.trialUsed && !s.onTrial)
+            setSubscribed(s.subscriptionStatus === 'active')
+          })
           .catch(() => undefined)
         return
       }
@@ -126,9 +130,21 @@ export function AddPatientModal({
   const upgradeAndInvite = async () => {
     if (!user?.accessToken || !limitInfo) return
     setUpgrading(true)
+    const target = nextTier(limitInfo.tier)
     try {
-      await chooseProPlan(nextTier(limitInfo.tier), 'annual', user.accessToken)
-      toast.success(`${PRO_PLANS[nextTier(limitInfo.tier)].name} liberado por ${TRIAL_DAYS} dias.`)
+      // Teste já usado ou já assinante: assinatura de verdade (checkout ou troca de plano)
+      if (trialUsed || subscribed) {
+        if (target === 'free') return
+        const res = await subscribeProPlan(target, user.accessToken)
+        if (res.url) {
+          window.location.href = res.url
+          return
+        }
+        toast.success(res.message || `${PRO_PLANS[target].name} liberado.`)
+      } else {
+        await chooseProPlan(target, user.accessToken)
+        toast.success(`${PRO_PLANS[target].name} liberado por ${TRIAL_DAYS} dias.`)
+      }
       await onSubmit({ email: pendingEmail })
     } catch (err) {
       const msg = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : ''
@@ -252,7 +268,7 @@ export function AddPatientModal({
                       <UpgradeOffer
                         tier={nextTier(limitInfo.tier)}
                         who={patientLabel.toLowerCase()}
-                        trialUsed={trialUsed}
+                        paid={trialUsed || subscribed}
                         upgrading={upgrading}
                         onUpgrade={upgradeAndInvite}
                       />
@@ -383,13 +399,14 @@ export function AddPatientModal({
 function UpgradeOffer({
   tier,
   who,
-  trialUsed,
+  paid,
   upgrading,
   onUpgrade,
 }: {
   tier: ProTier
   who: string
-  trialUsed: boolean
+  /** Sem teste disponível: oferece a assinatura paga */
+  paid: boolean
   upgrading: boolean
   onUpgrade: () => void
 }) {
@@ -401,25 +418,23 @@ function UpgradeOffer({
       <div className="flex items-baseline justify-between gap-3">
         <p className="cp-display text-[20px] font-bold">{up.name}</p>
         <p className="cp-display text-[20px] font-bold">
-          {formatBRL(up.annualMonthly)}
-          <span className="text-[13px] font-normal text-[var(--paper-muted)]">/mês no anual</span>
+          {formatBRL(up.monthly, true)}
+          <span className="text-[13px] font-normal text-[var(--paper-muted)]">/mês</span>
         </p>
       </div>
       <p className="mt-1 text-[13.5px] text-[var(--paper-muted)]">
         {up.studentLimit === null ? `${who}s ilimitados` : `Até ${up.studentLimit} ${who}s`} · todos os recursos
       </p>
-      {trialUsed ? (
-        <Link to="/planos" className={btn}>
-          Ver planos <ArrowRight className="h-4 w-4" />
-        </Link>
-      ) : (
-        <button type="button" onClick={onUpgrade} disabled={upgrading} className={btn}>
-          {upgrading ? 'Liberando…' : `Testar ${TRIAL_DAYS} dias grátis e convidar`}
-          {!upgrading && <ArrowRight className="h-4 w-4" />}
-        </button>
-      )}
+      <button type="button" onClick={onUpgrade} disabled={upgrading} className={btn}>
+        {upgrading
+          ? 'Abrindo…'
+          : paid
+            ? `Assinar o ${up.name} por ${formatBRL(up.monthly, true)}/mês`
+            : `Testar ${TRIAL_DAYS} dias grátis e convidar`}
+        {!upgrading && <ArrowRight className="h-4 w-4" />}
+      </button>
       <p className="mt-2 text-center text-[12px] text-[var(--paper-muted)]">
-        {trialUsed ? 'Seu teste grátis já foi usado.' : 'Sem cartão. Se não assinar, volta para o Grátis.'}
+        {paid ? 'Cartão de crédito pelo AbacatePay. Cancele quando quiser.' : 'Sem cartão. Se não assinar, volta para o Grátis.'}
       </p>
     </div>
   )

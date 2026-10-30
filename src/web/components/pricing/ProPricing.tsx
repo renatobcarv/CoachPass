@@ -1,20 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { ArrowRight, Check, CreditCard, Download, Lock, Minus, Plus, Undo2 } from 'lucide-react'
+import { ArrowRight, Check, CreditCard, Download, Lock, Minus, Plus, ShieldCheck, Undo2 } from 'lucide-react'
 
-import {
-  PRO_PLANS,
-  PRO_TIERS,
-  TRIAL_DAYS,
-  annualSavings,
-  formatBRL,
-  priceFor,
-  recommendTier,
-  type BillingCycle,
-  type ProTier,
-} from '@/lib/proPlans'
+import { PRO_PLANS, PRO_TIERS, TRIAL_DAYS, formatBRL, priceFor, recommendTier, type ProTier } from '@/lib/proPlans'
 
 type Audience = 'personal' | 'nutritionist'
+
+/** O que o profissional quer fazer com um plano. */
+export type PlanAction = 'free' | 'trial' | 'subscribe' | 'manage'
 
 export type ProPricingProps = {
   audience: Audience
@@ -26,10 +19,14 @@ export type ProPricingProps = {
   usedStudents?: number
   trialUsed?: boolean
   onTrial?: boolean
+  subscriptionStatus?: 'none' | 'pending' | 'active' | 'cancelled'
+  canManageBilling?: boolean
+  /** Pagamento configurado no servidor */
+  billingEnabled?: boolean
   /** Plano escolhido no onboarding, para manter o destaque ao voltar */
   selectedTier?: ProTier | null
   busyTier?: ProTier | null
-  onChoose: (tier: ProTier, cycle: BillingCycle) => void
+  onAction: (tier: ProTier, action: PlanAction) => void
 }
 
 const MAX_STUDENTS = 80
@@ -38,6 +35,12 @@ const DEFAULT_TICKET: Record<Audience, number> = { personal: 150, nutritionist: 
 /** Mostra 1–80 com "80+" no fim da régua. */
 const studentsLabel = (n: number) => (n >= MAX_STUDENTS ? `${MAX_STUDENTS}+` : String(n))
 
+/** "R$ 19" e ",90" separados para o preço grande. */
+function splitPrice(value: number) {
+  const [int, cents] = value.toFixed(2).split('.')
+  return { int: `R$ ${int}`, cents: cents === '00' ? '' : `,${cents}` }
+}
+
 export function ProPricing({
   audience,
   initialStudents = 8,
@@ -45,15 +48,16 @@ export function ProPricing({
   usedStudents,
   trialUsed,
   onTrial,
+  subscriptionStatus = 'none',
+  canManageBilling,
+  billingEnabled = true,
   selectedTier,
   busyTier,
-  onChoose,
+  onAction,
 }: ProPricingProps) {
   const who = audience === 'nutritionist' ? 'pacientes' : 'alunos'
   const whoOne = audience === 'nutritionist' ? 'paciente' : 'aluno'
 
-  // Anual por padrão: o preço mensal equivalente vira a âncora visível
-  const [cycle, setCycle] = useState<BillingCycle>('annual')
   const [students, setStudents] = useState(() =>
     Math.min(MAX_STUDENTS, Math.max(1, usedStudents ?? initialStudents)),
   )
@@ -66,6 +70,7 @@ export function ProPricing({
 
   const recommended = recommendTier(students)
   const highlight: ProTier = selectedTier ?? recommended
+  const subscribed = subscriptionStatus === 'active'
 
   return (
     <div className="relative">
@@ -77,12 +82,14 @@ export function ProPricing({
         setStudents={setStudents}
         ticket={ticket}
         setTicket={setTicket}
-        cycle={cycle}
         recommended={recommended}
       />
 
       <div className="mt-10 flex flex-wrap items-center justify-between gap-4">
-        <CycleToggle cycle={cycle} setCycle={setCycle} />
+        <span className="inline-flex items-center gap-2 rounded-full border border-[var(--line-2)] bg-[var(--ink-2)] px-4 py-2 text-[13.5px]">
+          <ShieldCheck className="h-4 w-4 text-[var(--teal)]" />
+          Cobrança mensal · cancele quando quiser
+        </span>
         <p className="cp-mono text-[11.5px] uppercase tracking-[0.12em] text-[var(--dim)]">
           Todos os recursos em todos os planos · você só paga quando cresce
         </p>
@@ -94,70 +101,25 @@ export function ProPricing({
             key={tier}
             tier={tier}
             index={i}
-            cycle={cycle}
             students={students}
             who={who}
             isRecommended={tier === recommended}
             isHighlighted={tier === highlight}
             isCurrent={tier === currentTier}
-            hasPaidCurrent={Boolean(currentTier && currentTier !== 'free')}
+            subscribed={subscribed}
+            canManageBilling={Boolean(canManageBilling)}
+            billingEnabled={billingEnabled}
             trialUsed={Boolean(trialUsed)}
             onTrial={Boolean(onTrial)}
             busy={busyTier === tier}
             disabled={Boolean(busyTier)}
-            onChoose={() => onChoose(tier, cycle)}
+            onAction={(action) => onAction(tier, action)}
           />
         ))}
       </div>
 
       <Guarantees />
       <Faq who={who} />
-    </div>
-  )
-}
-
-function CycleToggle({ cycle, setCycle }: { cycle: BillingCycle; setCycle: (c: BillingCycle) => void }) {
-  const options: { id: BillingCycle; label: string }[] = [
-    { id: 'monthly', label: 'Mensal' },
-    { id: 'annual', label: 'Anual' },
-  ]
-  return (
-    <div role="radiogroup" aria-label="Ciclo de cobrança" className="inline-flex items-center gap-1 rounded-full border border-[var(--line-2)] bg-[var(--ink-2)] p-1">
-      {options.map((o) => {
-        const active = cycle === o.id
-        return (
-          <button
-            key={o.id}
-            type="button"
-            role="radio"
-            aria-checked={active}
-            onClick={() => setCycle(o.id)}
-            className={`relative h-10 rounded-full px-5 text-[14px] font-semibold transition-colors ${
-              active ? 'text-[var(--paper-ink)]' : 'text-[var(--muted)] hover:text-white'
-            }`}
-          >
-            {active && (
-              <motion.span
-                layoutId="cycle-pill"
-                className="absolute inset-0 rounded-full bg-[var(--paper)]"
-                transition={{ type: 'spring', stiffness: 500, damping: 38 }}
-              />
-            )}
-            <span className="relative inline-flex items-center gap-2">
-              {o.label}
-              {o.id === 'annual' && (
-                <span
-                  className={`cp-mono rounded-full px-2 py-0.5 text-[10.5px] uppercase tracking-[0.08em] ${
-                    active ? 'bg-[var(--paper-ink)] text-[var(--amber)]' : 'bg-[rgba(255,181,71,0.14)] text-[var(--amber)]'
-                  }`}
-                >
-                  3 meses grátis
-                </span>
-              )}
-            </span>
-          </button>
-        )
-      })}
     </div>
   )
 }
@@ -169,7 +131,6 @@ function Calculator({
   setStudents,
   ticket,
   setTicket,
-  cycle,
   recommended,
 }: {
   who: string
@@ -178,16 +139,15 @@ function Calculator({
   setStudents: (n: number) => void
   ticket: number
   setTicket: (n: number) => void
-  cycle: BillingCycle
   recommended: ProTier
 }) {
-  const price = priceFor(recommended, cycle)
+  const price = priceFor(recommended)
   const plan = PRO_PLANS[recommended]
   const perStudent = price / students
-  // Quantos alunos pagam o plano inteiro
-  const payback = price > 0 && ticket > 0 ? Math.ceil(price / ticket) : 0
   const revenue = students * ticket
   const share = revenue > 0 ? (price / revenue) * 100 : 0
+  // Quantas vezes a mensalidade de um único aluno paga o plano
+  const timesPaid = price > 0 ? Math.floor(ticket / price) : 0
   const pct = ((students - 1) / (MAX_STUDENTS - 1)) * 100
 
   const step = (d: number) => setStudents(Math.min(MAX_STUDENTS, Math.max(1, students + d)))
@@ -296,19 +256,15 @@ function Calculator({
               </dd>
             </div>
             <Row label="Sua receita com a carteira" value={`${formatBRL(revenue)}/mês`} />
-            <Row
-              label={`Plano ${plan.name}${cycle === 'annual' && price > 0 ? ' (anual)' : ''}`}
-              value={price > 0 ? `${formatBRL(price)}/mês` : 'R$ 0'}
-            />
+            <Row label={`Plano ${plan.name}`} value={price > 0 ? `${formatBRL(price, true)}/mês` : 'R$ 0'} />
             {price > 0 && <Row label="Peso na sua receita" value={`${share < 1 ? share.toFixed(1) : Math.round(share)}%`} />}
           </dl>
 
-          {price > 0 && payback > 0 && (
+          {price > 0 && timesPaid >= 1 && (
             <p className="mt-4 rounded-xl bg-[var(--paper-ink)] px-4 py-3 text-[14px] leading-snug text-white">
-              <strong className="text-[var(--amber)]">
-                {payback === 1 ? `1 ${whoOne}` : `${payback} ${who}`}
-              </strong>{' '}
-              {payback === 1 ? 'paga' : 'pagam'} o plano inteiro. O resto da carteira é lucro.
+              A mensalidade de <strong className="text-[var(--amber)]">1 {whoOne}</strong> paga o {plan.name}{' '}
+              {timesPaid === 1 ? 'inteiro' : <strong className="text-[var(--amber)]">{timesPaid} vezes</strong>}. O resto da
+              carteira é lucro.
             </p>
           )}
         </div>
@@ -350,62 +306,103 @@ function StepButton({
   )
 }
 
+type Cta = { label: string; action: PlanAction | null; note?: string; secondary?: { label: string; action: PlanAction } }
+
+/** Botão principal (e um link secundário) de cada card conforme a situação da conta. */
+function ctaFor(args: {
+  tier: ProTier
+  isCurrent: boolean
+  subscribed: boolean
+  canManageBilling: boolean
+  billingEnabled: boolean
+  trialUsed: boolean
+  onTrial: boolean
+}): Cta {
+  const { tier, isCurrent, subscribed, canManageBilling, billingEnabled, trialUsed, onTrial } = args
+  const plan = PRO_PLANS[tier]
+  const price = formatBRL(plan.monthly, true)
+  const secure = 'Pagamento seguro no cartão via AbacatePay'
+
+  if (tier === 'free') {
+    if (subscribed) return { label: 'Incluído no seu plano', action: null, note: 'Cancele a assinatura para voltar ao Grátis.' }
+    if (isCurrent) return { label: 'Seu plano atual', action: null }
+    return { label: onTrial ? 'Voltar para o Grátis' : 'Começar grátis', action: 'free' }
+  }
+
+  if (subscribed) {
+    if (isCurrent) {
+      return canManageBilling
+        ? { label: 'Seu plano atual', action: null, secondary: { label: 'Gerenciar assinatura', action: 'manage' } }
+        : { label: 'Seu plano atual', action: null }
+    }
+    return {
+      label: `Mudar para o ${plan.name}`,
+      action: 'subscribe',
+      note: tier === 'elite' ? 'Libera na hora. O novo valor vale na próxima cobrança.' : 'Vale a partir do próximo ciclo.',
+    }
+  }
+
+  if (!trialUsed) {
+    return {
+      label: `Testar ${TRIAL_DAYS} dias grátis`,
+      action: 'trial',
+      note: 'Sem cartão. Se não assinar, volta para o Grátis.',
+      ...(billingEnabled ? { secondary: { label: `ou assinar agora por ${price}/mês`, action: 'subscribe' as const } } : {}),
+    }
+  }
+
+  if (!billingEnabled) return { label: 'Assinatura em breve', action: null, note: 'Fale com a gente para liberar.' }
+  return { label: `Assinar por ${price}/mês`, action: 'subscribe', note: secure }
+}
+
 function PlanCard({
   tier,
   index,
-  cycle,
   students,
   who,
   isRecommended,
   isHighlighted,
   isCurrent,
-  hasPaidCurrent,
+  subscribed,
+  canManageBilling,
+  billingEnabled,
   trialUsed,
   onTrial,
   busy,
   disabled,
-  onChoose,
+  onAction,
 }: {
   tier: ProTier
   index: number
-  cycle: BillingCycle
   students: number
   who: string
   isRecommended: boolean
   isHighlighted: boolean
   isCurrent: boolean
-  hasPaidCurrent: boolean
+  subscribed: boolean
+  canManageBilling: boolean
+  billingEnabled: boolean
   trialUsed: boolean
   onTrial: boolean
   busy: boolean
   disabled: boolean
-  onChoose: () => void
+  onAction: (action: PlanAction) => void
 }) {
   const plan = PRO_PLANS[tier]
   const isPro = tier === 'pro'
   const paid = tier !== 'free'
-  const price = priceFor(tier, cycle)
+  const { int, cents } = splitPrice(plan.monthly)
   const fits = plan.studentLimit === null || students <= plan.studentLimit
   const missing = plan.studentLimit === null ? 0 : students - plan.studentLimit
-  const yearly = plan.annualMonthly * 12
-  const perDay = cycle === 'annual' ? yearly / 365 : plan.monthly / 30
+  const perDay = plan.monthly / 30
+
+  const cta = ctaFor({ tier, isCurrent, subscribed, canManageBilling, billingEnabled, trialUsed, onTrial })
 
   // Pro é sempre o card de papel (âncora visual); destaque do recomendado é a borda/elevação
-  const surface = isPro
-    ? 'cp-paper border-transparent'
-    : 'border-[var(--line-2)] bg-[var(--ink-2)] text-white'
+  const surface = isPro ? 'cp-paper border-transparent' : 'border-[var(--line-2)] bg-[var(--ink-2)] text-white'
   const muted = isPro ? 'text-[var(--paper-muted)]' : 'text-[var(--muted)]'
   const line = isPro ? 'border-[var(--paper-line)]' : 'border-[var(--line)]'
-
-  // Plano pago depois do teste já usado: sem gateway ainda, não dá para assinar pela tela
-  const lockedPaid = paid && trialUsed && !onTrial && !isCurrent
-
-  let cta: string
-  if (isCurrent) cta = onTrial && paid ? 'Você está testando' : 'Seu plano atual'
-  else if (!paid) cta = hasPaidCurrent ? 'Voltar para o Grátis' : 'Começar grátis'
-  else if (onTrial) cta = `Trocar para o ${plan.name}`
-  else if (lockedPaid) cta = 'Assinatura em breve'
-  else cta = `Testar ${TRIAL_DAYS} dias grátis`
+  const inert = cta.action === null
 
   return (
     <motion.article
@@ -423,50 +420,27 @@ function PlanCard({
             Mais escolhido
           </span>
         )}
-        {isRecommended && !isPro && (
-          <span className="cp-mono rounded-full border border-[var(--brand-400)] px-2.5 py-1 text-[10.5px] uppercase tracking-[0.12em] text-[var(--brand-200)]">
-            Ideal para você
-          </span>
-        )}
-        {isRecommended && isPro && (
-          <span className="cp-mono rounded-full border border-[var(--paper-ink)] px-2.5 py-1 text-[10.5px] uppercase tracking-[0.12em]">
+        {isRecommended && (
+          <span
+            className={`cp-mono rounded-full border px-2.5 py-1 text-[10.5px] uppercase tracking-[0.12em] ${
+              isPro ? 'border-[var(--paper-ink)]' : 'border-[var(--brand-400)] text-[var(--brand-200)]'
+            }`}
+          >
             Ideal para você
           </span>
         )}
       </div>
       <p className={`mt-2 text-[14.5px] leading-snug ${muted}`}>{plan.tagline}</p>
 
-      {/* Preço */}
-      <div className="mt-6 flex items-end gap-2">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={`${tier}-${cycle}`}
-            initial={{ y: 12, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: -12, opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="cp-display text-[52px] font-bold leading-none tabular-nums"
-          >
-            {price === 0 ? 'R$ 0' : formatBRL(price)}
-          </motion.span>
-        </AnimatePresence>
-        <span className={`mb-1.5 text-[15px] ${muted}`}>/mês</span>
-        {paid && cycle === 'annual' && (
-          <span className={`mb-1.5 ml-1 text-[15px] line-through decoration-[1.5px] ${muted}`}>
-            {formatBRL(plan.monthly)}
-          </span>
-        )}
+      {/* Preço: reais grandes, centavos pequenos */}
+      <div className="mt-6 flex items-start">
+        <span className="cp-display text-[56px] font-bold leading-none tabular-nums">{int}</span>
+        {cents && <span className="cp-display mt-1.5 text-[24px] font-bold leading-none">{cents}</span>}
+        <span className={`ml-1.5 self-end pb-1.5 text-[15px] ${muted}`}>/mês</span>
       </div>
       <p className={`cp-mono mt-2 min-h-[18px] text-[12px] ${muted}`}>
-        {!paid
-          ? 'Para sempre. Sem cartão.'
-          : cycle === 'annual'
-            ? `${formatBRL(yearly)} por ano · economize ${formatBRL(annualSavings(tier))}`
-            : `${formatBRL(perDay, true)} por dia · sem fidelidade`}
+        {paid ? `Menos de ${formatBRL(Math.ceil(perDay * 10) / 10, true)} por dia` : 'Para sempre. Sem cartão.'}
       </p>
-      {paid && cycle === 'annual' && (
-        <p className={`cp-mono mt-1 text-[12px] ${muted}`}>Menos de {formatBRL(Math.ceil(perDay * 10) / 10, true)} por dia</p>
-      )}
 
       {/* Cabe na carteira simulada? */}
       <div className={`mt-5 rounded-xl border px-3.5 py-2.5 text-[13.5px] ${line} ${fits ? '' : isPro ? 'bg-[rgba(0,3,38,0.04)]' : 'bg-white/[0.02]'}`}>
@@ -495,28 +469,35 @@ function PlanCard({
       <div className="mt-auto pt-7">
         <button
           type="button"
-          onClick={onChoose}
-          disabled={disabled || isCurrent || lockedPaid}
+          onClick={() => cta.action && onAction(cta.action)}
+          disabled={disabled || inert}
           className={`group inline-flex h-12 w-full items-center justify-center gap-2 rounded-full text-[15px] font-semibold transition active:scale-[0.98] disabled:cursor-not-allowed ${
-            isCurrent
-              ? `border ${isPro ? 'border-[var(--paper-ink)] text-[var(--paper-ink)]' : 'border-white/40 text-white'}`
+            inert
+              ? `border ${isPro ? 'border-[var(--paper-ink)] text-[var(--paper-ink)]' : 'border-white/30 text-white'}`
               : isPro
-              ? 'bg-[var(--paper-ink)] text-white hover:bg-[var(--brand-700)] disabled:opacity-60'
-              : paid
-                ? 'bg-[var(--paper)] text-[var(--paper-ink)] hover:bg-white disabled:opacity-50'
-                : 'border border-[var(--line-2)] text-white hover:border-white disabled:opacity-50'
+                ? 'bg-[var(--paper-ink)] text-white hover:bg-[var(--brand-700)] disabled:opacity-60'
+                : paid
+                  ? 'bg-[var(--paper)] text-[var(--paper-ink)] hover:bg-white disabled:opacity-50'
+                  : 'border border-[var(--line-2)] text-white hover:border-white disabled:opacity-50'
           }`}
         >
-          {isCurrent && <Check className="h-4 w-4" strokeWidth={3} />}
-          {busy ? 'Salvando…' : cta}
-          {!busy && !isCurrent && !lockedPaid && (
-            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-          )}
+          {inert && isCurrent && <Check className="h-4 w-4" strokeWidth={3} />}
+          {busy ? 'Abrindo…' : cta.label}
+          {!busy && !inert && <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />}
         </button>
-        <p className={`mt-2.5 min-h-[16px] text-center text-[12px] ${muted}`}>
-          {paid && !isCurrent && !lockedPaid && !onTrial && 'Sem cartão. Se não assinar, volta para o Grátis.'}
-          {lockedPaid && 'Seu teste já foi usado. Fale com a gente para liberar.'}
-        </p>
+        {cta.secondary && (
+          <button
+            type="button"
+            onClick={() => onAction(cta.secondary!.action)}
+            disabled={disabled}
+            className={`mt-2 w-full text-center text-[13.5px] font-semibold underline-offset-4 hover:underline disabled:opacity-50 ${
+              isPro ? 'text-[var(--brand-600)]' : 'text-[var(--brand-200)]'
+            }`}
+          >
+            {cta.secondary.label}
+          </button>
+        )}
+        <p className={`mt-2 min-h-[16px] text-center text-[12px] ${muted}`}>{cta.note}</p>
       </div>
     </motion.article>
   )
@@ -524,8 +505,8 @@ function PlanCard({
 
 function Guarantees() {
   const items = [
-    { icon: CreditCard, title: 'Sem cartão para testar', text: `${TRIAL_DAYS} dias com tudo liberado.` },
-    { icon: Undo2, title: 'Sem fidelidade', text: 'Troque de plano ou volte para o Grátis quando quiser.' },
+    { icon: CreditCard, title: 'Pagamento seguro', text: 'Cartão de crédito pelo AbacatePay.' },
+    { icon: Undo2, title: 'Sem fidelidade', text: 'Cancele quando quiser, sem multa.' },
     { icon: Download, title: 'Seus dados são seus', text: 'Exporte tudo a qualquer momento.' },
   ]
   return (
@@ -555,8 +536,12 @@ function Faq({ who }: { who: string }) {
         a: `Não. O app do ${who === 'pacientes' ? 'paciente' : 'aluno'} é gratuito em qualquer plano.`,
       },
       {
+        q: 'Como cancelo?',
+        a: 'Em "Gerenciar assinatura". O plano segue ativo até o fim do mês já pago e depois volta para o Grátis, sem multa.',
+      },
+      {
         q: `E depois dos ${TRIAL_DAYS} dias de teste?`,
-        a: 'Sua conta volta para o Grátis automaticamente. Nada é cobrado sem você confirmar.',
+        a: 'Sua conta volta para o Grátis automaticamente. Nada é cobrado sem você assinar.',
       },
     ],
     [who],
