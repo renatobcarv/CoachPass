@@ -104,7 +104,7 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  ALTER TABLE "users" ALTER COLUMN "plan" SET DEFAULT 'free';
+  -- default 'free' fica em 20261021_090000_users_plan_default (Postgres não usa enum novo na mesma transação)
   ALTER TABLE "users" ADD COLUMN "bio" varchar;
   ALTER TABLE "users" ADD COLUMN "avatar_url" varchar;
   ALTER TABLE "users" ADD COLUMN "city" varchar;

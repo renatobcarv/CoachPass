@@ -7,6 +7,8 @@ import { generateChatWithGemini, type ChatTurn } from '@/services/ai/geminiProvi
 import { getChatQuota } from '@/services/ai/quota'
 
 export const dynamic = 'force-dynamic'
+// A IA pode levar até ~40s quando o Gemini está carregado
+export const maxDuration = 60
 
 const MAX_MESSAGES = 12
 const MAX_CHARS = 2000

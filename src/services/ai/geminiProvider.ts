@@ -60,10 +60,17 @@ function retryableStatus(status: number): boolean {
   return status === 404 || status === 429 || status === 502 || status === 503
 }
 
+// O Gemini oscila bastante sob carga; 40s cabe no limite de 60s das rotas
+function timeoutMs(): number {
+  const fromEnv = Number(process.env.GEMINI_TIMEOUT_MS)
+  return Number.isFinite(fromEnv) && fromEnv >= 5_000 ? fromEnv : 40_000
+}
+
 function modelsToTry(): string[] {
   const preferred = process.env.GEMINI_MODEL?.trim()
-  // O modelo do .env tem prioridade; 2.0/2.5 flash foram desativados pelo Google
-  const models = [preferred, 'gemini-3.8-flash', 'gemini-flash-latest'].filter(
+  // O modelo do .env tem prioridade. O lite responde em ~1s; o 3.8 flash fica de reserva
+  // (vive sobrecarregado). 2.0/2.5 flash foram desativados pelo Google.
+  const models = [preferred, 'gemini-flash-lite-latest', 'gemini-3.8-flash'].filter(
     (model): model is string => Boolean(model),
   )
   return [...new Set(models)].slice(0, 2)
@@ -78,7 +85,11 @@ async function callGeminiOnce(args: {
   model: string
 }): Promise<GeminiCall> {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${args.model}:generateContent`
-  const generationConfig: Record<string, unknown> = { temperature: args.temperature }
+  const generationConfig: Record<string, unknown> = {
+    temperature: args.temperature,
+    // Raciocínio curto: respostas bem mais rápidas e suficientes para dicas e planos
+    thinkingConfig: { thinkingLevel: 'low' },
+  }
   if (args.json) generationConfig.responseMimeType = 'application/json'
 
   let res: Response
@@ -94,14 +105,15 @@ async function callGeminiOnce(args: {
         contents: args.contents,
         generationConfig,
       }),
-      signal: AbortSignal.timeout(15_000),
+      signal: AbortSignal.timeout(timeoutMs()),
     })
   } catch (error) {
     const timedOut = error instanceof Error && (error.name === 'TimeoutError' || error.name === 'AbortError')
     return {
       ok: false,
       code: timedOut ? 'TIMEOUT' : 'PROVIDER',
-      retryable: true,
+      // Repetir após estourar o tempo dobraria a espera do usuário
+      retryable: !timedOut,
       error: timedOut
         ? 'O assistente demorou demais para responder. Tente de novo em instantes.'
         : 'O assistente não conseguiu responder agora. Tente de novo em instantes.',

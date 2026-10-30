@@ -7,6 +7,8 @@ import { createAiMealPlanForStudent } from '@/services/ai/mealPlanGenerator'
 import { getAiQuota } from '@/services/ai/quota'
 
 export const dynamic = 'force-dynamic'
+// A IA pode levar até ~40s quando o Gemini está carregado
+export const maxDuration = 60
 
 async function getAuthUser() {
   const payload = await getPayload({ config })
