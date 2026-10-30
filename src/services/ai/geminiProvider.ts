@@ -62,7 +62,8 @@ function retryableStatus(status: number): boolean {
 
 function modelsToTry(): string[] {
   const preferred = process.env.GEMINI_MODEL?.trim()
-  const models = ['gemini-2.0-flash', preferred, 'gemini-2.5-flash'].filter(
+  // O modelo do .env tem prioridade; 2.0/2.5 flash foram desativados pelo Google
+  const models = [preferred, 'gemini-3.8-flash', 'gemini-flash-latest'].filter(
     (model): model is string => Boolean(model),
   )
   return [...new Set(models)].slice(0, 2)
