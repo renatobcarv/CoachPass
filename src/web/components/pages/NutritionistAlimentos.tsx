@@ -1,19 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  ArrowLeft,
-  Apple,
-  Search,
-  Filter,
-  Star,
-  Flame,
-  Droplets,
-  Plus,
-  Info,
-  X,
-  ChevronDown,
-} from 'lucide-react';
+import { Apple, Search, Star, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { CTAButton } from '../brand/Brand';
+import { Badge, EmptyState, Page, PageHeader } from '../student/ui';
+import { Segmented } from '../pro/ui';
 
 interface Food {
   id: string;
@@ -63,19 +54,13 @@ const categories = [
   { id: 'suplementos', label: 'Suplementos' },
 ];
 
-const sourceColors = {
-  TACO: '#5a64b4',
-  TBCA: '#3b82f6',
-  Fabricante: '#f59e0b',
-  USDA: '#8b5cf6',
-};
-
 export function NutritionistAlimentos() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [activeCategory, setActiveCategory] = useState('all');
   const [selectedFood, setSelectedFood] = useState<Food | null>(null);
   const [favorites, setFavorites] = useState<Set<string>>(new Set(foods.filter(f => f.favorite).map(f => f.id)));
+  const [onlyFav, setOnlyFav] = useState(false);
   const [sortBy, setSortBy] = useState<'name' | 'calories' | 'protein'>('name');
 
   const filtered = foods
@@ -99,257 +84,264 @@ export function NutritionistAlimentos() {
     });
   };
 
-  const MacroBar = ({ label, value, max, color }: { label: string; value: number; max: number; color: string }) => (
-    <div>
-      <div className="flex justify-between text-xs mb-1">
-        <span className="dark:text-zinc-500 text-slate-400">{label}</span>
-        <span style={{ color, fontWeight: 600 }}>{value}g</span>
-      </div>
-      <div className="h-1.5 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
-        <div className="h-full rounded-full" style={{ width: `${Math.min((value / max) * 100, 100)}%`, backgroundColor: color }} />
-      </div>
-    </div>
-  );
+  const favCount = favorites.size;
+  const shown = onlyFav ? filtered.filter((f) => favorites.has(f.id)) : filtered;
+  const countFor = (id: string) => (id === 'all' ? foods.length : foods.filter((f) => f.category === id).length);
+  const catLabel = (id: string) => categories.find((c) => c.id === id)?.label ?? id;
 
   return (
-    <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
-      <button
-        onClick={() => navigate('/nutritionist')}
-        className="flex items-center gap-2 text-sm dark:text-zinc-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Voltar ao Dashboard
-      </button>
+    <Page wide>
+      <PageHeader
+        kicker="Base de alimentos"
+        title="Tabela nutricional"
+        accent="na palma da mão."
+        lead={`${foods.length} alimentos com valores das tabelas TACO, TBCA e de fabricantes. Toque em um item para ver todos os nutrientes.`}
+        action={
+          <CTAButton type="button" onClick={() => navigate('/nutritionist/criar-plano')}>
+            Montar plano alimentar
+          </CTAButton>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)' }}>
-              <Apple className="w-5 h-5 text-white" />
-            </div>
-            <h1 className="dark:text-white text-slate-900">Base de Alimentos</h1>
-          </div>
-          <p className="text-sm dark:text-zinc-400 text-slate-500">
-            Alimentos atualizados seguindo padrões TBCA/TACO e fabricantes brasileiros
-          </p>
-        </div>
-        <button
-          className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow: '0 8px 20px rgba(245,158,11,0.3)', fontWeight: 600 }}
-        >
-          <Plus className="w-4 h-4" />
-          Cadastrar Alimento
-        </button>
-      </div>
-
-      {/* Source Legend */}
-      <div className="flex items-center gap-3 mb-6 flex-wrap">
-        <span className="text-xs dark:text-zinc-500 text-slate-400" style={{ fontWeight: 500 }}>Fontes:</span>
-        {Object.entries(sourceColors).map(([source, color]) => (
-          <span key={source} className="flex items-center gap-1.5 text-xs dark:text-zinc-400 text-slate-500">
-            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: color }} />
-            {source}
-          </span>
-        ))}
-      </div>
-
-      {/* Search & Filter */}
-      <div className="flex items-center gap-3 mb-5 flex-wrap">
-        <div className="relative flex-1 min-w-[240px]">
-          <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
+      {/* Busca + ordenação */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-3">
+        <div className="relative flex-1">
+          <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--dim)] pointer-events-none" />
           <input
+            type="search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar alimento..."
-            className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/30"
+            placeholder="Buscar alimento… ex.: frango, aveia, banana"
+            aria-label="Buscar alimento"
+            className="cp-field h-12"
           />
         </div>
-        <div className="flex items-center gap-2">
-          <span className="text-xs dark:text-zinc-500 text-slate-400">Ordenar:</span>
-          {[
-            { id: 'name', label: 'Nome' },
-            { id: 'calories', label: 'Calorias' },
-            { id: 'protein', label: 'Proteína' },
-          ].map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => setSortBy(id as typeof sortBy)}
-              className={`px-3 py-1.5 rounded-xl text-xs transition-all ${sortBy === id ? 'text-white' : 'dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600'}`}
-              style={sortBy === id ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontWeight: 600 } : {}}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Category Filter */}
-      <div className="flex gap-2 mb-6 flex-wrap">
-        {categories.map((cat) => (
+        <div className="flex flex-wrap items-center gap-3">
+          <Segmented
+            size="sm"
+            layoutId="food-sort"
+            value={sortBy}
+            onChange={(v) => setSortBy(v)}
+            options={[
+              { value: 'name', label: 'A–Z' },
+              { value: 'calories', label: 'Menos kcal' },
+              { value: 'protein', label: 'Mais proteína' },
+            ]}
+          />
           <button
-            key={cat.id}
-            onClick={() => setActiveCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-xl text-xs transition-all ${activeCategory === cat.id ? 'text-white' : 'dark:bg-zinc-900 bg-white dark:border-zinc-800 border border-slate-200 dark:text-zinc-400 text-slate-600'}`}
-            style={activeCategory === cat.id ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontWeight: 600 } : {}}
+            type="button"
+            onClick={() => setOnlyFav((v) => !v)}
+            aria-pressed={onlyFav}
+            className={`h-10 px-4 rounded-full border inline-flex items-center gap-2 text-[13px] font-medium transition-colors ${
+              onlyFav ? 'border-[rgba(255,181,71,0.5)] bg-[rgba(255,181,71,0.12)] text-[var(--amber)]' : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white'
+            }`}
           >
-            {cat.label}
+            <Star className={`w-4 h-4 ${onlyFav ? 'fill-current' : ''}`} />
+            Favoritos
+            <span className="cp-mono text-[11px] opacity-70">{favCount}</span>
           </button>
-        ))}
-      </div>
-
-      {/* Table */}
-      <div className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b dark:border-zinc-800 border-slate-200">
-                <th className="text-left px-5 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Alimento / Porção</th>
-                <th className="text-right px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Kcal</th>
-                <th className="text-right px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>PTN</th>
-                <th className="text-right px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>CHO</th>
-                <th className="text-right px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>GOR</th>
-                <th className="text-right px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Fibras</th>
-                <th className="text-center px-4 py-4 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Fonte</th>
-                <th className="px-4 py-4"></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y dark:divide-zinc-800 divide-slate-100">
-              {filtered.map((food) => {
-                const isFav = favorites.has(food.id);
-                return (
-                  <tr
-                    key={food.id}
-                    className="hover:dark:bg-zinc-800/30 hover:bg-slate-50 transition-colors cursor-pointer"
-                    onClick={() => setSelectedFood(food)}
-                  >
-                    <td className="px-5 py-3.5">
-                      <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 500 }}>{food.name}</p>
-                      <p className="text-xs dark:text-zinc-600 text-slate-400">{food.portion}</p>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-sm text-amber-500" style={{ fontWeight: 700 }}>{food.calories}</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-sm text-blue-400" style={{ fontWeight: 600 }}>{food.protein}g</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-sm dark:text-zinc-400 text-slate-600">{food.carbs}g</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-sm dark:text-zinc-400 text-slate-600">{food.fat}g</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-right">
-                      <span className="text-sm dark:text-zinc-400 text-slate-600">{food.fiber}g</span>
-                    </td>
-                    <td className="px-4 py-3.5 text-center">
-                      <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${sourceColors[food.source]}20`, color: sourceColors[food.source], fontWeight: 600 }}>
-                        {food.source}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={(e) => { e.stopPropagation(); toggleFav(food.id); }}
-                          className="p-1.5 rounded-lg hover:dark:bg-zinc-700 hover:bg-slate-100 transition-colors"
-                        >
-                          <Star
-                            className="w-3.5 h-3.5"
-                            fill={isFav ? '#f59e0b' : 'none'}
-                            style={{ color: isFav ? '#f59e0b' : '#71717a' }}
-                          />
-                        </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setSelectedFood(food); }}
-                          className="p-1.5 rounded-lg hover:dark:bg-zinc-700 hover:bg-slate-100 transition-colors"
-                        >
-                          <Info className="w-3.5 h-3.5 dark:text-zinc-500 text-slate-400" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
         </div>
-
-        {filtered.length === 0 && (
-          <div className="text-center py-16 dark:text-zinc-600 text-slate-400">
-            <Apple className="w-10 h-10 mx-auto mb-3 opacity-40" />
-            <p className="text-sm">Nenhum alimento encontrado</p>
-          </div>
-        )}
       </div>
 
-      {/* Detail Modal */}
+      {/* Categorias */}
+      <div className="mt-4 flex gap-2 overflow-x-auto pb-2 -mx-1 px-1">
+        {categories.map((cat) => {
+          const on = activeCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              type="button"
+              onClick={() => setActiveCategory(cat.id)}
+              aria-pressed={on}
+              className={`shrink-0 h-9 px-3.5 rounded-full border inline-flex items-center gap-2 text-[13px] font-medium transition-colors ${
+                on ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.16)] text-white' : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white'
+              }`}
+            >
+              {cat.label}
+              <span className={`cp-mono text-[10.5px] ${on ? 'text-white/70' : 'text-[var(--dim)]'}`}>{countFor(cat.id)}</span>
+            </button>
+          );
+        })}
+      </div>
+
+      <p className="mt-4 mb-3 cp-mono text-[11.5px] text-[var(--dim)]">
+        {shown.length} {shown.length === 1 ? 'alimento' : 'alimentos'}
+      </p>
+
+      {shown.length === 0 ? (
+        <EmptyState
+          icon={Apple}
+          title="Nenhum alimento encontrado"
+        >
+          {onlyFav ? 'Você ainda não favoritou alimentos nesta busca.' : 'Tente outro nome ou outra categoria.'}
+        </EmptyState>
+      ) : (
+        <ul className="grid sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3">
+          {shown.map((food, i) => {
+            const fav = favorites.has(food.id);
+            const kcalMacro = food.protein * 4 + food.carbs * 4 + food.fat * 9 || 1;
+            return (
+              <motion.li
+                key={food.id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: Math.min(i, 12) * 0.025 }}
+                className="relative"
+              >
+                <button
+                  type="button"
+                  onClick={() => setSelectedFood(food)}
+                  className="cp-spot relative w-full h-full text-left rounded-[20px] border border-[var(--line)] bg-white/[0.025] p-4 hover:bg-white/[0.05] transition-colors"
+                >
+                  <span className="flex items-center gap-2 pr-9">
+                    <Badge>{catLabel(food.category)}</Badge>
+                    <span className="cp-mono text-[10.5px] text-[var(--dim)]">{food.source}</span>
+                  </span>
+                  <span className="mt-3 block font-semibold text-[15.5px] leading-snug">{food.name}</span>
+                  <span className="mt-0.5 block text-[12.5px] text-[var(--muted)]">Porção: {food.portion}</span>
+                  <span className="mt-4 flex items-baseline gap-1">
+                    <span className="cp-display text-[28px] font-bold leading-none">{food.calories}</span>
+                    <span className="text-[12px] text-[var(--muted)]">kcal</span>
+                  </span>
+                  {/* barra de composição calórica */}
+                  <span className="mt-3 flex h-1.5 rounded-full overflow-hidden bg-white/[0.06]" aria-hidden>
+                    <span style={{ width: `${((food.protein * 4) / kcalMacro) * 100}%`, background: MACRO.protein }} />
+                    <span style={{ width: `${((food.carbs * 4) / kcalMacro) * 100}%`, background: MACRO.carbs }} />
+                    <span style={{ width: `${((food.fat * 9) / kcalMacro) * 100}%`, background: MACRO.fat }} />
+                  </span>
+                  <span className="mt-2.5 grid grid-cols-3 gap-2 cp-mono text-[11px]">
+                    <span><span style={{ color: MACRO.protein }}>P</span> {food.protein}g</span>
+                    <span><span style={{ color: MACRO.carbs }}>C</span> {food.carbs}g</span>
+                    <span><span style={{ color: MACRO.fat }}>G</span> {food.fat}g</span>
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => toggleFav(food.id)}
+                  aria-pressed={fav}
+                  aria-label={fav ? `Remover ${food.name} dos favoritos` : `Favoritar ${food.name}`}
+                  className={`absolute top-3 right-3 w-9 h-9 rounded-full grid place-items-center transition-colors ${
+                    fav ? 'text-[var(--amber)]' : 'text-[var(--dim)] hover:text-white'
+                  }`}
+                >
+                  <Star className={`w-4 h-4 ${fav ? 'fill-current' : ''}`} />
+                </button>
+              </motion.li>
+            );
+          })}
+        </ul>
+      )}
+
+      {/* Detalhe do alimento */}
       <AnimatePresence>
         {selectedFood && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-          >
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200 w-full max-w-md"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/75 backdrop-blur-md"
+              onClick={() => setSelectedFood(null)}
+            />
+            <motion.div
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="food-title"
+              initial={{ opacity: 0, y: 24, scale: 0.97 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 16, scale: 0.98 }}
+              transition={{ type: 'spring', stiffness: 320, damping: 28 }}
+              className="cp-modal relative z-10 w-full sm:max-w-md max-h-[92vh] flex flex-col"
             >
-              <div className="flex items-start justify-between mb-5">
-                <div>
-                  <h3 className="dark:text-white text-slate-900 mb-1">{selectedFood.name}</h3>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs dark:text-zinc-500 text-slate-400">{selectedFood.portion}</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: `${sourceColors[selectedFood.source]}20`, color: sourceColors[selectedFood.source], fontWeight: 600 }}>
-                      {selectedFood.source}
-                    </span>
-                  </div>
+              <span aria-hidden className="cp-modal-bar" />
+              <div className="flex items-start justify-between gap-4 p-6 pb-4">
+                <div className="min-w-0">
+                  <span className="flex items-center gap-2">
+                    <Badge>{catLabel(selectedFood.category)}</Badge>
+                    <span className="cp-mono text-[11px] text-[var(--dim)]">Fonte: {selectedFood.source}</span>
+                  </span>
+                  <h3 id="food-title" className="cp-display mt-2 text-[22px] font-bold leading-tight">
+                    {selectedFood.name}
+                  </h3>
+                  <p className="text-[13.5px] text-[var(--muted)] mt-0.5">Porção de {selectedFood.portion}</p>
                 </div>
-                <button onClick={() => setSelectedFood(null)} className="p-2 rounded-xl dark:hover:bg-zinc-800 hover:bg-slate-100 transition-colors">
-                  <X className="w-4 h-4 dark:text-zinc-400 text-slate-500" />
+                <button
+                  type="button"
+                  onClick={() => setSelectedFood(null)}
+                  aria-label="Fechar"
+                  className="w-9 h-9 shrink-0 rounded-full grid place-items-center text-[var(--muted)] hover:text-white hover:bg-white/[0.06]"
+                >
+                  <X className="w-4 h-4" />
                 </button>
               </div>
 
-              {/* Calories */}
-              <div className="text-center py-5 dark:bg-zinc-800/50 bg-slate-50 rounded-2xl border dark:border-zinc-700 border-slate-200 mb-5">
-                <p className="text-3xl text-amber-500 mb-1" style={{ fontWeight: 800 }}>{selectedFood.calories}</p>
-                <p className="text-xs dark:text-zinc-500 text-slate-400">kcal por {selectedFood.portion}</p>
-              </div>
-
-              {/* Macros */}
-              <div className="space-y-3 mb-5">
-                <MacroBar label="Proteína" value={selectedFood.protein} max={30} color="#3b82f6" />
-                <MacroBar label="Carboidrato" value={selectedFood.carbs} max={50} color="#f59e0b" />
-                <MacroBar label="Gordura" value={selectedFood.fat} max={20} color="#ec4899" />
-                <MacroBar label="Fibras" value={selectedFood.fiber} max={10} color="#5a64b4" />
-              </div>
-
-              {/* Extra */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-3 border dark:border-zinc-700 border-slate-200">
-                  <p className="text-xs dark:text-zinc-500 text-slate-400 mb-1">Sódio</p>
-                  <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{selectedFood.sodium} mg</p>
+              <div className="px-6 pb-6 overflow-y-auto space-y-5">
+                <div className="flex items-baseline gap-2">
+                  <span className="cp-display text-[48px] font-bold leading-none">{selectedFood.calories}</span>
+                  <span className="text-[14px] text-[var(--muted)]">kcal por porção</span>
                 </div>
-                <div className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-3 border dark:border-zinc-700 border-slate-200">
-                  <p className="text-xs dark:text-zinc-500 text-slate-400 mb-1">Categoria</p>
-                  <p className="text-sm dark:text-white text-slate-900 capitalize" style={{ fontWeight: 600 }}>{selectedFood.category}</p>
+
+                <div className="space-y-3">
+                  {(
+                    [
+                      ['Proteína', selectedFood.protein, 40, MACRO.protein],
+                      ['Carboidrato', selectedFood.carbs, 40, MACRO.carbs],
+                      ['Gordura', selectedFood.fat, 20, MACRO.fat],
+                    ] as const
+                  ).map(([label, value, max, color]) => (
+                    <div key={label}>
+                      <div className="flex justify-between text-[13px]">
+                        <span className="text-[var(--muted)]">{label}</span>
+                        <span className="cp-mono font-semibold">{value} g</span>
+                      </div>
+                      <div className="mt-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                        <motion.div
+                          className="h-full rounded-full"
+                          style={{ background: color }}
+                          initial={{ width: 0 }}
+                          animate={{ width: `${Math.min((value / max) * 100, 100)}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                <dl className="grid grid-cols-2 gap-3">
+                  <div className="rounded-2xl border border-[var(--line)] p-3.5">
+                    <dt className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Fibras</dt>
+                    <dd className="mt-1 text-[18px] font-semibold">{selectedFood.fiber} g</dd>
+                  </div>
+                  <div className="rounded-2xl border border-[var(--line)] p-3.5">
+                    <dt className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Sódio</dt>
+                    <dd className="mt-1 text-[18px] font-semibold">{selectedFood.sodium} mg</dd>
+                  </div>
+                </dl>
+
+                <div className="flex gap-3">
+                  <button
+                    type="button"
+                    onClick={() => toggleFav(selectedFood.id)}
+                    aria-pressed={favorites.has(selectedFood.id)}
+                    className={`h-12 px-4 rounded-full border inline-flex items-center gap-2 text-[14px] font-medium ${
+                      favorites.has(selectedFood.id)
+                        ? 'border-[rgba(255,181,71,0.5)] text-[var(--amber)]'
+                        : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${favorites.has(selectedFood.id) ? 'fill-current' : ''}`} />
+                    {favorites.has(selectedFood.id) ? 'Favorito' : 'Favoritar'}
+                  </button>
+                  <CTAButton type="button" block onClick={() => navigate('/nutritionist/criar-plano')}>
+                    Usar em um plano
+                  </CTAButton>
                 </div>
               </div>
-
-              <button
-                onClick={() => setSelectedFood(null)}
-                className="w-full mt-5 py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontWeight: 600 }}
-              >
-                <Plus className="w-4 h-4 inline mr-2" />
-                Adicionar ao Plano
-              </button>
             </motion.div>
-          </motion.div>
+          </div>
         )}
       </AnimatePresence>
-    </div>
+    </Page>
   );
 }
+
+const MACRO = { protein: '#8c82ff', carbs: '#ffb547', fat: '#2ee6c8' } as const;

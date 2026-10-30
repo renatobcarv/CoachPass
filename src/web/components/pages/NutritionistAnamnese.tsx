@@ -1,25 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router';
-import {
-  ArrowLeft,
-  ClipboardList,
-  User,
-  Heart,
-  Utensils,
-  Activity,
-  Moon,
-  Brain,
-  Save,
-  ChevronDown,
-  ChevronUp,
-  CheckCircle,
-  Circle,
-  AlertCircle,
-  FileText,
-  Plus,
-  Sparkles,
-} from 'lucide-react';
+import { Activity, ArrowLeft, Brain, Check, Heart, Moon, Sparkles, User, Utensils } from 'lucide-react';
+import { toast } from 'sonner';
 import { motion, AnimatePresence } from 'motion/react';
+import { CTAButton } from '../brand/Brand';
+import { Page, PageHeader, SoonButton } from '../student/ui';
+import { FieldLabel, MobileActionBar, Segmented } from '../pro/ui';
 
 interface Section {
   id: string;
@@ -158,252 +144,252 @@ export function NutritionistAnamnese() {
 
   const completionPct = Math.round((savedSections.length / sections.length) * 100);
 
+  const [active, setActive] = useState(sections[0].id);
+  const idx = sections.findIndex((s) => s.id === active);
+  const section = sections[idx];
+  const filledIn = (s: Section) => s.fields.filter((f) => (formData[f.id] ?? '').trim() !== '').length;
+  const totalFilled = sections.reduce((n, s) => n + filledIn(s), 0);
+  const totalFields = sections.reduce((n, s) => n + s.fields.length, 0);
+
+  const goTo = (id: string) => {
+    setActive(id);
+    if (typeof window !== 'undefined') window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const saveAndNext = () => {
+    handleSaveSection(section.id);
+    const next = sections[idx + 1];
+    if (next) {
+      toast.success(`${section.title} salvo`, { description: `Próximo: ${next.title}` });
+      goTo(next.id);
+    } else {
+      toast.success('Anamnese concluída', { description: 'Todas as seções foram preenchidas.' });
+    }
+  };
+
+  const finish = () => {
+    setSavedSections(sections.map((s) => s.id));
+    toast.success('Anamnese concluída', { description: `${totalFilled} de ${totalFields} respostas preenchidas.` });
+    navigate('/nutritionist');
+  };
+
+  const SectionIcon = section.icon;
+
   return (
-    <div className="p-4 lg:p-8 max-w-[1100px] mx-auto">
-      {/* Header */}
-      <button
-        onClick={() => navigate('/nutritionist')}
-        className="flex items-center gap-2 text-sm dark:text-zinc-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors mb-6"
-      >
-        <ArrowLeft className="w-4 h-4" />
-        Voltar ao Dashboard
-      </button>
+    <Page wide>
+      <PageHeader
+        kicker="Anamnese nutricional"
+        title="Conheça o paciente"
+        accent="antes do plano."
+        lead="Histórico de saúde, hábitos, rotina e objetivos — preencha por etapas, na ordem que preferir."
+        action={<SoonButton icon={Sparkles}>Preencher com IA</SoonButton>}
+      />
 
-      <div className="flex items-start justify-between mb-8 flex-wrap gap-4">
-        <div>
-          <div className="flex items-center gap-3 mb-2">
-            <div className="w-10 h-10 rounded-2xl flex items-center justify-center" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)' }}>
-              <ClipboardList className="w-5 h-5 text-white" />
+      {/* Modelo */}
+      <div className="mb-6 flex flex-wrap items-center gap-3">
+        <span className="cp-mono text-[11px] uppercase tracking-[0.12em] text-[var(--muted)]">Modelo</span>
+        <Segmented
+          size="sm"
+          layoutId="anamnese-template"
+          value={selectedTemplate}
+          onChange={(v) => setSelectedTemplate(v)}
+          options={templates.map((t) => ({ value: t.id, label: t.name }))}
+        />
+      </div>
+
+      <div className="grid lg:grid-cols-[300px_1fr] gap-6 items-start">
+        {/* Navegação das seções */}
+        <aside className="lg:sticky lg:top-6 rounded-[22px] border border-[var(--line-2)] bg-[#0d0f18] overflow-hidden">
+          <span aria-hidden className="cp-modal-bar" />
+          <div className="p-5 border-b border-[var(--line)]">
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="cp-kicker">Progresso</p>
+                <p className="cp-display mt-1 text-[34px] font-bold leading-none">
+                  {completionPct}
+                  <span className="text-[16px] text-[var(--muted)]">%</span>
+                </p>
+              </div>
+              <p className="cp-mono text-[11px] text-[var(--dim)] text-right">
+                {savedSections.length}/{sections.length} seções
+                <br />
+                {totalFilled}/{totalFields} respostas
+              </p>
             </div>
-            <h1 className="dark:text-white text-slate-900">Anamnese Completa</h1>
+            <div className="mt-3 h-2 rounded-full bg-white/[0.08] overflow-hidden">
+              <motion.div className="h-full rounded-full"
+                style={{ background: 'linear-gradient(90deg,#2a14e0,#5546ff,#8c82ff)' }} animate={{ width: `${completionPct}%` }} />
+            </div>
           </div>
-          <p className="text-sm dark:text-zinc-400 text-slate-500">
-            Coleta completa do histórico de saúde e hábitos do paciente
-          </p>
-        </div>
-        <div className="flex gap-3 flex-wrap">
-          <button
-            onClick={() => setShowTemplates(!showTemplates)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:border-zinc-500 transition-all"
-          >
-            <FileText className="w-4 h-4" />
-            Modelos
-          </button>
-          <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
-          >
-            <Sparkles className="w-4 h-4" />
-            Preencher com IA
-          </button>
-        </div>
-      </div>
-
-      {/* Templates */}
-      <AnimatePresence>
-        {showTemplates && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            className="mb-6 dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200"
-          >
-            <p className="text-sm dark:text-zinc-400 text-slate-500 mb-4" style={{ fontWeight: 600 }}>
-              Selecione um modelo de anamnese
-            </p>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {templates.map((t) => (
-                <button
-                  key={t.id}
-                  onClick={() => { setSelectedTemplate(t.id); setShowTemplates(false); }}
-                  className={`p-4 rounded-2xl border text-left transition-all ${
-                    selectedTemplate === t.id
-                      ? 'border-[#000326]/40 dark:border-white/40 dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5'
-                      : 'dark:border-zinc-700 border-slate-200 dark:hover:border-zinc-500 hover:border-slate-300'
-                  }`}
-                >
-                  <div className="w-8 h-8 rounded-xl mb-3 flex items-center justify-center" style={{ backgroundColor: `${t.color}20` }}>
-                    <ClipboardList className="w-4 h-4" style={{ color: t.color }} />
-                  </div>
-                  <p className="text-xs dark:text-white text-slate-900 mb-1" style={{ fontWeight: 600 }}>{t.name}</p>
-                  <p className="text-xs dark:text-zinc-500 text-slate-400">{t.sections} seções</p>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Progress Bar */}
-      <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
-            Progresso da Anamnese
-          </p>
-          <span className="text-sm text-[#000326] dark:text-white" style={{ fontWeight: 700 }}>{completionPct}%</span>
-        </div>
-        <div className="w-full h-2 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
-          <motion.div
-            className="h-full rounded-full"
-            style={{ background: 'linear-gradient(90deg,#5a64b4,#000346)' }}
-            initial={{ width: 0 }}
-            animate={{ width: `${completionPct}%` }}
-            transition={{ duration: 0.5 }}
-          />
-        </div>
-        <div className="flex gap-4 mt-3 flex-wrap">
-          {sections.map((s) => (
-            <div key={s.id} className="flex items-center gap-1.5">
-              {savedSections.includes(s.id) ? (
-                <CheckCircle className="w-3.5 h-3.5 text-[#000326] dark:text-white" />
-              ) : (
-                <Circle className="w-3.5 h-3.5 dark:text-zinc-600 text-slate-300" />
-              )}
-              <span className="text-xs dark:text-zinc-400 text-slate-500">{s.title}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Sections */}
-      <div className="space-y-4">
-        {sections.map((section) => {
-          const Icon = section.icon;
-          const isExpanded = expandedSections.includes(section.id);
-          const isSaved = savedSections.includes(section.id);
-
-          return (
-            <div
-              key={section.id}
-              className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden"
-            >
-              <button
-                onClick={() => toggleSection(section.id)}
-                className="w-full flex items-center gap-4 p-5 text-left hover:dark:bg-zinc-800/30 hover:bg-slate-50 transition-colors"
-              >
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${section.color}20` }}>
-                  <Icon className="w-5 h-5" style={{ color: section.color }} />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{section.title}</p>
-                  <p className="text-xs dark:text-zinc-500 text-slate-400">{section.fields.length} campos</p>
-                </div>
-                {isSaved && (
-                  <span className="flex items-center gap-1 text-xs text-[#000326] dark:text-white mr-2" style={{ fontWeight: 600 }}>
-                    <CheckCircle className="w-3.5 h-3.5" /> Salvo
-                  </span>
-                )}
-                {isExpanded ? (
-                  <ChevronUp className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0" />
-                ) : (
-                  <ChevronDown className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0" />
-                )}
-              </button>
-
-              <AnimatePresence>
-                {isExpanded && (
-                  <motion.div
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    transition={{ duration: 0.2 }}
+          <ol className="p-2 flex lg:block gap-1 overflow-x-auto">
+            {sections.map((s, i) => {
+              const Icon = s.icon;
+              const on = s.id === active;
+              const saved = savedSections.includes(s.id);
+              const filled = filledIn(s);
+              return (
+                <li key={s.id} className="shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => goTo(s.id)}
+                    aria-current={on ? 'step' : undefined}
+                    className={`w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left transition-colors ${
+                      on ? 'bg-[rgba(85,70,255,0.14)]' : 'hover:bg-white/[0.04]'
+                    }`}
                   >
-                    <div className="px-5 pb-5 border-t dark:border-zinc-800 border-slate-100 pt-5">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {section.fields.map((field) => (
-                          <div
-                            key={field.id}
-                            className={field.type === 'textarea' ? 'md:col-span-2' : ''}
-                          >
-                            <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-2" style={{ fontWeight: 500 }}>
-                              {field.label}
-                            </label>
-                            {field.type === 'textarea' ? (
-                              <textarea
-                                value={formData[field.id] || ''}
-                                onChange={(e) => handleChange(field.id, e.target.value)}
-                                placeholder={field.placeholder}
-                                rows={3}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 resize-none"
-                              />
-                            ) : field.type === 'select' ? (
-                              <select
-                                value={formData[field.id] || ''}
-                                onChange={(e) => handleChange(field.id, e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 appearance-none"
-                              >
-                                <option value="">Selecione...</option>
-                                {field.options?.map((opt) => (
-                                  <option key={opt} value={opt}>{opt}</option>
-                                ))}
-                              </select>
-                            ) : field.type === 'radio' ? (
-                              <div className="flex flex-wrap gap-2">
-                                {field.options?.map((opt) => (
-                                  <button
-                                    key={opt}
-                                    type="button"
-                                    onClick={() => handleChange(field.id, opt)}
-                                    className={`px-3 py-1.5 rounded-xl text-xs transition-all border ${
-                                      formData[field.id] === opt
-                                        ? 'text-white border-transparent'
-                                        : 'dark:border-zinc-700 border-slate-200 dark:text-zinc-400 text-slate-600 hover:dark:border-zinc-500'
-                                    }`}
-                                    style={formData[field.id] === opt ? { backgroundColor: section.color, fontWeight: 600 } : {}}
-                                  >
-                                    {opt}
-                                  </button>
-                                ))}
-                              </div>
-                            ) : (
-                              <input
-                                type={field.type}
-                                value={formData[field.id] || ''}
-                                onChange={(e) => handleChange(field.id, e.target.value)}
-                                placeholder={field.placeholder}
-                                className="w-full px-4 py-3 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 dark:border-zinc-700 border border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
-                              />
-                            )}
-                          </div>
+                    <span
+                      className={`w-9 h-9 shrink-0 rounded-xl grid place-items-center ${
+                        saved ? 'bg-[rgba(46,230,200,0.12)] text-[var(--teal)]' : on ? 'cp-selected' : 'bg-white/[0.05] text-[var(--muted)]'
+                      }`}
+                    >
+                      {saved ? <Check className="w-4 h-4" strokeWidth={3} /> : <Icon className="w-4 h-4" />}
+                    </span>
+                    <span className="min-w-0 hidden lg:block">
+                      <span className={`block text-[14px] font-medium leading-tight ${on ? 'text-white' : 'text-[var(--cream)]'}`}>
+                        <span className="cp-mono text-[11px] text-[var(--dim)] mr-1.5">{String(i + 1).padStart(2, '0')}</span>
+                        {s.title}
+                      </span>
+                      <span className="cp-mono text-[11px] text-[var(--dim)]">
+                        {filled}/{s.fields.length} respondidas
+                      </span>
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
+          </ol>
+        </aside>
+
+        {/* Seção ativa */}
+        <AnimatePresence mode="wait">
+          <motion.section
+            key={section.id}
+            initial={{ opacity: 0, x: 16 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -16 }}
+            transition={{ duration: 0.25 }}
+            className="rounded-[22px] border border-[var(--line)] bg-white/[0.025] overflow-hidden"
+          >
+            <header className="p-5 sm:p-6 border-b border-[var(--line)] flex items-center gap-4">
+              <span className="w-12 h-12 rounded-2xl grid place-items-center bg-[rgba(85,70,255,0.16)] border border-[rgba(140,130,255,0.3)]">
+                <SectionIcon className="w-5 h-5 text-[var(--brand-300)]" />
+              </span>
+              <div className="min-w-0">
+                <p className="cp-mono text-[11px] text-[var(--dim)]">
+                  Etapa {idx + 1} de {sections.length}
+                </p>
+                <h2 className="cp-display text-[22px] font-bold leading-tight">{section.title}</h2>
+              </div>
+            </header>
+
+            <div className="p-5 sm:p-6 grid md:grid-cols-2 gap-x-5 gap-y-6">
+              {section.fields.map((field) => {
+                const value = formData[field.id] ?? '';
+                const wide = field.type === 'textarea' || field.type === 'radio' || (field.options?.length ?? 0) > 4;
+                const useChips = field.type === 'radio' || (field.type === 'select' && (field.options?.length ?? 0) <= 5);
+                return (
+                  <div key={field.id} className={wide ? 'md:col-span-2' : ''}>
+                    <FieldLabel htmlFor={useChips ? undefined : `an-${field.id}`}>{field.label}</FieldLabel>
+                    {useChips ? (
+                      <div role="radiogroup" aria-label={field.label} className="flex flex-wrap gap-2">
+                        {field.options!.map((opt) => {
+                          const on = value === opt;
+                          return (
+                            <button
+                              key={opt}
+                              type="button"
+                              role="radio"
+                              aria-checked={on}
+                              onClick={() => handleChange(field.id, on ? '' : opt)}
+                              className={`h-10 px-4 rounded-full border text-[13.5px] font-medium transition-colors ${
+                                on ? 'cp-selected border-transparent' : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white hover:bg-white/[0.04]'
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    ) : field.type === 'select' ? (
+                      <select
+                        id={`an-${field.id}`}
+                        value={value}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        className="cp-field cp-field-plain h-12"
+                      >
+                        <option value="">Selecione…</option>
+                        {field.options!.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
                         ))}
-                      </div>
-
-                      <div className="flex justify-end mt-5">
-                        <button
-                          onClick={() => handleSaveSection(section.id)}
-                          className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                          style={{ background: `linear-gradient(135deg,${section.color},${section.color}cc)`, fontWeight: 600 }}
-                        >
-                          <Save className="w-4 h-4" />
-                          Salvar Seção
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                      </select>
+                    ) : field.type === 'textarea' ? (
+                      <textarea
+                        id={`an-${field.id}`}
+                        value={value}
+                        onChange={(e) => handleChange(field.id, e.target.value)}
+                        placeholder={field.placeholder}
+                        rows={3}
+                        maxLength={1000}
+                        className="cp-field"
+                      />
+                    ) : (
+                      <input
+                        id={`an-${field.id}`}
+                        type="text"
+                        inputMode={field.type === 'number' ? 'decimal' : undefined}
+                        value={value}
+                        onChange={(e) =>
+                          handleChange(field.id, field.type === 'number' ? e.target.value.replace(/[^\d.,]/g, '').slice(0, 6) : e.target.value)
+                        }
+                        placeholder={field.placeholder}
+                        maxLength={field.type === 'number' ? 6 : 120}
+                        className="cp-field cp-field-plain h-12"
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
-          );
-        })}
+
+            <footer className="p-5 sm:p-6 border-t border-[var(--line)] flex flex-wrap items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => idx > 0 && goTo(sections[idx - 1].id)}
+                disabled={idx === 0}
+                className="h-11 px-4 rounded-full inline-flex items-center gap-2 text-[14px] text-[var(--muted)] hover:text-white disabled:opacity-30"
+              >
+                <ArrowLeft className="w-4 h-4" /> Anterior
+              </button>
+              <div className="flex flex-wrap gap-3">
+                {idx === sections.length - 1 ? (
+                  <CTAButton type="button" onClick={finish}>
+                    Concluir anamnese
+                  </CTAButton>
+                ) : (
+                  <CTAButton type="button" onClick={saveAndNext}>
+                    Salvar e continuar
+                  </CTAButton>
+                )}
+              </div>
+            </footer>
+          </motion.section>
+        </AnimatePresence>
       </div>
 
-      {/* Save All */}
-      <div className="mt-6 flex justify-end gap-3">
+      <MobileActionBar>
+        <p className="text-[13px] text-[var(--muted)]">
+          <span className="text-white font-semibold">{idx + 1}</span>/{sections.length} · {section.title}
+        </p>
         <button
-          onClick={() => navigate('/nutritionist')}
-          className="px-6 py-3 rounded-xl text-sm border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:border-zinc-500 transition-all"
+          type="button"
+          onClick={idx === sections.length - 1 ? finish : saveAndNext}
+          className="cp-selected h-10 px-5 rounded-full text-[14px] font-semibold"
         >
-          Cancelar
+          {idx === sections.length - 1 ? 'Concluir' : 'Próxima'}
         </button>
-        <button
-          onClick={() => { setSavedSections(sections.map(s => s.id)); }}
-          className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-          style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
-        >
-          <Save className="w-4 h-4" />
-          Salvar Anamnese Completa
-        </button>
-      </div>
-    </div>
+      </MobileActionBar>
+    </Page>
   );
 }

@@ -15,7 +15,7 @@ const nutritionistNav: ShellNavItem[] = [
   { to: '/nutritionist/criar-plano', icon: Utensils, label: 'Criar plano alimentar', short: 'Plano' },
   { to: '/nutritionist/anamnese', icon: ClipboardList, label: 'Anamnese', short: 'Anamnese' },
   { to: '/nutritionist/alimentos', icon: Apple, label: 'Base de alimentos', short: 'Alimentos' },
-  { to: '/nutritionist/perfil', icon: User, label: 'Perfil', short: 'Perfil' },
+  { to: '/nutritionist/perfil', icon: User, label: 'Perfil e pacientes', short: 'Perfil' },
 ]
 
 /** Layout dos painéis do personal e da nutricionista (mesma base visual do app do aluno). */

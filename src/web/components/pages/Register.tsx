@@ -5,7 +5,6 @@ import {
   User,
   Briefcase,
   Mail,
-  Lock,
   ArrowRight,
   Heart,
   Shield,
@@ -16,6 +15,8 @@ import { toast } from 'sonner';
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms';
 import { AuthShell, FieldLabel } from '../brand/AuthShell';
 import { CTAButton } from '../brand/Brand';
+import { PasswordInput, PasswordStrength } from '../forms/PasswordInput';
+import { isStrongEnough, isValidEmail, nameError } from '../../lib/validation';
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
@@ -71,14 +72,15 @@ export function Register() {
   const validateStep2 = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) newErrors.name = 'Nome é obrigatório';
+    const nameProblem = nameError(formData.name);
+    if (nameProblem) newErrors.name = nameProblem;
     if (!formData.email.trim()) newErrors.email = 'E-mail é obrigatório';
-    else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    else if (!isValidEmail(formData.email)) {
       newErrors.email = 'E-mail em formato inválido';
     }
     if (!formData.password) newErrors.password = 'Senha é obrigatória';
-    else if (formData.password.length < 6) {
-      newErrors.password = 'A senha deve ter no mínimo 6 caracteres';
+    else if (!isStrongEnough(formData.password)) {
+      newErrors.password = 'A senha precisa de 8+ caracteres, com pelo menos uma letra e um número.';
     }
 
     setErrors(newErrors);
@@ -333,6 +335,7 @@ export function Register() {
                       type="text"
                       value={formData.name}
                       onChange={(e) => handleInputChange('name', e.target.value)}
+                      maxLength={120}
                       placeholder="Como você quer ser chamado"
                       autoComplete="name"
                       aria-invalid={Boolean(errors.name)}
@@ -352,6 +355,10 @@ export function Register() {
                       type="email"
                       value={formData.email}
                       onChange={(e) => handleInputChange('email', e.target.value)}
+                      maxLength={254}
+                      inputMode="email"
+                      autoCapitalize="none"
+                      spellCheck={false}
                       placeholder="seu@gmail.com"
                       autoComplete="email"
                       aria-invalid={Boolean(errors.email)}
@@ -364,19 +371,15 @@ export function Register() {
                 {/* Senha */}
                 <div>
                   <FieldLabel htmlFor="reg-password">Senha</FieldLabel>
-                  <div className="relative">
-                    <Lock className={iconCls} />
-                    <input
-                      id="reg-password"
-                      type="password"
-                      value={formData.password}
-                      onChange={(e) => handleInputChange('password', e.target.value)}
-                      placeholder="Mínimo de 6 caracteres"
-                      autoComplete="new-password"
-                      aria-invalid={Boolean(errors.password)}
-                      className="cp-field"
-                    />
-                  </div>
+                  <PasswordInput
+                    id="reg-password"
+                    value={formData.password}
+                    onChange={(v) => handleInputChange('password', v)}
+                    placeholder="8+ caracteres, com letra e número"
+                    autoComplete="new-password"
+                    invalid={Boolean(errors.password)}
+                  />
+                  <PasswordStrength value={formData.password} />
                   {errors.password && <p className="text-[12.5px] text-[#ff8a95] mt-2">{errors.password}</p>}
                 </div>
               </div>

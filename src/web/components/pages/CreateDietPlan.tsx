@@ -1,32 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  ArrowLeft,
-  Save,
-  Plus,
-  X,
-  Utensils,
-  Search,
-  Sparkles,
-  Apple,
-  Beef,
-  Wheat,
-  Droplets,
-  Clock,
-  Users,
-  BarChart3,
-  ShoppingCart,
-  Package,
-  Download,
-  Printer,
-  Tag,
-  Calendar,
-} from 'lucide-react';
+import { Check, Circle, Minus, Plus, Printer, Search, ShoppingCart, Sparkles, Utensils, X, User } from 'lucide-react';
 import { toast } from 'sonner';
+import { CTAButton } from '../brand/Brand';
+import { Badge, Page, PageHeader, SoonButton } from '../student/ui';
+import { FieldLabel, MobileActionBar, PersonChip, Segmented } from '../pro/ui';
+import { useAuth } from '../../context/AuthContext';
+import { fetchNutriPatients, createMealPlan, type NutriPatient, type PlanMeal } from '../../lib/nutriApi';
 
 // ────────────────── DATA ──────────────────
-interface FoodItem {
+export interface FoodItem {
   id: string;
   name: string;
   category: 'protein' | 'carb' | 'fat' | 'vegetable' | 'fruit' | 'dairy';
@@ -37,7 +21,7 @@ interface FoodItem {
   unit: string;
 }
 
-const foodDatabase: FoodItem[] = [
+export const foodDatabase: FoodItem[] = [
   // Proteínas
   { id: 'f1', name: 'Frango grelhado', category: 'protein', calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: 'g' },
   { id: 'f2', name: 'Carne bovina magra', category: 'protein', calories: 215, protein: 26, carbs: 0, fat: 12, unit: 'g' },
@@ -79,14 +63,6 @@ const foodDatabase: FoodItem[] = [
   { id: 'd3', name: 'Whey protein', category: 'dairy', calories: 373, protein: 78, carbs: 6, fat: 5, unit: 'g' },
 ];
 
-const categoryColors: Record<string, { bg: string; text: string; icon: React.ReactNode }> = {
-  protein: { bg: 'bg-blue-500/10', text: 'text-blue-400', icon: <Beef className="w-3 h-3" /> },
-  carb: { bg: 'bg-amber-500/10', text: 'text-amber-400', icon: <Wheat className="w-3 h-3" /> },
-  fat: { bg: 'bg-pink-500/10', text: 'text-pink-400', icon: <Droplets className="w-3 h-3" /> },
-  vegetable: { bg: 'bg-[#000326] dark:bg-white/10', text: 'text-[#5a64b4] dark:text-[#C5C5CE]', icon: <Apple className="w-3 h-3" /> },
-  fruit: { bg: 'bg-orange-500/10', text: 'text-orange-400', icon: <Apple className="w-3 h-3" /> },
-  dairy: { bg: 'bg-purple-500/10', text: 'text-purple-400', icon: <Droplets className="w-3 h-3" /> },
-};
 
 const categoryLabels: Record<string, string> = {
   protein: 'Proteínas',
@@ -96,36 +72,6 @@ const categoryLabels: Record<string, string> = {
   fruit: 'Frutas',
   dairy: 'Laticínios e Suplementos',
 };
-
-const categoryGradients: Record<string, string> = {
-  protein: 'from-blue-500 to-indigo-600',
-  carb: 'from-amber-500 to-orange-500',
-  fat: 'from-pink-500 to-rose-500',
-  vegetable: 'from-[#000326] to-[#000346]',
-  fruit: 'from-orange-400 to-amber-500',
-  dairy: 'from-violet-500 to-purple-600',
-};
-
-const categoryIconsLg: Record<string, React.ReactNode> = {
-  protein: <Beef className="w-4 h-4" />,
-  carb: <Wheat className="w-4 h-4" />,
-  fat: <Droplets className="w-4 h-4" />,
-  vegetable: <Apple className="w-4 h-4" />,
-  fruit: <Apple className="w-4 h-4" />,
-  dairy: <Package className="w-4 h-4" />,
-};
-
-function getCategoryColors(category: string): [string, string] {
-  const map: Record<string, [string, string]> = {
-    protein: ['#3b82f6', '#4338ca'],
-    carb: ['#f59e0b', '#d97706'],
-    fat: ['#ec4899', '#be185d'],
-    vegetable: ['#5a64b4', '#000346'],
-    fruit: ['#f97316', '#ea580c'],
-    dairy: ['#8b5cf6', '#7c3aed'],
-  };
-  return map[category] || ['#6b7280', '#4b5563'];
-}
 
 function formatQuantity(qty: number, unit: string): string {
   if (unit === 'g') {
@@ -145,7 +91,7 @@ function formatQuantity(qty: number, unit: string): string {
   return `${Math.round(qty)} ${unit}`;
 }
 
-const defaultMeals = [
+export const defaultMeals = [
   { id: 'meal1', name: 'Café da Manhã', time: '07:00', icon: '☀️' },
   { id: 'meal2', name: 'Lanche da Manhã', time: '10:00', icon: '🍎' },
   { id: 'meal3', name: 'Almoço', time: '13:00', icon: '🍽️' },
@@ -188,6 +134,10 @@ const mockPatients = [
 export function CreateDietPlan() {
   const { patientId } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+
+  const [patients, setPatients] = useState<NutriPatient[]>([]);
+  const [loadingPatients, setLoadingPatients] = useState(true);
 
   const [planName, setPlanName] = useState('');
   const [selectedPatient, setSelectedPatient] = useState(patientId || '');
@@ -201,6 +151,37 @@ export function CreateDietPlan() {
   const [generatingAI, setGeneratingAI] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [shoppingDays, setShoppingDays] = useState(30);
+
+  useEffect(() => {
+    let cancelled = false;
+    async function loadPatients() {
+      if (!user?.id || !user?.accessToken) {
+        setLoadingPatients(false);
+        return;
+      }
+      try {
+        const list = await fetchNutriPatients(user.id, user.accessToken);
+        if (!cancelled) {
+          setPatients(list);
+          if (patientId && list.some(p => String(p.id) === String(patientId))) {
+            setSelectedPatient(patientId);
+          } else if (list.length > 0 && !selectedPatient) {
+            setSelectedPatient(list[0].id);
+          }
+        }
+      } catch (err) {
+        if (!cancelled) {
+          toast.error('Erro ao carregar pacientes', {
+            description: err instanceof Error ? err.message : 'Tente recarregar a página.'
+          });
+        }
+      } finally {
+        if (!cancelled) setLoadingPatients(false);
+      }
+    }
+    loadPatients();
+    return () => { cancelled = true; };
+  }, [user?.id, user?.accessToken, patientId]);
 
   const [meals, setMeals] = useState<Meal[]>(
     defaultMeals.map((m) => ({ ...m, foods: [] }))
@@ -303,617 +284,594 @@ export function CreateDietPlan() {
     setTimeout(() => { setGeneratingAI(false); toast.success('Plano alimentar gerado pela IA com sucesso!'); }, 2000);
   };
 
-  const handleSave = () => {
-    if (!planName || !selectedPatient) { toast.error('Preencha o nome do plano e selecione um paciente'); return; }
+  const handleSave = async () => {
+    if (!planName.trim()) {
+      toast.error('Preencha o nome do plano');
+      return;
+    }
+    if (!selectedPatient || selectedPatient === '0') {
+      toast.error('Selecione um paciente ativo para este plano');
+      return;
+    }
+    if (!user?.accessToken) {
+      toast.error('Sessão expirada. Faça login novamente.');
+      return;
+    }
+
     setSaving(true);
-    setTimeout(() => {
-      setSaving(false);
+    try {
+      // Converte refeições para formato do Payload
+      const mappedMeals: PlanMeal[] = meals.map((m) => ({
+        name: m.name,
+        time: m.time,
+        calories: Math.round(getMealCalories(m)),
+        items: m.foods.map((f) => ({
+          name: f.food.name,
+          quantity: `${f.quantity}${f.food.unit}`,
+          calories: Math.round((f.food.calories * f.quantity) / 100),
+        })),
+      }));
+
+      await createMealPlan(
+        {
+          title: planName.trim(),
+          student: selectedPatient,
+          status: 'published',
+          observations: notes.trim(),
+          meals: mappedMeals,
+        },
+        user.accessToken
+      );
+
       toast.success('Plano alimentar salvo com sucesso!');
       navigate(patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist');
-    }, 1500);
+    } catch (err) {
+      toast.error('Erro ao salvar plano alimentar', {
+        description: err instanceof Error ? err.message : 'Verifique os dados e tente novamente.'
+      });
+    } finally {
+      setSaving(false);
+    }
   };
 
   const proteinTarget = Math.round((targetCalories * proteinPct) / 100 / 4);
   const carbsTarget = Math.round((targetCalories * carbsPct) / 100 / 4);
   const fatTarget = Math.round((targetCalories * fatPct) / 100 / 9);
 
+  const macroSum = proteinPct + carbsPct + fatPct;
+  const backTo = patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist';
+  const active = meals.find((m) => m.id === activeMeal) || null;
+  const patientData = patients.find((p) => String(p.id) === String(selectedPatient));
+  const filledMeals = meals.filter((m) => m.foods.length > 0).length;
+  const checklist = [
+    { ok: Boolean(planName.trim()), label: 'Nome do plano' },
+    { ok: Boolean(selectedPatient) && selectedPatient !== '0', label: 'Paciente' },
+    { ok: macroSum === 100, label: 'Macros somam 100%' },
+    { ok: filledMeals > 0, label: 'Ao menos 1 refeição' },
+  ];
+  const kcalPct = targetCalories ? Math.min(140, (totals.calories / targetCalories) * 100) : 0;
+  const macroRows = [
+    { label: 'Proteína', value: totals.protein, target: proteinTarget, color: '#8c82ff' },
+    { label: 'Carboidrato', value: totals.carbs, target: carbsTarget, color: '#ffb547' },
+    { label: 'Gordura', value: totals.fat, target: fatTarget, color: '#2ee6c8' },
+  ];
+  const catTone: Record<string, 'blue' | 'amber' | 'teal' | 'violet' | 'neutral'> = {
+    protein: 'blue',
+    carb: 'amber',
+    fat: 'violet',
+    vegetable: 'teal',
+    fruit: 'amber',
+    dairy: 'neutral',
+  };
+  const shortCat: Record<string, string> = {
+    protein: 'Proteína',
+    carb: 'Carboidrato',
+    fat: 'Gordura',
+    vegetable: 'Vegetal',
+    fruit: 'Fruta',
+    dairy: 'Laticínio',
+  };
+
   return (
-    <div className="p-4 lg:p-8 max-w-[1600px] mx-auto">
-      {/* Header */}
-      <div className="mb-8">
-        <button
-          onClick={() => navigate(patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist')}
-          className="flex items-center gap-2 text-sm dark:text-zinc-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors mb-4"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar
-        </button>
-        <div className="flex items-center justify-between flex-wrap gap-3">
-          <div>
-            <h1 className="dark:text-white text-slate-900 mb-1">Criar Plano Alimentar</h1>
-            <p className="text-sm dark:text-zinc-400 text-slate-500">Monte um plano nutricional completo e personalizado</p>
-          </div>
-          <div className="flex gap-3 flex-wrap">
-            {/* Shopping List toggle */}
+    <Page wide>
+      <PageHeader
+        kicker="Plano alimentar"
+        title="Monte o plano"
+        accent="do seu paciente."
+        lead="Defina metas, monte as refeições com a base de alimentos e acompanhe os macros em tempo real."
+        action={
+          <div className="flex flex-wrap gap-3">
             <button
-              onClick={() => setShowShoppingList(!showShoppingList)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all border ${
-                showShoppingList
-                  ? 'text-white border-transparent shadow-lg'
-                  : 'dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:border-[#000326]/40 dark:border-white/40 hover:border-[#5a64b4]'
-              }`}
-              style={showShoppingList ? { background: 'linear-gradient(135deg,#5a64b4,#000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 } : { fontWeight: 500 }}
+              type="button"
+              onClick={() => setShowShoppingList((v) => !v)}
+              className={`cp-btn-ghost ${showShoppingList ? '!border-[var(--brand-400)] !bg-[rgba(85,70,255,0.14)]' : ''}`}
             >
               <ShoppingCart className="w-4 h-4" />
-              Lista de Compras
-              {totalFoodItems > 0 && (
-                <span
-                  className={`text-xs px-1.5 py-0.5 rounded-full ${showShoppingList ? 'bg-white/25 text-white' : 'bg-[#000326] dark:bg-white/15 text-[#000326] dark:text-white'}`}
-                  style={{ fontWeight: 700 }}
-                >
-                  {totalFoodItems}
-                </span>
-              )}
+              Lista de compras
+              {totalFoodItems > 0 && <span className="cp-mono text-[11px] text-[var(--brand-200)]">{totalFoodItems}</span>}
             </button>
-            <button
-              onClick={handleGenerateAI}
-              disabled={generatingAI}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-70"
-              style={{ background: 'linear-gradient(135deg,#8b5cf6,#7c3aed)', boxShadow: '0 8px 20px rgba(139,92,246,0.3)', fontWeight: 600 }}
-            >
-              {generatingAI ? (
-                <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Gerando...</>
-              ) : (
-                <><Sparkles className="w-4 h-4" />Gerar com IA</>
-              )}
-            </button>
+            <SoonButton icon={Sparkles}>Gerar com IA</SoonButton>
           </div>
-        </div>
-      </div>
+        }
+      />
 
-      <div className="grid lg:grid-cols-[300px,1fr,320px] gap-6">
-
-        {/* ──── LEFT: Plan Config ──── */}
-        <div className="space-y-5">
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h3 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Informações do Plano</h3>
-            <div className="space-y-4">
+      <div className="grid xl:grid-cols-[1fr_380px] gap-6 items-start">
+        <div className="space-y-6 min-w-0">
+          {/* 1. Informações */}
+          <section className="cp-spot relative rounded-[22px] border border-[var(--line)] bg-white/[0.025] p-5 sm:p-6">
+            <StepTitle n={1}>Informações do plano</StepTitle>
+            <FieldLabel htmlFor="plan-name">Nome do plano</FieldLabel>
+            <input
+              id="plan-name"
+              type="text"
+              value={planName}
+              onChange={(e) => setPlanName(e.target.value)}
+              maxLength={80}
+              placeholder="Ex.: Emagrecimento — fase 1"
+              className="cp-field cp-field-lg !text-[20px] !h-14"
+            />
+            <div className="mt-5 grid 2xl:grid-cols-2 gap-5">
               <div>
-                <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-2">Nome do Plano *</label>
-                <input type="text" value={planName} onChange={(e) => setPlanName(e.target.value)} placeholder="Ex: Plano Emagrecimento – Fase 1"
-                  className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30" />
-              </div>
-              <div>
-                <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-2">Paciente *</label>
-                <div className="relative">
-                  <Users className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                  <select value={selectedPatient} onChange={(e) => setSelectedPatient(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500/30">
-                    <option value="">Selecione...</option>
-                    {mockPatients.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-                  </select>
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs dark:text-zinc-400 text-slate-500 mb-2">Duração (semanas)</label>
-                <div className="flex gap-2">
-                  {[2, 4, 6, 8].map((w) => (
-                    <button key={w} onClick={() => setDuration(w)}
-                      className={`flex-1 py-2 rounded-xl text-xs transition-all ${duration === w ? 'text-white shadow-lg' : 'dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:dark:bg-zinc-700'}`}
-                      style={duration === w ? { background: 'linear-gradient(135deg,#f59e0b,#d97706)', fontWeight: 600 } : {}}>
-                      {w}
+                <FieldLabel>Paciente</FieldLabel>
+                {loadingPatients ? (
+                  <p className="text-[13px] text-[var(--muted)]">Carregando pacientes vinculados...</p>
+                ) : patients.length === 0 ? (
+                  <div className="rounded-xl border border-[var(--line-2)] p-3 text-[13px] text-[var(--amber)]">
+                    Nenhum paciente vinculado com status ativo ou pendente.{' '}
+                    <button
+                      type="button"
+                      onClick={() => navigate('/nutritionist')}
+                      className="underline font-semibold text-white ml-1"
+                    >
+                      Convidar paciente
                     </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h3 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Meta Calórica Diária</h3>
-            <div className="text-center mb-4">
-              <div className="flex items-center justify-center gap-3">
-                <button onClick={() => setTargetCalories((v) => Math.max(1200, v - 50))}
-                  className="w-8 h-8 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:dark:bg-zinc-700 flex items-center justify-center text-xl transition-colors">−</button>
-                <div>
-                  <p className="text-3xl text-amber-500" style={{ fontWeight: 800 }}>{targetCalories}</p>
-                  <p className="text-xs dark:text-zinc-500 text-slate-400">kcal / dia</p>
-                </div>
-                <button onClick={() => setTargetCalories((v) => Math.min(4000, v + 50))}
-                  className="w-8 h-8 rounded-lg dark:bg-zinc-800 bg-slate-100 dark:text-zinc-400 text-slate-600 hover:dark:bg-zinc-700 flex items-center justify-center text-xl transition-colors">+</button>
-              </div>
-            </div>
-            <input type="range" min={1200} max={4000} step={50} value={targetCalories} onChange={(e) => setTargetCalories(Number(e.target.value))} className="w-full accent-amber-500" />
-            <div className="flex justify-between text-xs dark:text-zinc-600 text-slate-400 mt-1"><span>1200</span><span>4000</span></div>
-          </div>
-
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h3 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Distribuição de Macros</h3>
-            <div className="space-y-4">
-              {[
-                { label: 'Proteína', value: proteinPct, setter: setProteinPct, color: '#3b82f6', gram: proteinTarget },
-                { label: 'Carboidrato', value: carbsPct, setter: setCarbsPct, color: '#f59e0b', gram: carbsTarget },
-                { label: 'Gordura', value: fatPct, setter: setFatPct, color: '#ec4899', gram: fatTarget },
-              ].map(({ label, value, setter, color, gram }) => (
-                <div key={label}>
-                  <div className="flex justify-between mb-1">
-                    <span className="text-xs dark:text-zinc-400 text-slate-500">{label}</span>
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs dark:text-zinc-500 text-slate-400">{gram}g</span>
-                      <span className="text-xs" style={{ fontWeight: 600, color }}>{value}%</span>
-                    </div>
                   </div>
-                  <input type="range" min={10} max={60} value={value} onChange={(e) => setter(Number(e.target.value))}
-                    className="w-full h-1.5 rounded-full appearance-none cursor-pointer" style={{ accentColor: color }} />
-                </div>
-              ))}
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {patients.map((p) => (
+                      <PersonChip
+                        key={p.id}
+                        name={p.name}
+                        selected={String(selectedPatient) === String(p.id)}
+                        onClick={() => setSelectedPatient(p.id)}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <FieldLabel>Duração</FieldLabel>
+                <Segmented
+                  layoutId="diet-duration"
+                  value={String(duration)}
+                  onChange={(v) => setDuration(Number(v))}
+                  options={[2, 4, 6, 8].map((w) => ({ value: String(w), label: `${w} semanas` }))}
+                  size="sm"
+                />
+              </div>
             </div>
-            <div className="flex h-3 rounded-full overflow-hidden mt-4">
-              <div className="bg-blue-500 transition-all" style={{ width: `${proteinPct}%` }} />
-              <div className="bg-amber-500 transition-all" style={{ width: `${carbsPct}%` }} />
-              <div className="bg-pink-500 transition-all" style={{ width: `${fatPct}%` }} />
-            </div>
-          </div>
+          </section>
 
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h3 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Observações do Plano</h3>
-            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} placeholder="Orientações gerais, restrições, substituições permitidas..."
-              className="w-full px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30 resize-none" />
-          </div>
-        </div>
-
-        {/* ──── CENTER: Meal Builder ──── */}
-        <div className="space-y-5">
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h3 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Refeições do Dia</h3>
-            <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-              {meals.map((meal) => {
-                const cal = Math.round(getMealCalories(meal));
-                return (
-                  <button key={meal.id} onClick={() => setActiveMeal(activeMeal === meal.id ? null : meal.id)}
-                    className={`flex flex-col items-center gap-1.5 p-3 rounded-2xl border transition-all ${
-                      activeMeal === meal.id ? 'border-amber-500/50 shadow-lg' : 'dark:bg-zinc-800/50 bg-slate-50 dark:border-zinc-700 border-slate-200 hover:dark:border-zinc-600'
-                    }`}
-                    style={activeMeal === meal.id ? { background: 'linear-gradient(135deg,rgba(245,158,11,0.15),rgba(217,119,6,0.15))', borderColor: '#f59e0b55' } : {}}>
-                    <span className="text-xl">{meal.icon}</span>
-                    <span className="text-xs dark:text-zinc-300 text-slate-700 text-center leading-tight" style={{ fontWeight: activeMeal === meal.id ? 600 : 400 }}>
-                      {meal.name.split(' ')[0]}
-                    </span>
-                    {cal > 0 && <span className="text-xs text-amber-500" style={{ fontWeight: 700 }}>{cal}</span>}
+          {/* 2. Metas */}
+          <section className="cp-spot relative rounded-[22px] border border-[var(--line)] bg-white/[0.025] p-5 sm:p-6">
+            <StepTitle n={2}>Metas diárias</StepTitle>
+            <div className="grid lg:grid-cols-[1fr_1.2fr] gap-8">
+              <div>
+                <FieldLabel htmlFor="target-calories-input">Calorias (meta diária)</FieldLabel>
+                <div className="flex items-center gap-3">
+                  <button
+                    type="button"
+                    aria-label="Diminuir 50 kcal"
+                    onClick={() => setTargetCalories((v) => Math.max(500, v - 50))}
+                    className="w-11 h-11 rounded-full border border-[var(--line-2)] grid place-items-center text-[var(--muted)] hover:text-white"
+                  >
+                    <Minus className="w-4 h-4" />
                   </button>
-                );
-              })}
+                  <div className="flex items-center justify-center min-w-[150px]">
+                    <input
+                      id="target-calories-input"
+                      type="number"
+                      min={500}
+                      max={10000}
+                      step={10}
+                      value={targetCalories}
+                      onChange={(e) => setTargetCalories(Math.max(0, Number(e.target.value) || 0))}
+                      className="cp-display text-[36px] font-bold leading-none w-28 text-center bg-transparent border-b border-[var(--line-2)] focus:border-[var(--brand-400)] focus:outline-none"
+                    />
+                    <span className="ml-1 text-[14px] font-medium text-[var(--muted)]">kcal</span>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="Aumentar 50 kcal"
+                    onClick={() => setTargetCalories((v) => Math.min(10000, v + 50))}
+                    className="w-11 h-11 rounded-full border border-[var(--line-2)] grid place-items-center text-[var(--muted)] hover:text-white"
+                  >
+                    <Plus className="w-4 h-4" />
+                  </button>
+                </div>
+                <input
+                  type="range"
+                  min={800}
+                  max={6000}
+                  step={25}
+                  value={Math.min(6000, Math.max(800, targetCalories))}
+                  onChange={(e) => setTargetCalories(Number(e.target.value))}
+                  aria-label="Meta de calorias"
+                  className="cp-range mt-5 w-full"
+                />
+                <div className="mt-1 flex justify-between cp-mono text-[11px] text-[var(--dim)]">
+                  <span>800</span>
+                  <span>6.000</span>
+                </div>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { label: 'Proteína', value: proteinPct, setter: setProteinPct, color: '#8c82ff', gram: proteinTarget },
+                  { label: 'Carboidrato', value: carbsPct, setter: setCarbsPct, color: '#ffb547', gram: carbsTarget },
+                  { label: 'Gordura', value: fatPct, setter: setFatPct, color: '#2ee6c8', gram: fatTarget },
+                ].map(({ label, value, setter, color, gram }) => (
+                  <div key={label}>
+                    <div className="flex items-baseline justify-between">
+                      <span className="flex items-center gap-2 text-[14px] font-medium">
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ background: color }} />
+                        {label}
+                      </span>
+                      <span className="cp-mono text-[12px] text-[var(--muted)]">
+                        <span className="text-white text-[14px] font-semibold">{value}%</span> · {gram} g
+                      </span>
+                    </div>
+                    <input
+                      type="range"
+                      min={10}
+                      max={60}
+                      value={value}
+                      onChange={(e) => setter(Number(e.target.value))}
+                      aria-label={`${label} em %`}
+                      className="cp-range mt-2 w-full"
+                      style={{ ['--cp-range-color' as string]: color }}
+                    />
+                  </div>
+                ))}
+                <p className={`text-[12.5px] ${macroSum === 100 ? 'text-[var(--teal)]' : 'text-[var(--amber)]'}`}>
+                  {macroSum === 100 ? 'Distribuição fechada em 100%.' : `Os macros somam ${macroSum}% — ajuste para 100%.`}
+                </p>
+              </div>
             </div>
-          </div>
+          </section>
 
-          {activeMeal && (
-            <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="dark:text-white text-slate-900 text-sm" style={{ fontWeight: 600 }}>
-                  {meals.find((m) => m.id === activeMeal)?.icon} {meals.find((m) => m.id === activeMeal)?.name}
-                </h3>
-                <div className="flex items-center gap-1.5 text-xs dark:text-zinc-500 text-slate-400">
-                  <Clock className="w-3 h-3" />{meals.find((m) => m.id === activeMeal)?.time}
-                </div>
-              </div>
-              <div className="flex gap-3 mb-4">
-                <div className="flex-1 relative">
-                  <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400" />
-                  <input type="text" value={foodSearch} onChange={(e) => setFoodSearch(e.target.value)} placeholder="Buscar alimento..."
-                    className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-zinc-200 text-slate-700 dark:placeholder:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500/30" />
-                </div>
-                <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)}
-                  className="px-3 py-2.5 rounded-xl text-sm dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-zinc-200 text-slate-700 focus:outline-none focus:ring-2 focus:ring-amber-500/30">
-                  <option value="all">Todos</option>
-                  <option value="protein">Proteína</option>
-                  <option value="carb">Carboidrato</option>
-                  <option value="fat">Gordura</option>
-                  <option value="vegetable">Vegetal</option>
-                  <option value="fruit">Fruta</option>
-                  <option value="dairy">Laticínio</option>
-                </select>
-              </div>
-              <div className="max-h-64 overflow-y-auto space-y-2 pr-1">
-                {filteredFoods.map((food) => {
-                  const cat = categoryColors[food.category];
+          {/* 3. Refeições */}
+          <section className="rounded-[22px] border border-[var(--line)] bg-white/[0.025] overflow-hidden">
+            <div className="p-5 sm:p-6 border-b border-[var(--line)]">
+              <StepTitle n={3}>Refeições do dia</StepTitle>
+              <div className="grid grid-cols-2 sm:grid-cols-3 2xl:grid-cols-6 gap-2">
+                {meals.map((meal) => {
+                  const on = activeMeal === meal.id;
+                  const kcal = Math.round(getMealCalories(meal));
                   return (
-                    <motion.div key={food.id} whileHover={{ scale: 1.01 }} onClick={() => addFoodToMeal(activeMeal, food)}
-                      className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200 hover:dark:border-amber-500/40 hover:border-amber-400/40 transition-all cursor-pointer group">
-                      <div className={`w-8 h-8 rounded-lg ${cat.bg} flex items-center justify-center flex-shrink-0 ${cat.text}`}>{cat.icon}</div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm dark:text-white text-slate-900 truncate" style={{ fontWeight: 500 }}>{food.name}</p>
-                        <p className="text-xs dark:text-zinc-500 text-slate-400">{food.calories} kcal / 100{food.unit} • P {food.protein}g C {food.carbs}g G {food.fat}g</p>
-                      </div>
-                      <div className="w-7 h-7 rounded-lg bg-amber-500/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
-                        <Plus className="w-4 h-4 text-amber-500" />
-                      </div>
-                    </motion.div>
+                    <button
+                      key={meal.id}
+                      type="button"
+                      onClick={() => setActiveMeal(meal.id)}
+                      aria-pressed={on}
+                      className={`text-left rounded-2xl border px-3.5 py-3 transition-[background,border-color] ${
+                        on ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.12)]' : 'border-[var(--line)] hover:bg-white/[0.04]'
+                      }`}
+                    >
+                      <span className="flex items-center justify-between">
+                        <span className="text-[18px]" aria-hidden>{meal.icon}</span>
+                        <span className="cp-mono text-[11px] text-[var(--dim)]">{meal.time}</span>
+                      </span>
+                      <span className="mt-1.5 block text-[13.5px] font-semibold leading-tight">{meal.name}</span>
+                      <span className="mt-1 block cp-mono text-[11px] text-[var(--muted)]">
+                        {meal.foods.length ? `${kcal} kcal · ${meal.foods.length} itens` : 'vazia'}
+                      </span>
+                    </button>
                   );
                 })}
-                {filteredFoods.length === 0 && <div className="text-center py-8 dark:text-zinc-600 text-slate-400 text-sm">Nenhum alimento encontrado</div>}
               </div>
             </div>
-          )}
 
-          {activeMeal && (
-            <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="dark:text-white text-slate-900 text-sm" style={{ fontWeight: 600 }}>Alimentos na Refeição</h3>
-                <span className="text-amber-500 text-sm" style={{ fontWeight: 700 }}>
-                  {Math.round(getMealCalories(meals.find((m) => m.id === activeMeal)!))} kcal
-                </span>
-              </div>
-              {(meals.find((m) => m.id === activeMeal)?.foods || []).length === 0 ? (
-                <div className="text-center py-6 dark:text-zinc-600 text-slate-400 text-sm">
-                  <Utensils className="w-10 h-10 mx-auto mb-2 opacity-30" />
-                  Adicione alimentos da lista acima
+            {active && (
+              <div className="grid 2xl:grid-cols-[1.25fr_1fr]">
+                {/* base de alimentos */}
+                <div className="p-5 sm:p-6 border-b 2xl:border-b-0 2xl:border-r border-[var(--line)] min-w-0">
+                  <p className="cp-kicker mb-3">Adicionar em {active.name}</p>
+                  <div className="relative">
+                    <Search className="w-4 h-4 absolute left-4 top-1/2 -translate-y-1/2 text-[var(--dim)] pointer-events-none" />
+                    <input
+                      type="text"
+                      value={foodSearch}
+                      onChange={(e) => setFoodSearch(e.target.value)}
+                      placeholder="Buscar alimento…"
+                      className="cp-field h-11"
+                    />
+                  </div>
+                  <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                    {['all', ...Object.keys(categoryLabels)].map((c) => {
+                      const on = categoryFilter === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCategoryFilter(c)}
+                          aria-pressed={on}
+                          className={`shrink-0 h-8 px-3 rounded-full border text-[12.5px] font-medium transition-colors ${
+                            on ? 'border-[var(--brand-400)] bg-[rgba(85,70,255,0.16)] text-white' : 'border-[var(--line-2)] text-[var(--muted)] hover:text-white'
+                          }`}
+                        >
+                          {c === 'all' ? 'Todos' : shortCat[c]}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <ul className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-2 gap-2 max-h-[440px] overflow-y-auto pr-1">
+                    {filteredFoods.map((food) => (
+                      <li key={food.id}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            addFoodToMeal(active.id, food);
+                            toast.success('Alimento adicionado', { description: `${food.name} · ${active.name}` });
+                          }}
+                          className="cp-spot group relative w-full text-left rounded-2xl border border-[var(--line)] bg-white/[0.02] p-3 hover:bg-white/[0.05] transition-colors"
+                        >
+                          <span className="flex items-start justify-between gap-2">
+                            <span className="text-[14px] font-semibold leading-snug">{food.name}</span>
+                            <span className="w-7 h-7 shrink-0 rounded-full grid place-items-center border border-[var(--line-2)] text-white group-hover:bg-[rgba(85,70,255,0.2)]">
+                              <Plus className="w-3.5 h-3.5" />
+                            </span>
+                          </span>
+                          <span className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1">
+                            <Badge tone={catTone[food.category]}>{shortCat[food.category]}</Badge>
+                            <span className="cp-mono text-[11px] text-[var(--dim)] whitespace-nowrap">
+                              {food.calories} kcal/100{food.unit}
+                            </span>
+                          </span>
+                          <span className="mt-2 block cp-mono text-[10.5px] text-[var(--muted)]">
+                            P {food.protein}g · C {food.carbs}g · G {food.fat}g
+                          </span>
+                        </button>
+                      </li>
+                    ))}
+                    {filteredFoods.length === 0 && (
+                      <li className="col-span-full py-10 text-center text-[14px] text-[var(--muted)]">Nenhum alimento encontrado.</li>
+                    )}
+                  </ul>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {(meals.find((m) => m.id === activeMeal)?.foods || []).map((mf) => (
-                    <div key={mf.id} className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs dark:text-white text-slate-900 mb-1 truncate" style={{ fontWeight: 500 }}>{mf.food.name}</p>
-                        <p className="text-xs dark:text-zinc-500 text-slate-400">{Math.round((mf.food.calories * mf.quantity) / 100)} kcal</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <input type="number" value={mf.quantity} onChange={(e) => updateQuantity(activeMeal, mf.id, Number(e.target.value))}
-                          className="w-16 px-2 py-1 rounded-lg text-xs dark:bg-zinc-700 bg-white border dark:border-zinc-600 border-slate-200 dark:text-white text-slate-900 text-center focus:outline-none" />
-                        <span className="text-xs dark:text-zinc-500 text-slate-400">{mf.food.unit}</span>
-                      </div>
-                      <button onClick={() => removeFoodFromMeal(activeMeal, mf.id)}
-                        className="w-7 h-7 rounded-lg dark:bg-red-500/10 bg-red-50 flex items-center justify-center text-red-400 hover:dark:bg-red-500/20 hover:bg-red-100 transition-colors flex-shrink-0">
-                        <X className="w-3 h-3" />
-                      </button>
+
+                {/* itens da refeição */}
+                <div className="p-5 sm:p-6 min-w-0">
+                  <div className="flex items-center justify-between">
+                    <p className="flex items-center gap-2 font-semibold">
+                      <span aria-hidden>{active.icon}</span> {active.name}
+                    </p>
+                    <span className="cp-mono text-[12px] text-[var(--muted)]">{Math.round(getMealCalories(active))} kcal</span>
+                  </div>
+                  {active.foods.length === 0 ? (
+                    <div className="py-12 text-center">
+                      <Utensils className="w-8 h-8 mx-auto text-[var(--dim)]" />
+                      <p className="mt-3 text-[14px] text-[var(--muted)]">Refeição vazia</p>
+                      <p className="mt-1 text-[12.5px] text-[var(--dim)]">Toque em um alimento ao lado para adicionar.</p>
                     </div>
-                  ))}
+                  ) : (
+                    <ul className="mt-4 space-y-2">
+                      <AnimatePresence initial={false}>
+                        {active.foods.map((mf) => (
+                          <motion.li
+                            key={mf.id}
+                            layout
+                            initial={{ opacity: 0, x: 12 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -12 }}
+                            className="flex items-center gap-3 rounded-2xl border border-[var(--line)] px-3.5 py-2.5"
+                          >
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[14px] font-medium leading-snug">{mf.food.name}</p>
+                              <p className="cp-mono text-[11px] text-[var(--dim)]">
+                                {Math.round((mf.food.calories * mf.quantity) / 100)} kcal
+                              </p>
+                            </div>
+                            <div className="relative">
+                              <input
+                                type="number"
+                                min={0}
+                                max={2000}
+                                value={mf.quantity}
+                                onChange={(e) => updateQuantity(active.id, mf.id, Math.max(0, Math.min(2000, Number(e.target.value) || 0)))}
+                                aria-label={`Quantidade de ${mf.food.name}`}
+                                className="w-24 h-9 rounded-full border border-[var(--line-2)] bg-white/[0.03] pl-3 pr-8 text-[13px] text-white focus:outline-none focus:border-[var(--brand-400)]"
+                              />
+                              <span className="cp-mono absolute right-3 top-1/2 -translate-y-1/2 text-[11px] text-[var(--dim)]">{mf.food.unit}</span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => removeFoodFromMeal(active.id, mf.id)}
+                              aria-label={`Remover ${mf.food.name}`}
+                              className="w-8 h-8 rounded-full grid place-items-center text-[var(--muted)] hover:text-[#ff8a95]"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </motion.li>
+                        ))}
+                      </AnimatePresence>
+                    </ul>
+                  )}
                 </div>
-              )}
-            </div>
-          )}
+              </div>
+            )}
+          </section>
+
+          {/* Lista de compras */}
+          <AnimatePresence>
+            {showShoppingList && (
+              <motion.section
+                id="shopping-section"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 8 }}
+                className="cp-print-area rounded-[22px] border border-[var(--line-2)] bg-[#0d0f18] overflow-hidden"
+              >
+                <span aria-hidden className="cp-modal-bar" />
+                <div className="p-5 sm:p-6 flex flex-wrap items-center justify-between gap-4 border-b border-[var(--line)]">
+                  <div>
+                    <p className="cp-kicker">Lista de compras</p>
+                    <h2 className="cp-display mt-1 text-[22px] font-bold">
+                      {planName || 'Plano alimentar'}
+                      {patientData ? ` · ${patientData.name}` : ''}
+                    </h2>
+                    <p className="mt-1 text-[13px] text-[var(--muted)]">
+                      {totalFoodItems} itens · quantidades para {shoppingDays} dias
+                    </p>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 cp-no-print">
+                    <Segmented
+                      size="sm"
+                      layoutId="shop-days"
+                      value={String(shoppingDays)}
+                      onChange={(v) => setShoppingDays(Number(v))}
+                      options={[7, 15, 30, 60].map((d) => ({ value: String(d), label: `${d} dias` }))}
+                    />
+                    <button type="button" onClick={() => window.print()} disabled={totalFoodItems === 0} className="cp-btn-sm disabled:opacity-40">
+                      <Printer className="w-4 h-4" /> Imprimir / PDF
+                    </button>
+                  </div>
+                </div>
+                {totalFoodItems === 0 ? (
+                  <p className="px-6 py-10 text-center text-[14px] text-[var(--muted)]">Adicione alimentos às refeições para gerar a lista.</p>
+                ) : (
+                  <div className="p-5 sm:p-6 grid md:grid-cols-2 gap-5">
+                    {Object.entries(shoppingByCategory).map(([cat, items]) => (
+                      <div key={cat} className="rounded-2xl border border-[var(--line)] p-4">
+                        <p className="flex items-center gap-2 font-semibold">
+                          <Badge tone={catTone[cat]}>{categoryLabels[cat]}</Badge>
+                        </p>
+                        <ul className="mt-3 divide-y divide-[var(--line)]">
+                          {items.map((it) => (
+                            <li key={it.foodId} className="flex items-center justify-between gap-3 py-2 text-[14px]">
+                              <span>{it.name}</span>
+                              <span className="text-right">
+                                <span className="font-semibold">{it.displayMonthly}</span>
+                                <span className="block cp-mono text-[10.5px] text-[var(--dim)]">{it.displayDaily}/dia</span>
+                              </span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </motion.section>
+            )}
+          </AnimatePresence>
         </div>
 
-        {/* ──── RIGHT: Summary & Save ──── */}
-        <div className="space-y-5">
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200 sticky top-4">
-            <div className="flex items-center gap-2 mb-5">
-              <BarChart3 className="w-5 h-5 text-amber-500" />
-              <h3 className="dark:text-white text-slate-900 text-sm" style={{ fontWeight: 600 }}>Resumo do Plano</h3>
-            </div>
-
-            <div className="text-center mb-5 p-4 dark:bg-zinc-800/50 bg-slate-50 rounded-2xl border dark:border-zinc-700 border-slate-200">
-              <p className="text-4xl text-amber-500" style={{ fontWeight: 800 }}>{Math.round(totals.calories)}</p>
-              <p className="text-xs dark:text-zinc-500 text-slate-400 mt-1">kcal totais / {targetCalories} meta</p>
-              <div className="w-full h-2 dark:bg-zinc-700 bg-slate-200 rounded-full mt-3 overflow-hidden">
-                <div className="h-full rounded-full transition-all"
-                  style={{ width: `${Math.min(100, (totals.calories / targetCalories) * 100)}%`, background: totals.calories > targetCalories * 1.05 ? 'linear-gradient(90deg,#ef4444,#dc2626)' : 'linear-gradient(90deg,#f59e0b,#d97706)' }} />
-              </div>
-              <p className="text-xs mt-2" style={{ color: totals.calories > targetCalories ? '#ef4444' : '#5a64b4', fontWeight: 600 }}>
-                {totals.calories > targetCalories ? `+${Math.round(totals.calories - targetCalories)} kcal acima` : `${Math.round(targetCalories - totals.calories)} kcal restantes`}
+        {/* Resumo fixo */}
+        <aside className="xl:sticky xl:top-6">
+          <section className="rounded-[22px] border border-[var(--line-2)] bg-[#0d0f18] overflow-hidden">
+            <span aria-hidden className="cp-modal-bar" />
+            <div className="p-5 sm:p-6 border-b border-[var(--line)]">
+              <StepTitle n={4}>Resumo do plano</StepTitle>
+              <p className="cp-display text-[22px] font-bold leading-tight break-words">
+                {planName || <span className="text-[var(--dim)]">Plano sem nome</span>}
               </p>
-            </div>
-
-            <div className="space-y-3 mb-5">
-              {[
-                { label: 'Proteína', current: totals.protein, target: proteinTarget, color: '#3b82f6' },
-                { label: 'Carboidrato', current: totals.carbs, target: carbsTarget, color: '#f59e0b' },
-                { label: 'Gordura', current: totals.fat, target: fatTarget, color: '#ec4899' },
-              ].map(({ label, current, target, color }) => (
-                <div key={label}>
-                  <div className="flex justify-between text-xs mb-1.5">
-                    <span className="dark:text-zinc-400 text-slate-500">{label}</span>
-                    <span style={{ fontWeight: 600, color }}>{Math.round(current)}g / {target}g</span>
-                  </div>
-                  <div className="w-full h-1.5 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
-                    <div className="h-full rounded-full transition-all" style={{ width: `${Math.min(100, (current / target) * 100)}%`, backgroundColor: color }} />
-                  </div>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {patientData && <Badge tone="blue">{patientData.name}</Badge>}
+                <Badge>{duration} semanas</Badge>
+              </div>
+              <div className="mt-5">
+                <div className="flex items-end justify-between">
+                  <p className="cp-display text-[34px] font-bold leading-none">
+                    {Math.round(totals.calories).toLocaleString('pt-BR')}
+                    <span className="ml-1 text-[13px] font-medium text-[var(--muted)]">/ {targetCalories.toLocaleString('pt-BR')} kcal</span>
+                  </p>
                 </div>
-              ))}
-            </div>
-
-            <div className="space-y-2 mb-5">
-              <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider">Por Refeição</p>
-              {meals.map((meal) => {
-                const cal = Math.round(getMealCalories(meal));
-                return (
-                  <div key={meal.id} className="flex items-center gap-2">
-                    <span className="text-xs dark:text-zinc-500 text-slate-400 w-4">{meal.icon}</span>
-                    <span className="text-xs dark:text-zinc-400 text-slate-500 flex-1 truncate">{meal.name}</span>
-                    <span className="text-xs dark:text-zinc-300 text-slate-700" style={{ fontWeight: cal > 0 ? 600 : 400 }}>{cal > 0 ? `${cal} kcal` : '—'}</span>
+                <div className="mt-3 h-2.5 rounded-full bg-white/[0.08] overflow-hidden">
+                  <motion.div
+                    className="h-full rounded-full"
+                    style={{ background: kcalPct > 110 ? '#ff5d6c' : 'linear-gradient(90deg,#2a14e0,#5546ff,#8c82ff)' }}
+                    animate={{ width: `${Math.min(100, kcalPct)}%` }}
+                  />
+                </div>
+                <p className="mt-1.5 cp-mono text-[11px] text-[var(--dim)]">
+                  {kcalPct > 110 ? 'Acima da meta' : `${Math.round(kcalPct)}% da meta diária`}
+                </p>
+              </div>
+              <div className="mt-5 space-y-3">
+                {macroRows.map(({ label, value, target, color }) => (
+                  <div key={label}>
+                    <div className="flex justify-between text-[12.5px]">
+                      <span className="text-[var(--muted)]">{label}</span>
+                      <span className="cp-mono">
+                        {Math.round(value)} / {target} g
+                      </span>
+                    </div>
+                    <div className="mt-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                      <motion.div className="h-full rounded-full" style={{ background: color }} animate={{ width: `${target ? Math.min(100, (value / target) * 100) : 0}%` }} />
+                    </div>
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
 
-            {/* Quick shopping list access */}
-            {totalFoodItems > 0 && (
-              <button
-                onClick={() => { setShowShoppingList(true); setTimeout(() => document.getElementById('shopping-section')?.scrollIntoView({ behavior: 'smooth' }), 100); }}
-                className="w-full flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm mb-3 border dark:border-[#000326]/25 dark:border-white/25 border-[#000326]/30 dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 dark:text-[#5a64b4] dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE] hover:dark:bg-[#000326] dark:bg-white/10 hover:bg-[#000326]/10 transition-all"
-              >
-                <ShoppingCart className="w-4 h-4" />
-                <span className="flex-1 text-left">Ver Lista de Compras</span>
-                <span className="text-xs px-1.5 py-0.5 rounded-full bg-[#000326] dark:bg-white/20" style={{ fontWeight: 700 }}>{totalFoodItems} itens</span>
-              </button>
-            )}
+            <div className="p-5 sm:p-6 border-b border-[var(--line)]">
+              <FieldLabel htmlFor="diet-notes">Orientações ao paciente</FieldLabel>
+              <textarea
+                id="diet-notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                rows={3}
+                maxLength={800}
+                placeholder="Substituições permitidas, hidratação, restrições…"
+                className="cp-field"
+              />
+            </div>
 
-            <div className="space-y-2">
-              <button onClick={handleSave} disabled={saving || !planName || !selectedPatient}
-                className="w-full py-3 rounded-xl text-white transition-all hover:opacity-90 disabled:opacity-50 flex items-center justify-center gap-2 text-sm"
-                style={{ background: 'linear-gradient(135deg,#f59e0b,#d97706)', boxShadow: '0 8px 20px rgba(245,158,11,0.3)', fontWeight: 600 }}>
-                {saving ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Salvando...</> : <><Save className="w-4 h-4" />Salvar Plano</>}
-              </button>
-              <button onClick={() => navigate(patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist')}
-                className="w-full py-2.5 rounded-xl border dark:border-zinc-700 border-slate-300 dark:text-zinc-300 text-slate-700 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all text-sm">
+            <div className="p-5 sm:p-6 space-y-4">
+              <ul className="grid grid-cols-2 gap-x-3 gap-y-1.5">
+                {checklist.map(({ ok, label }) => (
+                  <li key={label} className={`flex items-center gap-2 text-[12.5px] ${ok ? 'text-[var(--cream)]' : 'text-[var(--dim)]'}`}>
+                    {ok ? <Check className="w-3.5 h-3.5 text-[var(--teal)]" strokeWidth={3} /> : <Circle className="w-3.5 h-3.5" />}
+                    {label}
+                  </li>
+                ))}
+              </ul>
+              <CTAButton type="button" block onClick={handleSave} disabled={saving || !planName || !selectedPatient}>
+                {saving ? 'Salvando…' : 'Salvar plano alimentar'}
+              </CTAButton>
+              <button
+                type="button"
+                onClick={() => navigate(backTo)}
+                className="w-full h-10 rounded-full text-[13.5px] text-[var(--muted)] hover:text-white transition-colors"
+              >
                 Cancelar
               </button>
             </div>
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
 
-      {/* ──────────────────────── SHOPPING LIST ──────────────────────── */}
-      <AnimatePresence>
-        {showShoppingList && (
-          <motion.div
-            id="shopping-section"
-            initial={{ opacity: 0, y: 32 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 32 }}
-            transition={{ duration: 0.35, ease: 'easeOut' }}
-            className="mt-8"
-          >
-            <div className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden">
+      <MobileActionBar>
+        <p className="text-[13px] text-[var(--muted)]">
+          <span className="text-white font-semibold">{Math.round(totals.calories)}</span> / {targetCalories} kcal
+        </p>
+        <button
+          type="button"
+          onClick={handleSave}
+          disabled={saving || !planName || !selectedPatient}
+          className="cp-selected h-10 px-5 rounded-full text-[14px] font-semibold disabled:opacity-40"
+        >
+          {saving ? 'Salvando…' : 'Salvar'}
+        </button>
+      </MobileActionBar>
+    </Page>
+  );
+}
 
-              {/* ── Banner ── */}
-              <div className="relative p-6 lg:p-8 overflow-hidden" style={{ background: 'linear-gradient(135deg,#5a64b4,#000346,#047857)' }}>
-                <div className="absolute -top-10 -right-10 w-52 h-52 rounded-full bg-white/10" />
-                <div className="absolute bottom-0 right-32 w-32 h-32 rounded-full bg-white/5" />
-                <div className="absolute top-4 left-1/2 w-16 h-16 rounded-full bg-white/5" />
-
-                <div className="relative flex items-start justify-between flex-wrap gap-6">
-                  <div>
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                        <ShoppingCart className="w-6 h-6 text-white" />
-                      </div>
-                      <div>
-                        <h2 className="text-white text-xl" style={{ fontWeight: 700 }}>Lista de Compras</h2>
-                        <p className="text-white/70 text-sm">Totalização dos alimentos do plano alimentar</p>
-                      </div>
-                    </div>
-
-                    {/* Summary chips */}
-                    <div className="flex flex-wrap gap-2 mt-4">
-                      {[
-                        { label: 'Itens', value: totalFoodItems, icon: Tag },
-                        { label: 'Categorias', value: Object.keys(shoppingByCategory).length, icon: Package },
-                        { label: 'Período', value: `${shoppingDays} dias`, icon: Calendar },
-                        { label: 'Refeições', value: `${meals.filter(m => m.foods.length > 0).length}/${meals.length}`, icon: Utensils },
-                      ].map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/15 backdrop-blur-sm">
-                          <Icon className="w-3.5 h-3.5 text-white/80" />
-                          <span className="text-xs text-white/80">{label}:</span>
-                          <span className="text-xs text-white" style={{ fontWeight: 700 }}>{value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    {/* Period selector */}
-                    <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-4 py-2.5">
-                      <Calendar className="w-4 h-4 text-white/80" />
-                      <span className="text-xs text-white/80 mr-1">Período:</span>
-                      {[7, 15, 30, 60].map((d) => (
-                        <button key={d} onClick={() => setShoppingDays(d)}
-                          className={`px-2.5 py-1 rounded-lg text-xs transition-all ${shoppingDays === d ? 'bg-white text-[#000326] dark:text-[#C5C5CE] shadow-sm' : 'text-white/70 hover:bg-white/15'}`}
-                          style={{ fontWeight: shoppingDays === d ? 700 : 400 }}>
-                          {d === 7 ? '7d' : d === 15 ? '15d' : d === 30 ? '1 mês' : '2 meses'}
-                        </button>
-                      ))}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex gap-2 justify-end">
-                      <button onClick={() => toast.success('Lista exportada em PDF!')}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 backdrop-blur-sm text-white text-xs hover:bg-white/25 transition-all" style={{ fontWeight: 600 }}>
-                        <Download className="w-3.5 h-3.5" /> PDF
-                      </button>
-                      <button onClick={() => toast.success('Enviando para impressão...')}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/15 backdrop-blur-sm text-white text-xs hover:bg-white/25 transition-all" style={{ fontWeight: 600 }}>
-                        <Printer className="w-3.5 h-3.5" /> Imprimir
-                      </button>
-                      <button onClick={() => setShowShoppingList(false)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white/10 backdrop-blur-sm text-white/80 text-xs hover:bg-white/20 transition-all">
-                        <X className="w-3.5 h-3.5" /> Fechar
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* ── Empty state ── */}
-              {totalFoodItems === 0 && (
-                <div className="text-center py-20">
-                  <ShoppingCart className="w-16 h-16 mx-auto mb-4 dark:text-zinc-700 text-slate-300 opacity-60" />
-                  <p className="text-sm dark:text-zinc-500 text-slate-400" style={{ fontWeight: 500 }}>Adicione alimentos às refeições para gerar a lista</p>
-                  <p className="text-xs dark:text-zinc-600 text-slate-300 mt-1">A soma mensal será calculada automaticamente</p>
-                </div>
-              )}
-
-              {totalFoodItems > 0 && (
-                <div className="p-6 lg:p-8">
-
-                  {/* ── Category summary bar ── */}
-                  <div className="flex flex-wrap gap-3 mb-8 p-4 dark:bg-zinc-800/40 bg-slate-50 rounded-2xl border dark:border-zinc-700 border-slate-200">
-                    <p className="text-xs dark:text-zinc-500 text-slate-400 w-full" style={{ fontWeight: 600, letterSpacing: '0.05em' }}>RESUMO POR CATEGORIA</p>
-                    {Object.entries(shoppingByCategory).map(([cat, items]) => {
-                      const [c1] = getCategoryColors(cat);
-                      return (
-                        <div key={cat} className="flex items-center gap-2 px-3 py-1.5 rounded-xl border dark:border-zinc-700 border-slate-200 dark:bg-zinc-800/50 bg-white">
-                          <div className="w-5 h-5 rounded-md flex items-center justify-center" style={{ backgroundColor: `${c1}20` }}>
-                            <span style={{ color: c1 }}>{categoryIconsLg[cat]}</span>
-                          </div>
-                          <span className="text-xs dark:text-zinc-300 text-slate-600">{categoryLabels[cat]}</span>
-                          <span className="text-xs px-1.5 py-0.5 rounded-md" style={{ backgroundColor: `${c1}20`, color: c1, fontWeight: 700 }}>{items.length}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Category cards grid ── */}
-                  <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-5 mb-8">
-                    {Object.entries(shoppingByCategory).map(([cat, items]) => {
-                      const [c1, c2] = getCategoryColors(cat);
-                      return (
-                        <div key={cat} className="dark:bg-zinc-800/30 bg-slate-50 rounded-2xl border dark:border-zinc-700 border-slate-200 overflow-hidden">
-                          {/* Category header */}
-                          <div className={`flex items-center gap-3 px-4 py-3 bg-gradient-to-r ${categoryGradients[cat]}`}>
-                            <div className="w-8 h-8 rounded-xl bg-white/20 flex items-center justify-center text-white flex-shrink-0">
-                              {categoryIconsLg[cat]}
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-sm text-white" style={{ fontWeight: 700 }}>{categoryLabels[cat]}</p>
-                              <p className="text-xs text-white/70">{items.length} {items.length === 1 ? 'item' : 'itens'}</p>
-                            </div>
-                            <span className="text-xs px-2 py-1 rounded-lg bg-white/20 text-white" style={{ fontWeight: 700 }}>{shoppingDays}d</span>
-                          </div>
-
-                          {/* Items list */}
-                          <div className="divide-y dark:divide-zinc-700/60 divide-slate-200">
-                            {items.map((item, idx) => (
-                              <div key={item.foodId} className="flex items-center gap-3 px-4 py-3 hover:dark:bg-zinc-700/20 hover:bg-slate-100 transition-colors">
-                                {/* Index badge */}
-                                <div className="w-6 h-6 rounded-full flex items-center justify-center text-white flex-shrink-0 text-xs"
-                                  style={{ background: `linear-gradient(135deg,${c1},${c2})`, fontWeight: 700 }}>
-                                  {idx + 1}
-                                </div>
-
-                                {/* Name + daily */}
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm dark:text-white text-slate-900 truncate" style={{ fontWeight: 500 }}>{item.name}</p>
-                                  <p className="text-xs dark:text-zinc-500 text-slate-400">
-                                    {item.displayDaily}/dia × {shoppingDays} dias
-                                  </p>
-                                </div>
-
-                                {/* Monthly total */}
-                                <div className="text-right flex-shrink-0">
-                                  <p className="text-sm" style={{ color: c1, fontWeight: 700 }}>{item.displayMonthly}</p>
-                                  <p className="text-xs dark:text-zinc-600 text-slate-400">total</p>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-
-                          {/* Category total footer */}
-                          <div className="px-4 py-2.5 dark:bg-zinc-800/60 bg-slate-100/80 border-t dark:border-zinc-700 border-slate-200 flex items-center justify-between">
-                            <span className="text-xs dark:text-zinc-500 text-slate-400">
-                              {items.length} produto{items.length !== 1 ? 's' : ''}
-                            </span>
-                            <span className="text-xs" style={{ color: c1, fontWeight: 600 }}>
-                              {categoryLabels[cat].split(' ')[0]}
-                            </span>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Full table ── */}
-                  <div className="dark:bg-zinc-800/30 bg-white rounded-2xl border dark:border-zinc-700 border-slate-200 overflow-hidden">
-                    {/* Table header */}
-                    <div className="flex items-center gap-3 px-6 py-4 border-b dark:border-zinc-700 border-slate-200">
-                      <ShoppingCart className="w-5 h-5 text-[#000326] dark:text-white" />
-                      <div>
-                        <h4 className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 700 }}>
-                          Lista Completa — {shoppingDays === 7 ? '1 semana' : shoppingDays === 30 ? '1 mês' : shoppingDays === 60 ? '2 meses' : `${shoppingDays} dias`}
-                        </h4>
-                        <p className="text-xs dark:text-zinc-500 text-slate-400">Quantidade diária × {shoppingDays} dias</p>
-                      </div>
-                      <div className="ml-auto flex items-center gap-3">
-                        <span className="text-xs px-2.5 py-1 rounded-full bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 700 }}>
-                          {totalFoodItems} itens
-                        </span>
-                        <button onClick={() => toast.success('Lista exportada!')}
-                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:dark:text-[#5a64b4] dark:text-[#C5C5CE] transition-all" style={{ fontWeight: 600 }}>
-                          <Download className="w-3.5 h-3.5" /> Exportar
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Table */}
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b dark:border-zinc-700 border-slate-200">
-                            <th className="text-left px-6 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider w-10" style={{ fontWeight: 600 }}>#</th>
-                            <th className="text-left px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Alimento</th>
-                            <th className="text-center px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider hidden md:table-cell" style={{ fontWeight: 600 }}>Categoria</th>
-                            <th className="text-right px-4 py-3 text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider" style={{ fontWeight: 600 }}>Qtd / dia</th>
-                            <th className="text-right px-6 py-3 text-xs text-[#000326] dark:text-white uppercase tracking-wider" style={{ fontWeight: 700 }}>Total {shoppingDays} dias</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {shoppingList.map((item, idx) => {
-                            const [c1] = getCategoryColors(item.category);
-                            const cat = categoryColors[item.category];
-                            return (
-                              <tr key={item.foodId} className={`border-b dark:border-zinc-800 border-slate-100 hover:dark:bg-zinc-800/30 hover:bg-slate-50 transition-colors ${idx === shoppingList.length - 1 ? 'border-0' : ''}`}>
-                                <td className="px-6 py-3.5">
-                                  <span className="text-xs dark:text-zinc-600 text-slate-400" style={{ fontWeight: 600 }}>{String(idx + 1).padStart(2, '0')}</span>
-                                </td>
-                                <td className="px-4 py-3.5">
-                                  <div className="flex items-center gap-2.5">
-                                    <div className={`w-7 h-7 rounded-lg ${cat.bg} flex items-center justify-center ${cat.text} flex-shrink-0`}>
-                                      {cat.icon}
-                                    </div>
-                                    <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 500 }}>{item.name}</p>
-                                  </div>
-                                </td>
-                                <td className="px-4 py-3.5 text-center hidden md:table-cell">
-                                  <span className={`text-xs px-2 py-0.5 rounded-full ${cat.bg} ${cat.text}`} style={{ fontWeight: 600 }}>
-                                    {categoryLabels[item.category]}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-3.5 text-right">
-                                  <span className="text-xs dark:text-zinc-400 text-slate-600 tabular-nums" style={{ fontWeight: 500 }}>{item.displayDaily}</span>
-                                </td>
-                                <td className="px-6 py-3.5 text-right">
-                                  <span className="text-sm tabular-nums" style={{ color: c1, fontWeight: 700 }}>{item.displayMonthly}</span>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-
-                    {/* Footer note */}
-                    <div className="flex items-center justify-between flex-wrap gap-3 px-6 py-4 dark:bg-zinc-800/50 bg-slate-50 border-t dark:border-zinc-700 border-slate-200">
-                      <p className="text-xs dark:text-zinc-500 text-slate-400">
-                        ✦ Quantidades calculadas com base na soma de todas as refeições diárias × {shoppingDays} dias.
-                        Conversão automática: g → kg (≥ 1.000g) · ml → L (≥ 1.000ml).
-                      </p>
-                      <div className="flex gap-2">
-                        <button onClick={() => toast.success('PDF gerado!')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-[#000326] dark:border-white hover:dark:text-[#5a64b4] dark:text-[#C5C5CE] transition-all" style={{ fontWeight: 600 }}>
-                          <Download className="w-3.5 h-3.5" /> PDF
-                        </button>
-                        <button onClick={() => toast.success('Imprimindo...')}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-700 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-blue-500 hover:dark:text-blue-400 transition-all" style={{ fontWeight: 600 }}>
-                          <Printer className="w-3.5 h-3.5" /> Imprimir
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+function StepTitle({ n, children }: { n: number; children: React.ReactNode }) {
+  return (
+    <div className="flex items-center gap-3 mb-5">
+      <span className="cp-mono w-7 h-7 rounded-lg grid place-items-center text-[12px] cp-selected">{n}</span>
+      <h2 className="cp-display text-[18px] font-bold">{children}</h2>
     </div>
   );
 }

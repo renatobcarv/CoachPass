@@ -2,12 +2,16 @@ import type { CollectionConfig, Where } from 'payload'
 
 import { isSuperUser } from '../access/isSuper'
 import { userId, userRole } from '../access/roles'
+import { mealPlanGuard } from '../hooks/mealPlanGuard'
 
 export const MealPlans: CollectionConfig = {
   slug: 'meal-plans',
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'student', 'status', 'source', 'updatedAt'],
+  },
+  hooks: {
+    beforeChange: [mealPlanGuard],
   },
   access: {
     create: ({ req }) => {

@@ -16,6 +16,7 @@ import { toast } from 'sonner'
 import { useAuth, UserRole } from '../../context/AuthContext'
 import { USERS_API, patchJson, postJson, PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 import { saveProProfile } from '../../lib/proProfile'
+import { credentialError, maskPhoneBR, phoneError } from '../../lib/validation'
 import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
 
 type ProfessionalType = 'personal' | 'nutritionist'
@@ -170,8 +171,14 @@ export function ProfessionalOnboarding() {
   useEffect(() => () => window.clearTimeout(timer.current), [])
   const current = STEPS[step]
 
-  const valid = (id: StepId) =>
-    id === 'area' ? Boolean(data.professionalType) : id === 'credential' || id === 'review' ? Boolean(data.professionalType && data.credential.trim()) : true
+  const valid = (id: StepId) => {
+    if (id === 'area') return Boolean(data.professionalType)
+    if (id === 'credential') return !credentialError(data.credential, type)
+    if (id === 'phone') return !phoneError(data.phone, false)
+    if (id === 'review')
+      return Boolean(data.professionalType) && !credentialError(data.credential, type) && !phoneError(data.phone, false)
+    return true
+  }
 
   const hasValue = (id: StepId) => {
     switch (id) {
@@ -294,10 +301,17 @@ export function ProfessionalOnboarding() {
               autoFocus
               type="text"
               value={data.credential}
-              onChange={(e) => setData({ ...data, credential: e.target.value })}
+              onChange={(e) => setData({ ...data, credential: e.target.value.toUpperCase() })}
               placeholder={isNutri ? '12345/SP' : '123456-G/SP'}
+              maxLength={30}
+              autoCapitalize="characters"
+              spellCheck={false}
+              aria-invalid={Boolean(data.credential) && Boolean(credentialError(data.credential, type))}
               className="cp-field cp-field-lg pl-14"
             />
+            {data.credential && credentialError(data.credential, type) && (
+              <p role="alert" className="mt-3 text-[13.5px] text-[#ff8a95]">{credentialError(data.credential, type)}</p>
+            )}
           </div>
         )
       case 'phone':
@@ -308,10 +322,17 @@ export function ProfessionalOnboarding() {
               autoFocus
               type="tel"
               value={data.phone}
-              onChange={(e) => setData({ ...data, phone: e.target.value })}
-              placeholder="(00) 00000-0000"
+              onChange={(e) => setData({ ...data, phone: maskPhoneBR(e.target.value) })}
+              placeholder="(11) 98765-4321"
+              inputMode="numeric"
+              autoComplete="tel-national"
+              maxLength={15}
+              aria-invalid={Boolean(phoneError(data.phone, false))}
               className="cp-field cp-field-lg pl-14"
             />
+            {phoneError(data.phone, false) && (
+              <p role="alert" className="mt-3 text-[13.5px] text-[#ff8a95]">{phoneError(data.phone, false)}</p>
+            )}
           </div>
         )
       case 'specialties':

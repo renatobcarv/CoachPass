@@ -74,6 +74,7 @@ export interface Config {
     workouts: Workout;
     'meal-plans': MealPlan;
     'ai-generations': AiGeneration;
+    anamneses: Anamnesis;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -88,6 +89,7 @@ export interface Config {
     workouts: WorkoutsSelect<false> | WorkoutsSelect<true>;
     'meal-plans': MealPlansSelect<false> | MealPlansSelect<true>;
     'ai-generations': AiGenerationsSelect<false> | AiGenerationsSelect<true>;
+    anamneses: AnamnesesSelect<false> | AnamnesesSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -220,6 +222,15 @@ export interface ProfessionalLink {
   professionalRole: 'personal' | 'nutritionist';
   status: 'pending' | 'active' | 'revoked';
   notes?: string | null;
+  studentInfo?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -310,6 +321,38 @@ export interface AiGeneration {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anamneses".
+ */
+export interface Anamnesis {
+  id: number;
+  /**
+   * Nutricionista responsável pela anamnese
+   */
+  author: number | User;
+  /**
+   * Paciente associado
+   */
+  patient: number | User;
+  status: 'draft' | 'completed';
+  templateId?: string | null;
+  /**
+   * Respostas estruturadas das seções da anamnese
+   */
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -359,6 +402,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ai-generations';
         value: number | AiGeneration;
+      } | null)
+    | ({
+        relationTo: 'anamneses';
+        value: number | Anamnesis;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -486,6 +533,7 @@ export interface ProfessionalLinksSelect<T extends boolean = true> {
   professionalRole?: T;
   status?: T;
   notes?: T;
+  studentInfo?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -565,6 +613,20 @@ export interface AiGenerationsSelect<T extends boolean = true> {
   provider?: T;
   errorMessage?: T;
   resultId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "anamneses_select".
+ */
+export interface AnamnesesSelect<T extends boolean = true> {
+  author?: T;
+  patient?: T;
+  status?: T;
+  templateId?: T;
+  data?: T;
+  completedAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }

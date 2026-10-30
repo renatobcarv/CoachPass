@@ -43,6 +43,7 @@ type LinkDoc = {
         name?: string
         email?: string
       }
+  studentInfo?: { name?: string | null; email?: string | null } | null
 }
 
 type ListResponse = { docs: LinkDoc[] }
@@ -55,12 +56,9 @@ function mapLink(doc: LinkDoc): StudentRow | null {
       ? String(student.id)
       : String(student || '')
   if (!id) return null
-  const name =
-    typeof student === 'object' && student
-      ? student.name || student.email || 'Aluno'
-      : 'Aluno'
-  const email =
-    typeof student === 'object' && student ? student.email || '' : ''
+  const obj = typeof student === 'object' && student ? student : null
+  const email = obj?.email || doc.studentInfo?.email || ''
+  const name = obj?.name || doc.studentInfo?.name || email || 'Aluno'
   return {
     id,
     linkId: String(doc.id),

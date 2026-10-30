@@ -208,6 +208,30 @@ export async function saveStudentProfile(
   return createStudentProfile(payload, token)
 }
 
+export async function fetchPendingProfessionalLinks(
+  studentId: string,
+  token: string,
+): Promise<ProfessionalLink[]> {
+  const data = await getJson<ListResponse<ProfessionalLink>>(
+    `${PROFESSIONAL_LINKS_API}${qs({
+      'where[and][0][student][equals]': studentId,
+      'where[and][1][status][equals]': 'pending',
+      depth: 1,
+      limit: 20,
+    })}`,
+    token,
+  )
+  return data.docs
+}
+
+export async function respondProfessionalLink(
+  linkId: string | number,
+  status: 'active' | 'revoked',
+  token: string,
+): Promise<ProfessionalLink> {
+  return patchJson<ProfessionalLink>(`${PROFESSIONAL_LINKS_API}/${linkId}`, { status }, token)
+}
+
 export async function fetchActiveProfessionalLinks(
   studentId: string,
   token: string,

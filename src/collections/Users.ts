@@ -3,6 +3,7 @@ import { ValidationError } from 'payload'
 import { formatAdminURL } from 'payload/shared'
 
 import { isSuperUser } from '../access/isSuper'
+import { passwordProblem, phoneField } from './validators'
 
 function adminServerURL(req: PayloadRequest): string {
   const config = req.payload.config
@@ -23,6 +24,9 @@ export const Users: CollectionConfig = {
     useAsTitle: 'email',
   },
   auth: {
+    // Proteção contra força bruta: após 5 senhas erradas, a conta fica bloqueada por 10 minutos.
+    maxLoginAttempts: 5,
+    lockTime: 10 * 60 * 1000,
     forgotPassword: {
       generateEmailSubject: () => 'FitSync — Redefinir senha do painel',
       generateEmailHTML: (args) => {
@@ -70,6 +74,17 @@ export const Users: CollectionConfig = {
       ({ data, operation, req, collection }) => {
         const bypass =
           req.context?.allowMasterCreate === true || req.context?.seedMaster === true
+        // Política de senha vale para todos (inclusive super), exceto seed interno
+        if (data && !bypass && typeof data.password === 'string') {
+          const problem = passwordProblem(data.password)
+          if (problem) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'password', message: problem }],
+            })
+          }
+        }
+
         if (!data || bypass || isSuperUser(req)) return data
 
         if (operation === 'create') {
@@ -121,6 +136,7 @@ export const Users: CollectionConfig = {
       type: 'text',
       required: false,
       label: 'Nome completo',
+      maxLength: 120,
     },
     {
       name: 'isSuperAdmin',
@@ -150,12 +166,15 @@ export const Users: CollectionConfig = {
       name: 'whatsapp',
       type: 'text',
       required: false,
+      maxLength: 20,
+      validate: phoneField(false),
     },
     {
       name: 'professionalId',
       type: 'text',
       label: 'CREF / CRN',
       required: false,
+      maxLength: 30,
     },
     {
       name: 'plan',
@@ -168,6 +187,11 @@ export const Users: CollectionConfig = {
         { label: 'Anual', value: 'annual' },
       ],
       defaultValue: 'free',
+      // Plano só muda pelo administrador (futuramente pelo pagamento) — o próprio usuário não pode se promover
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
     },
   ],
 }

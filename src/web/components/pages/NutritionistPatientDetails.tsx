@@ -1,31 +1,27 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import {
-  ArrowLeft,
-  Apple,
   Activity,
-  Calendar,
-  Scale,
-  Utensils,
-  TrendingDown,
-  TrendingUp,
-  FileText,
-  Plus,
-  BarChart3,
   AlertCircle,
-  Flame,
-  Edit,
-  CheckCircle,
-  Droplets,
-  Ruler,
-  Target,
-  Heart,
+  ArrowLeft,
+  BarChart3,
   ChevronDown,
-  ChevronUp,
-  Clock,
+  ClipboardList,
+  Edit,
+  FileText,
+  Flame,
+  Heart,
+  Plus,
+  Ruler,
+  Scale,
+  Target,
   User,
-  MessageSquare,
+  Utensils,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
+import { CTAButton } from '../brand/Brand';
+import { Badge, Page } from '../student/ui';
+import { SectionCard, Segmented } from '../pro/ui';
 import {
   AreaChart,
   Area,
@@ -190,6 +186,22 @@ const progressData = [
 // ────────────────────────── COMPONENT ──────────────────────────
 type Tab = 'overview' | 'diet' | 'consultations' | 'progress';
 
+const MACRO = { protein: '#8c82ff', carbs: '#ffb547', fat: '#2ee6c8' } as const;
+const fmtDate = (iso: string, opts: Intl.DateTimeFormatOptions = { day: '2-digit', month: 'short', year: 'numeric' }) =>
+  new Date(iso + 'T12:00').toLocaleDateString('pt-BR', opts);
+const chartTooltip = {
+  contentStyle: {
+    backgroundColor: '#0d0f18',
+    border: '1px solid rgba(232,236,255,0.14)',
+    borderRadius: 12,
+    fontSize: 12,
+    color: '#f4f6fb',
+  },
+  labelStyle: { color: '#9aa0b8' },
+  cursor: { stroke: 'rgba(232,236,255,0.15)' },
+};
+const axis = { stroke: '#5c627a', fontSize: 12, tickLine: false, axisLine: false } as const;
+
 export function NutritionistPatientDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -197,556 +209,498 @@ export function NutritionistPatientDetails() {
   const [expandedMeal, setExpandedMeal] = useState<string | null>('m1');
   const [expandedConsultation, setExpandedConsultation] = useState<string | null>('c1');
 
+  const p = patientData;
   const proteinPct = Math.round((mockMealPlan.protein * 4 * 100) / mockMealPlan.calories);
   const carbsPct = Math.round((mockMealPlan.carbs * 4 * 100) / mockMealPlan.calories);
   const fatPct = Math.round((mockMealPlan.fat * 9 * 100) / mockMealPlan.calories);
+  const startWeight = progressData[0].weight;
+  const lost = +(startWeight - p.currentWeight).toFixed(1);
+  const toGoal = +(p.currentWeight - p.goalWeight).toFixed(1);
+  const goalPct = Math.max(0, Math.min(100, ((startWeight - p.currentWeight) / (startWeight - p.goalWeight)) * 100));
+  const initials = p.name.split(' ').map((n) => n[0]).slice(0, 2).join('');
+  const nextConsult = mockConsultations[0]?.nextConsultation;
 
   const tabs = [
-    { id: 'overview' as Tab, label: 'Visão Geral', icon: User },
-    { id: 'diet' as Tab, label: 'Plano Alimentar', icon: Utensils },
-    { id: 'consultations' as Tab, label: 'Consultas', icon: FileText },
-    { id: 'progress' as Tab, label: 'Progresso', icon: BarChart3 },
+    { value: 'overview' as Tab, label: 'Visão geral', icon: User },
+    { value: 'diet' as Tab, label: 'Plano alimentar', icon: Utensils },
+    { value: 'consultations' as Tab, label: 'Consultas', icon: FileText, count: mockConsultations.length },
+    { value: 'progress' as Tab, label: 'Progresso', icon: BarChart3 },
   ];
 
   return (
-    <div className="p-4 lg:p-8 max-w-[1400px] mx-auto">
-      {/* Back */}
+    <Page wide>
       <button
+        type="button"
         onClick={() => navigate('/nutritionist')}
-        className="flex items-center gap-2 text-sm dark:text-zinc-400 text-slate-500 hover:dark:text-white hover:text-slate-900 transition-colors mb-6"
+        className="mb-6 inline-flex items-center gap-2 text-[13.5px] text-[var(--muted)] hover:text-white transition-colors"
       >
-        <ArrowLeft className="w-4 h-4" />
-        Voltar para Pacientes
+        <ArrowLeft className="w-4 h-4" /> Meus pacientes
       </button>
 
-      {/* Patient Header */}
-      <div className="flex items-start justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-4">
-          <img
-            src={patientData.avatar}
-            alt={patientData.name}
-            className="w-16 h-16 rounded-2xl ring-4 ring-amber-500/20"
-          />
-          <div>
-            <h1 className="dark:text-white text-slate-900 mb-1">{patientData.name}</h1>
-            <div className="flex flex-wrap items-center gap-3 text-sm dark:text-zinc-400 text-slate-500">
-              <span>{patientData.age} anos</span>
-              <span>•</span>
-              <span>{patientData.height} cm</span>
-              <span>•</span>
-              <span className="text-amber-500">{patientData.goal}</span>
-            </div>
+      {/* Cabeçalho do paciente */}
+      <header className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-6 mb-8">
+        <div className="flex items-center gap-5 min-w-0">
+          <span className="cp-selected w-20 h-20 shrink-0 rounded-[24px] grid place-items-center cp-display text-[28px] font-bold">
+            {initials}
+          </span>
+          <div className="min-w-0">
+            <p className="cp-kicker">Paciente desde {fmtDate(p.startDate, { month: 'long', year: 'numeric' })}</p>
+            <h1 className="cp-display mt-1 text-[34px] sm:text-[42px] font-bold leading-[1.05] tracking-[-0.03em]">{p.name}</h1>
+            <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-[14px] text-[var(--muted)]">
+              <span>{p.age} anos</span>
+              <span aria-hidden>·</span>
+              <span>{p.height} cm</span>
+              <span aria-hidden>·</span>
+              <span className="text-[var(--brand-200)]">{p.goal}</span>
+            </p>
           </div>
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => navigate(`/nutritionist/consulta/${id}`)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', boxShadow: '0 8px 20px rgba(245,158,11,0.3)', fontWeight: 600 }}
-          >
-            <Plus className="w-4 h-4" />
-            Nova Consulta
+        <div className="flex flex-wrap gap-3">
+          <button type="button" onClick={() => navigate(`/nutritionist/criar-plano/${id}`)} className="cp-btn-ghost">
+            <Edit className="w-4 h-4" /> Editar plano
           </button>
-          <button
-            onClick={() => navigate(`/nutritionist/criar-plano/${id}`)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-            style={{ background: 'linear-gradient(135deg, #5a64b4, #000346)', boxShadow: '0 8px 20px rgba(16,185,129,0.3)', fontWeight: 600 }}
-          >
-            <Edit className="w-4 h-4" />
-            Editar Plano
-          </button>
+          <CTAButton type="button" onClick={() => navigate(`/nutritionist/consulta/${id}`)}>
+            Nova consulta
+          </CTAButton>
         </div>
-      </div>
+      </header>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-8">
         {[
-          { label: 'Peso Atual', value: `${patientData.currentWeight} kg`, icon: Scale, color: '#f59e0b' },
-          { label: 'Meta de Peso', value: `${patientData.goalWeight} kg`, icon: Target, color: '#5a64b4' },
-          { label: 'Gordura Corp.', value: `${patientData.bodyFat}%`, icon: Activity, color: '#8b5cf6' },
-          { label: 'IMC', value: patientData.bmi, icon: Heart, color: '#ef4444' },
-        ].map(({ label, value, icon: Icon, color }) => (
-          <div key={label} className="dark:bg-zinc-900 bg-white rounded-2xl p-4 dark:border-zinc-800 border border-slate-200">
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center mb-3" style={{ backgroundColor: `${color}20` }}>
-              <Icon className="w-5 h-5" style={{ color }} />
-            </div>
-            <p className="dark:text-white text-slate-900 text-xl mb-1" style={{ fontWeight: 700 }}>{value}</p>
-            <p className="text-xs dark:text-zinc-500 text-slate-400">{label}</p>
+          { label: 'Peso atual', value: p.currentWeight.toLocaleString('pt-BR'), unit: 'kg', hint: `−${lost.toLocaleString('pt-BR')} kg desde o início`, tone: 'var(--teal)' },
+          { label: 'Meta', value: p.goalWeight.toLocaleString('pt-BR'), unit: 'kg', hint: `faltam ${toGoal.toLocaleString('pt-BR')} kg`, tone: 'var(--muted)' },
+          { label: 'Gordura corporal', value: p.bodyFat.toLocaleString('pt-BR'), unit: '%', hint: `IMC ${p.bmi.toLocaleString('pt-BR')}`, tone: 'var(--muted)' },
+          { label: 'Adesão ao plano', value: String(p.adherence), unit: '%', hint: 'média das consultas', tone: 'var(--brand-200)' },
+        ].map((k) => (
+          <div key={k.label} className="cp-spot relative rounded-[20px] border border-[var(--line)] bg-white/[0.025] p-4 sm:p-5">
+            <p className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">{k.label}</p>
+            <p className="mt-2 cp-display text-[30px] sm:text-[34px] font-bold leading-none">
+              {k.value}
+              <span className="ml-1 text-[14px] font-medium text-[var(--muted)]">{k.unit}</span>
+            </p>
+            <p className="mt-2 text-[12.5px]" style={{ color: k.tone }}>
+              {k.hint}
+            </p>
           </div>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="dark:bg-zinc-900 bg-white rounded-2xl p-1 mb-6 inline-flex flex-wrap dark:border-zinc-800 border border-slate-200">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm transition-all ${
-                activeTab === tab.id
-                  ? 'text-white shadow-lg'
-                  : 'dark:text-zinc-400 text-slate-600 hover:dark:text-white hover:text-slate-900'
-              }`}
-              style={activeTab === tab.id ? { background: 'linear-gradient(135deg, #f59e0b, #d97706)', fontWeight: 600 } : { fontWeight: 400 }}
-            >
-              <Icon className="w-4 h-4" />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="mb-6">
+        <Segmented layoutId="npd-tabs" value={activeTab} onChange={setActiveTab} options={tabs} />
       </div>
 
-      {/* Content */}
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Content */}
-        <div className="lg:col-span-2 space-y-6">
-
-          {/* ── TAB: VISÃO GERAL ── */}
-          {activeTab === 'overview' && (
-            <>
-              {/* Dados Pessoais */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <h3 className="dark:text-white text-slate-900 mb-5">Dados Pessoais & Anamnese</h3>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                  {[
-                    { label: 'Idade', value: `${patientData.age} anos` },
-                    { label: 'Altura', value: `${patientData.height} cm` },
-                    { label: 'Peso Atual', value: `${patientData.currentWeight} kg` },
-                    { label: 'Cintura', value: `${patientData.waist} cm` },
-                    { label: 'Quadril', value: `${patientData.hip} cm` },
-                    { label: 'Massa Muscular', value: `${patientData.muscleMass} kg` },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-4 border dark:border-zinc-700 border-slate-200">
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 mb-1">{label}</p>
-                      <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{value}</p>
+      <div className="grid xl:grid-cols-[1fr_340px] gap-6 items-start">
+        <div className="min-w-0 space-y-6">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -6 }}
+              transition={{ duration: 0.22 }}
+              className="space-y-6"
+            >
+              {/* ── VISÃO GERAL ── */}
+              {activeTab === 'overview' && (
+                <>
+                  <SectionCard icon={Target} title="Rumo à meta" meta={<span className="cp-mono text-[12px] text-[var(--muted)]">{Math.round(goalPct)}%</span>}>
+                    <div className="h-3 rounded-full bg-white/[0.08] overflow-hidden">
+                      <motion.div
+                        className="h-full rounded-full"
+                        style={{ background: 'linear-gradient(90deg,#2a14e0,#5546ff,#8c82ff)' }}
+                        initial={{ width: 0 }}
+                        animate={{ width: `${goalPct}%` }}
+                        transition={{ duration: 0.9, ease: [0.22, 1, 0.36, 1] }}
+                      />
                     </div>
-                  ))}
-                </div>
-              </div>
+                    <div className="mt-2 flex justify-between cp-mono text-[11.5px] text-[var(--dim)]">
+                      <span>Início {startWeight.toLocaleString('pt-BR')} kg</span>
+                      <span className="text-white">Hoje {p.currentWeight.toLocaleString('pt-BR')} kg</span>
+                      <span>Meta {p.goalWeight.toLocaleString('pt-BR')} kg</span>
+                    </div>
+                  </SectionCard>
 
-              {/* Restrições e Condições */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <h3 className="dark:text-white text-slate-900 mb-5 flex items-center gap-2">
-                  <AlertCircle className="w-5 h-5 text-amber-500" />
-                  Restrições Alimentares & Condições de Saúde
-                </h3>
-
-                <div className="space-y-5">
-                  <div>
-                    <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3">Alergias</p>
-                    <div className="flex flex-wrap gap-2">
-                      {patientData.allergies.map((a) => (
-                        <span key={a} className="text-xs px-3 py-1.5 rounded-full bg-red-500/10 text-red-400 border border-red-500/20" style={{ fontWeight: 600 }}>
-                          ⚠ {a}
-                        </span>
+                  <SectionCard icon={Ruler} title="Medidas atuais">
+                    <dl className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                      {[
+                        ['Altura', `${p.height} cm`],
+                        ['IMC', p.bmi.toLocaleString('pt-BR')],
+                        ['Massa muscular', `${p.muscleMass.toLocaleString('pt-BR')} kg`],
+                        ['Cintura', `${p.waist} cm`],
+                        ['Quadril', `${p.hip} cm`],
+                        ['Cintura/quadril', (p.waist / p.hip).toFixed(2).replace('.', ',')],
+                      ].map(([label, value]) => (
+                        <div key={label} className="rounded-2xl border border-[var(--line)] p-3.5">
+                          <dt className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">{label}</dt>
+                          <dd className="mt-1 text-[18px] font-semibold">{value}</dd>
+                        </div>
                       ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3">Intolerâncias / Preferências</p>
-                    <div className="flex flex-wrap gap-2">
-                      {patientData.restrictions.map((r) => (
-                        <span key={r} className="text-xs px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-400 border border-amber-500/20" style={{ fontWeight: 500 }}>
-                          {r}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3">Condições de Saúde</p>
-                    <div className="space-y-2">
-                      {patientData.conditions.map((c) => (
-                        <div key={c} className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                          <Heart className="w-4 h-4 text-rose-400 flex-shrink-0" />
-                          <p className="text-sm dark:text-zinc-200 text-slate-700">{c}</p>
+                    </dl>
+                  </SectionCard>
+
+                  <SectionCard icon={Heart} title="Saúde e restrições">
+                    <div className="grid md:grid-cols-3 gap-5">
+                      {[
+                        { label: 'Condições', items: p.conditions, tone: 'blue' as const },
+                        { label: 'Restrições', items: p.restrictions, tone: 'amber' as const },
+                        { label: 'Alergias', items: p.allergies, tone: 'violet' as const },
+                      ].map(({ label, items, tone }) => (
+                        <div key={label}>
+                          <p className="cp-mono text-[11px] uppercase tracking-[0.12em] text-[var(--muted)] mb-2">{label}</p>
+                          <div className="flex flex-wrap gap-2">
+                            {items.map((it) => (
+                              <Badge key={it} tone={tone}>
+                                {it}
+                              </Badge>
+                            ))}
+                          </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                </div>
-              </div>
+                    {p.allergies.length > 0 && (
+                      <p className="mt-5 flex items-start gap-2 rounded-2xl border border-[rgba(255,181,71,0.3)] bg-[rgba(255,181,71,0.08)] px-4 py-3 text-[13px] text-[var(--amber)]">
+                        <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                        Alergia a {p.allergies.join(', ').toLowerCase()} — confira antes de incluir alimentos no plano.
+                      </p>
+                    )}
+                  </SectionCard>
+                </>
+              )}
 
-              {/* Objetivos */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <h3 className="dark:text-white text-slate-900 mb-5 flex items-center gap-2">
-                  <Target className="w-5 h-5 text-[#000326] dark:text-white" />
-                  Objetivos do Tratamento
-                </h3>
-                <div className="dark:bg-[#000326] dark:bg-white/5 bg-[#000326]/5 rounded-2xl p-4 border dark:border-[#000326]/20 dark:border-white/20 border-[#000326]/20">
-                  <p className="text-sm dark:text-[#C5C5CE] text-[#000326] dark:text-[#C5C5CE] mb-2" style={{ fontWeight: 600 }}>
-                    {patientData.goal}
-                  </p>
-                  <p className="text-xs dark:text-zinc-400 text-slate-500">
-                    Redução de {(patientData.currentWeight - patientData.goalWeight).toFixed(1)} kg até a meta •
-                    Redução de gordura corporal de {patientData.bodyFat}% para &lt;25%
-                  </p>
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between text-xs mb-2">
-                    <span className="dark:text-zinc-400 text-slate-500">Progresso até a meta</span>
-                    <span className="text-amber-500" style={{ fontWeight: 600 }}>
-                      {Math.round(((72 - patientData.currentWeight) / (72 - patientData.goalWeight)) * 100)}%
-                    </span>
-                  </div>
-                  <div className="w-full h-2 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{
-                        width: `${Math.round(((72 - patientData.currentWeight) / (72 - patientData.goalWeight)) * 100)}%`,
-                        background: 'linear-gradient(90deg, #f59e0b, #d97706)',
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* ── TAB: PLANO ALIMENTAR ── */}
-          {activeTab === 'diet' && (
-            <>
-              {/* Plan Header */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <div className="flex items-start justify-between mb-5">
-                  <div>
-                    <h3 className="dark:text-white text-slate-900 mb-1">{mockMealPlan.name}</h3>
-                    <p className="text-sm dark:text-zinc-500 text-slate-400">
-                      Atualizado em {mockMealPlan.updatedAt} • {mockMealPlan.calories} kcal/dia
-                    </p>
-                  </div>
-                  <button
-                    onClick={() => navigate(`/nutritionist/criar-plano/${id}`)}
-                    className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs border dark:border-zinc-600 border-slate-300 dark:text-zinc-400 text-slate-600 hover:dark:border-amber-500 hover:border-amber-400 hover:dark:text-amber-400 hover:text-amber-600 transition-all"
-                  >
-                    <Edit className="w-3 h-3" />
-                    Editar Plano
-                  </button>
-                </div>
-
-                {/* Macros */}
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { label: 'Proteína', value: `${mockMealPlan.protein}g`, pct: proteinPct, color: '#3b82f6' },
-                    { label: 'Carboidrato', value: `${mockMealPlan.carbs}g`, pct: carbsPct, color: '#f59e0b' },
-                    { label: 'Gordura', value: `${mockMealPlan.fat}g`, pct: fatPct, color: '#ec4899' },
-                  ].map(({ label, value, pct, color }) => (
-                    <div key={label} className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-4 border dark:border-zinc-700 border-slate-200">
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 mb-1">{label}</p>
-                      <p className="text-lg dark:text-white text-slate-900 mb-1" style={{ fontWeight: 700, color }}>{value}</p>
-                      <div className="w-full h-1.5 dark:bg-zinc-700 bg-slate-200 rounded-full">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, backgroundColor: color }} />
-                      </div>
-                      <p className="text-xs dark:text-zinc-600 text-slate-400 mt-1">{pct}%</p>
+              {/* ── PLANO ALIMENTAR ── */}
+              {activeTab === 'diet' && (
+                <section className="rounded-[22px] border border-[var(--line)] bg-white/[0.025] overflow-hidden">
+                  <header className="p-5 sm:p-6 border-b border-[var(--line)] flex flex-wrap items-start justify-between gap-4">
+                    <div>
+                      <p className="cp-kicker">Plano ativo</p>
+                      <h2 className="cp-display mt-1 text-[22px] font-bold">{mockMealPlan.name}</h2>
+                      <p className="mt-0.5 text-[13px] text-[var(--muted)]">
+                        Atualizado em {fmtDate(mockMealPlan.updatedAt)} · {mockMealPlan.meals.length} refeições
+                      </p>
                     </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Meals */}
-              <div className="space-y-3">
-                {mockMealPlan.meals.map((meal) => (
-                  <div key={meal.id} className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden">
-                    <button
-                      onClick={() => setExpandedMeal(expandedMeal === meal.id ? null : meal.id)}
-                      className="w-full flex items-center gap-4 p-5 text-left hover:dark:bg-zinc-800/30 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'linear-gradient(135deg, #f59e0b22, #d97706aa)' }}>
-                        <Utensils className="w-5 h-5 text-amber-500" />
-                      </div>
-                      <div className="flex-1">
-                        <p className="text-sm dark:text-white text-slate-900 mb-0.5" style={{ fontWeight: 600 }}>{meal.name}</p>
-                        <p className="text-xs dark:text-zinc-500 text-slate-400">
-                          <Clock className="w-3 h-3 inline mr-1" />{meal.time} • {meal.foods.length} alimentos
+                    <button type="button" onClick={() => navigate(`/nutritionist/criar-plano/${id}`)} className="cp-btn-sm">
+                      <Edit className="w-4 h-4" /> Editar
+                    </button>
+                  </header>
+                  <div className="p-5 sm:p-6 grid grid-cols-2 sm:grid-cols-4 gap-3 border-b border-[var(--line)]">
+                    {[
+                      ['Calorias', `${mockMealPlan.calories}`, 'kcal', '#f4f6fb'],
+                      ['Proteína', `${mockMealPlan.protein}`, 'g', MACRO.protein],
+                      ['Carboidrato', `${mockMealPlan.carbs}`, 'g', MACRO.carbs],
+                      ['Gordura', `${mockMealPlan.fat}`, 'g', MACRO.fat],
+                    ].map(([label, v, u, c]) => (
+                      <div key={label}>
+                        <p className="flex items-center gap-1.5 text-[12.5px] text-[var(--muted)]">
+                          <span className="w-2 h-2 rounded-full" style={{ background: c }} />
+                          {label}
+                        </p>
+                        <p className="mt-1 cp-display text-[24px] font-bold leading-none">
+                          {v}
+                          <span className="ml-1 text-[12px] font-medium text-[var(--muted)]">{u}</span>
                         </p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-amber-500" style={{ fontWeight: 700 }}>{meal.calories} kcal</span>
-                        {expandedMeal === meal.id ? (
-                          <ChevronUp className="w-4 h-4 dark:text-zinc-500 text-slate-400" />
-                        ) : (
-                          <ChevronDown className="w-4 h-4 dark:text-zinc-500 text-slate-400" />
-                        )}
-                      </div>
-                    </button>
-
-                    {expandedMeal === meal.id && (
-                      <div className="px-5 pb-5 space-y-2">
-                        {meal.foods.map((food) => (
-                          <div key={food.id} className="flex items-center justify-between py-2 border-b dark:border-zinc-800 border-slate-100 last:border-0">
-                            <div className="flex items-center gap-3">
-                              <div className="w-2 h-2 rounded-full bg-amber-500/60 flex-shrink-0" />
-                              <p className="text-sm dark:text-zinc-200 text-slate-700">{food.name}</p>
-                            </div>
-                            <div className="flex items-center gap-4 text-xs dark:text-zinc-500 text-slate-400">
-                              <span>{food.quantity}</span>
-                              <span className="dark:text-zinc-400 text-slate-600" style={{ fontWeight: 600 }}>{food.calories} kcal</span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
+                    ))}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ── TAB: CONSULTAS ── */}
-          {activeTab === 'consultations' && (
-            <>
-              <div className="flex justify-end mb-2">
-                <button
-                  onClick={() => navigate(`/nutritionist/consulta/${id}`)}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', fontWeight: 600 }}
-                >
-                  <Plus className="w-4 h-4" />
-                  Nova Consulta
-                </button>
-              </div>
-
-              <div className="space-y-4">
-                {mockConsultations.map((c, idx) => (
-                  <div key={c.id} className="dark:bg-zinc-900 bg-white rounded-3xl dark:border-zinc-800 border border-slate-200 overflow-hidden">
-                    <button
-                      onClick={() => setExpandedConsultation(expandedConsultation === c.id ? null : c.id)}
-                      className="w-full flex items-start gap-4 p-5 text-left hover:dark:bg-zinc-800/30 hover:bg-slate-50 transition-colors"
-                    >
-                      <div className="relative flex-shrink-0">
-                        <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: idx === 0 ? 'linear-gradient(135deg, #f59e0b, #d97706)' : '#3b82f620' }}>
-                          <FileText className={`w-5 h-5 ${idx === 0 ? 'text-white' : 'text-blue-400'}`} />
-                        </div>
-                        {idx === 0 && (
-                          <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#000326] dark:bg-white flex items-center justify-center">
-                            <CheckCircle className="w-2.5 h-2.5 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between mb-1">
-                          <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
-                            Consulta {idx === 0 ? '(mais recente)' : `#${mockConsultations.length - idx}`}
-                          </p>
-                          <p className="text-xs dark:text-zinc-500 text-slate-400">{c.date}</p>
-                        </div>
-                        <div className="flex flex-wrap gap-3 text-xs">
-                          <span className="dark:text-zinc-400 text-slate-600">
-                            <Scale className="w-3 h-3 inline mr-0.5" />{c.weight} kg
-                          </span>
-                          <span className="dark:text-zinc-400 text-slate-600">
-                            Gordura: {c.bodyFat}%
-                          </span>
-                          <span className="dark:text-zinc-400 text-slate-600">
-                            Cintura: {c.waist} cm
-                          </span>
-                          {c.adherence > 0 && (
-                            <span className="text-[#000326] dark:text-white" style={{ fontWeight: 600 }}>
-                              Adesão: {c.adherence}%
+                  <ul className="divide-y divide-[var(--line)]">
+                    {mockMealPlan.meals.map((meal) => {
+                      const open = expandedMeal === meal.id;
+                      return (
+                        <li key={meal.id}>
+                          <button
+                            type="button"
+                            onClick={() => setExpandedMeal(open ? null : meal.id)}
+                            aria-expanded={open}
+                            className="w-full flex items-center gap-4 px-5 sm:px-6 py-4 text-left hover:bg-white/[0.03] transition-colors"
+                          >
+                            <span className="cp-mono w-12 text-[12px] text-[var(--dim)]">{meal.time}</span>
+                            <span className="flex-1 min-w-0">
+                              <span className="block font-semibold">{meal.name}</span>
+                              <span className="block text-[12.5px] text-[var(--muted)]">{meal.foods.length} itens</span>
                             </span>
-                          )}
-                        </div>
-                      </div>
-                      {expandedConsultation === c.id ? (
-                        <ChevronUp className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0 mt-1" />
-                      ) : (
-                        <ChevronDown className="w-4 h-4 dark:text-zinc-500 text-slate-400 flex-shrink-0 mt-1" />
-                      )}
+                            <span className="cp-mono text-[13px]">{meal.calories} kcal</span>
+                            <ChevronDown className={`w-4 h-4 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
+                          </button>
+                          <AnimatePresence initial={false}>
+                            {open && (
+                              <motion.ul
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                className="overflow-hidden px-5 sm:px-6"
+                              >
+                                {meal.foods.map((f) => (
+                                  <li key={f.id} className="flex items-center gap-3 py-2.5 pl-16 border-t border-dashed border-[var(--line)] first:border-t-0 text-[14px]">
+                                    <span className="flex-1">{f.name}</span>
+                                    <span className="text-[var(--muted)]">{f.quantity}</span>
+                                    <span className="cp-mono w-16 text-right text-[12px] text-[var(--dim)]">{f.calories} kcal</span>
+                                  </li>
+                                ))}
+                                <li className="h-3" aria-hidden />
+                              </motion.ul>
+                            )}
+                          </AnimatePresence>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              )}
+
+              {/* ── CONSULTAS ── */}
+              {activeTab === 'consultations' && (
+                <section>
+                  <div className="flex items-center justify-between mb-4">
+                    <p className="cp-mono text-[11.5px] text-[var(--dim)]">{mockConsultations.length} consultas registradas</p>
+                    <button type="button" onClick={() => navigate(`/nutritionist/consulta/${id}`)} className="cp-btn-sm">
+                      <Plus className="w-4 h-4" /> Nova consulta
                     </button>
-
-                    {expandedConsultation === c.id && (
-                      <div className="px-5 pb-5 space-y-4 border-t dark:border-zinc-800 border-slate-100 pt-4">
-                        {/* Measurements */}
-                        <div className="grid grid-cols-3 gap-3">
-                          {[
-                            { label: 'Pressão Arterial', value: c.bloodPressure },
-                            { label: 'Quadril', value: `${c.hip} cm` },
-                            { label: 'Próxima Consulta', value: c.nextConsultation },
-                          ].map(({ label, value }) => (
-                            <div key={label} className="dark:bg-zinc-800/50 bg-slate-50 rounded-xl p-3 border dark:border-zinc-700 border-slate-200">
-                              <p className="text-xs dark:text-zinc-500 text-slate-400 mb-1">{label}</p>
-                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{value}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Notes */}
-                        <div className="dark:bg-zinc-800/50 bg-slate-50 rounded-2xl p-4 border dark:border-zinc-700 border-slate-200">
-                          <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-wider mb-2">
-                            <MessageSquare className="w-3 h-3 inline mr-1" />Observações
-                          </p>
-                          <p className="text-sm dark:text-zinc-300 text-slate-700 leading-relaxed">{c.notes}</p>
-                        </div>
-
-                        {/* Recommendations */}
-                        <div className="dark:bg-amber-500/5 bg-amber-50 rounded-2xl p-4 border dark:border-amber-500/20 border-amber-200">
-                          <p className="text-xs text-amber-500 uppercase tracking-wider mb-2" style={{ fontWeight: 600 }}>
-                            ✦ Recomendações
-                          </p>
-                          <p className="text-sm dark:text-zinc-300 text-slate-700 leading-relaxed">{c.recommendations}</p>
-                        </div>
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
-            </>
-          )}
-
-          {/* ── TAB: PROGRESSO ── */}
-          {activeTab === 'progress' && (
-            <>
-              {/* Weight Chart */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="dark:text-white text-slate-900">Evolução de Peso</h3>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-[#000326] dark:bg-white/10 text-[#000326] dark:text-white border border-[#000326]/20 dark:border-white/20" style={{ fontWeight: 600 }}>
-                    ↓ {(72 - patientData.currentWeight).toFixed(1)} kg perdidos
-                  </span>
-                </div>
-                <ResponsiveContainer width="100%" height={200}>
-                  <AreaChart id="npd-weight-chart" data={progressData}>
-                    <defs>
-                      <linearGradient id="npd-weight-grad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <XAxis dataKey="month" stroke="#71717a" fontSize={12} axisLine={{ stroke: '#27272a' }} tickLine={false} />
-                    <YAxis stroke="#71717a" fontSize={12} domain={[65, 75]} axisLine={{ stroke: '#27272a' }} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '12px' }} />
-                    <Area type="monotone" dataKey="weight" stroke="#f59e0b" fillOpacity={1} fill="url(#npd-weight-grad)" strokeWidth={3} dot={{ fill: '#f59e0b', strokeWidth: 2, r: 4 }} isAnimationActive={false} name="Peso (kg)" />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Body Fat Chart */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="dark:text-white text-slate-900">Gordura Corporal e Cintura</h3>
-                  <span className="text-xs px-2.5 py-1 rounded-lg bg-blue-500/10 text-blue-400 border border-blue-500/20" style={{ fontWeight: 600 }}>
-                    ↓ {(32 - patientData.bodyFat).toFixed(1)}% de gordura
-                  </span>
-                </div>
-                <ResponsiveContainer width="100%" height={220}>
-                  <LineChart id="npd-bodyfat-chart" data={progressData}>
-                    <XAxis dataKey="month" stroke="#71717a" fontSize={12} axisLine={{ stroke: '#27272a' }} tickLine={false} />
-                    <YAxis stroke="#71717a" fontSize={12} axisLine={{ stroke: '#27272a' }} tickLine={false} />
-                    <Tooltip contentStyle={{ backgroundColor: '#18181b', border: '1px solid #27272a', borderRadius: '12px', fontSize: '12px' }} />
-                    <Legend />
-                    <Line type="monotone" dataKey="bodyFat" stroke="#8b5cf6" strokeWidth={3} name="Gordura (%)" dot={{ fill: '#8b5cf6', strokeWidth: 2, r: 4 }} isAnimationActive={false} />
-                    <Line type="monotone" dataKey="waist" stroke="#3b82f6" strokeWidth={3} name="Cintura (cm)" dot={{ fill: '#3b82f6', strokeWidth: 2, r: 4 }} isAnimationActive={false} />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-
-              {/* Comparison */}
-              <div className="dark:bg-zinc-900 bg-white rounded-3xl p-6 dark:border-zinc-800 border border-slate-200">
-                <h3 className="dark:text-white text-slate-900 mb-5">Comparativo Inicial × Atual</h3>
-                <div className="space-y-4">
-                  {[
-                    { label: 'Peso', initial: 72.0, current: patientData.currentWeight, unit: 'kg', invert: true },
-                    { label: 'Gordura Corporal', initial: 32.0, current: patientData.bodyFat, unit: '%', invert: true },
-                    { label: 'Cintura', initial: 88, current: patientData.waist, unit: 'cm', invert: true },
-                    { label: 'Massa Muscular', initial: 40.8, current: patientData.muscleMass, unit: 'kg', invert: false },
-                  ].map(({ label, initial, current, unit, invert }) => {
-                    const diff = current - initial;
-                    const isPositive = invert ? diff < 0 : diff > 0;
-                    return (
-                      <div key={label} className="flex items-center gap-4">
-                        <div className="w-28 text-sm dark:text-zinc-400 text-slate-500 flex-shrink-0">{label}</div>
-                        <div className="flex-1 flex items-center gap-3">
-                          <span className="text-xs dark:text-zinc-500 text-slate-400 w-16 text-right">{initial}{unit}</span>
-                          <div className="flex-1 h-2 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all"
-                              style={{
-                                width: `${(current / initial) * 100}%`,
-                                backgroundColor: isPositive ? '#5a64b4' : '#ef4444',
-                              }}
-                            />
+                  <ol className="relative space-y-3 before:absolute before:left-[19px] before:top-4 before:bottom-4 before:w-px before:bg-[var(--line-2)]">
+                    {mockConsultations.map((c, i) => {
+                      const open = expandedConsultation === c.id;
+                      const prev = mockConsultations[i + 1];
+                      const delta = prev ? +(c.weight - prev.weight).toFixed(1) : null;
+                      return (
+                        <li key={c.id} className="relative pl-12">
+                          <span
+                            className={`absolute left-2 top-5 w-[23px] h-[23px] rounded-full grid place-items-center border-4 border-[var(--ink)] ${
+                              i === 0 ? 'cp-selected' : 'bg-[#1b1e2c]'
+                            }`}
+                            aria-hidden
+                          />
+                          <div className="rounded-[20px] border border-[var(--line)] bg-white/[0.025] overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => setExpandedConsultation(open ? null : c.id)}
+                              aria-expanded={open}
+                              className="w-full flex flex-wrap items-center gap-x-5 gap-y-2 px-5 py-4 text-left hover:bg-white/[0.03]"
+                            >
+                              <span className="min-w-[150px]">
+                                <span className="block font-semibold first-letter:uppercase">{fmtDate(c.date, { day: '2-digit', month: 'long', year: 'numeric' })}</span>
+                                <span className="block text-[12.5px] text-[var(--muted)]">
+                                  {i === mockConsultations.length - 1 ? 'Consulta inicial' : 'Retorno'}
+                                </span>
+                              </span>
+                              <span className="flex flex-wrap gap-2 flex-1">
+                                <Badge>{c.weight.toLocaleString('pt-BR')} kg</Badge>
+                                {delta != null && <Badge tone={delta <= 0 ? 'teal' : 'amber'}>{delta > 0 ? '+' : ''}{delta.toLocaleString('pt-BR')} kg</Badge>}
+                                <Badge>{c.bodyFat.toLocaleString('pt-BR')}% gordura</Badge>
+                                {c.adherence > 0 && <Badge tone="violet">adesão {c.adherence}%</Badge>}
+                              </span>
+                              <ChevronDown className={`w-4 h-4 text-[var(--muted)] transition-transform ${open ? 'rotate-180' : ''}`} />
+                            </button>
+                            <AnimatePresence initial={false}>
+                              {open && (
+                                <motion.div
+                                  initial={{ height: 0, opacity: 0 }}
+                                  animate={{ height: 'auto', opacity: 1 }}
+                                  exit={{ height: 0, opacity: 0 }}
+                                  className="overflow-hidden"
+                                >
+                                  <div className="px-5 pb-5 pt-1 space-y-4">
+                                    <dl className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                                      {[
+                                        ['Cintura', `${c.waist} cm`],
+                                        ['Quadril', `${c.hip} cm`],
+                                        ['Pressão', c.bloodPressure],
+                                        ['Próxima', fmtDate(c.nextConsultation, { day: '2-digit', month: 'short' })],
+                                      ].map(([l, v]) => (
+                                        <div key={l} className="rounded-xl border border-[var(--line)] px-3 py-2.5">
+                                          <dt className="cp-mono text-[10px] uppercase tracking-[0.12em] text-[var(--dim)]">{l}</dt>
+                                          <dd className="mt-0.5 text-[14.5px] font-semibold">{v}</dd>
+                                        </div>
+                                      ))}
+                                    </dl>
+                                    <div>
+                                      <p className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--muted)] mb-1">Observações</p>
+                                      <p className="text-[14px] leading-relaxed text-[var(--cream)]">{c.notes}</p>
+                                    </div>
+                                    <div className="rounded-2xl bg-[rgba(85,70,255,0.08)] border border-[rgba(140,130,255,0.22)] px-4 py-3">
+                                      <p className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--brand-200)] mb-1">Recomendações</p>
+                                      <p className="text-[14px] leading-relaxed">{c.recommendations}</p>
+                                    </div>
+                                  </div>
+                                </motion.div>
+                              )}
+                            </AnimatePresence>
                           </div>
-                          <span className="text-xs dark:text-white text-slate-900 w-16" style={{ fontWeight: 700 }}>{current}{unit}</span>
-                        </div>
-                        <span className={`text-xs w-12 text-right ${isPositive ? 'text-[#000326] dark:text-white' : 'text-red-400'}`} style={{ fontWeight: 600 }}>
-                          {diff > 0 ? '+' : ''}{diff.toFixed(1)}
-                        </span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </>
-          )}
+                        </li>
+                      );
+                    })}
+                  </ol>
+                </section>
+              )}
+
+              {/* ── PROGRESSO ── */}
+              {activeTab === 'progress' && (
+                <>
+                  <SectionCard icon={Scale} title="Evolução de peso" meta={<Badge tone="teal">−{lost.toLocaleString('pt-BR')} kg</Badge>}>
+                    <div className="h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart id="npd-weight-chart" data={progressData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                          <defs>
+                            <linearGradient id="npd-weight-grad" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="0%" stopColor="#5546ff" stopOpacity={0.45} />
+                              <stop offset="100%" stopColor="#5546ff" stopOpacity={0} />
+                            </linearGradient>
+                          </defs>
+                          <XAxis dataKey="month" {...axis} />
+                          <YAxis {...axis} domain={['dataMin - 2', 'dataMax + 1']} />
+                          <Tooltip {...chartTooltip} />
+                          <Area type="monotone" dataKey="weight" name="Peso (kg)" stroke="#8c82ff" strokeWidth={3} fill="url(#npd-weight-grad)" dot={{ r: 4, fill: '#8c82ff', strokeWidth: 0 }} isAnimationActive={false} />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard icon={Activity} title="Gordura corporal e cintura">
+                    <div className="h-[220px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <LineChart id="npd-bodyfat-chart" data={progressData} margin={{ top: 8, right: 8, left: -18, bottom: 0 }}>
+                          <XAxis dataKey="month" {...axis} />
+                          <YAxis {...axis} />
+                          <Tooltip {...chartTooltip} />
+                          <Legend wrapperStyle={{ fontSize: 12, color: '#9aa0b8' }} />
+                          <Line type="monotone" dataKey="bodyFat" name="Gordura (%)" stroke={MACRO.fat} strokeWidth={3} dot={{ r: 4, fill: MACRO.fat, strokeWidth: 0 }} isAnimationActive={false} />
+                          <Line type="monotone" dataKey="waist" name="Cintura (cm)" stroke={MACRO.carbs} strokeWidth={3} dot={{ r: 4, fill: MACRO.carbs, strokeWidth: 0 }} isAnimationActive={false} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </SectionCard>
+
+                  <SectionCard icon={BarChart3} title="Início × hoje">
+                    <ul className="space-y-4">
+                      {[
+                        { label: 'Peso', initial: 72.0, current: p.currentWeight, unit: 'kg', lowerIsBetter: true },
+                        { label: 'Gordura corporal', initial: 32.0, current: p.bodyFat, unit: '%', lowerIsBetter: true },
+                        { label: 'Cintura', initial: 88, current: p.waist, unit: 'cm', lowerIsBetter: true },
+                        { label: 'Massa muscular', initial: 40.8, current: p.muscleMass, unit: 'kg', lowerIsBetter: false },
+                      ].map(({ label, initial, current, unit, lowerIsBetter }) => {
+                        const diff = +(current - initial).toFixed(1);
+                        const good = lowerIsBetter ? diff < 0 : diff > 0;
+                        return (
+                          <li key={label} className="grid grid-cols-[110px_1fr_auto] sm:grid-cols-[150px_1fr_auto] items-center gap-4">
+                            <span className="text-[14px] text-[var(--muted)]">{label}</span>
+                            <span className="flex items-center gap-3 cp-mono text-[12px]">
+                              <span className="text-[var(--dim)] w-14 text-right">{initial.toLocaleString('pt-BR')}</span>
+                              <span className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
+                                <span
+                                  className="block h-full rounded-full"
+                                  style={{ width: `${Math.min(100, (current / initial) * 100)}%`, background: good ? MACRO.fat : '#ff5d6c' }}
+                                />
+                              </span>
+                              <span className="w-16">
+                                {current.toLocaleString('pt-BR')} {unit}
+                              </span>
+                            </span>
+                            <Badge tone={good ? 'teal' : 'amber'}>
+                              {diff > 0 ? '+' : ''}
+                              {diff.toLocaleString('pt-BR')}
+                            </Badge>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </SectionCard>
+                </>
+              )}
+            </motion.div>
+          </AnimatePresence>
         </div>
 
-        {/* ────── SIDEBAR ────── */}
-        <div className="space-y-5">
-          {/* Quick Actions */}
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <h4 className="dark:text-white text-slate-900 mb-4 text-sm" style={{ fontWeight: 600 }}>Ações Rápidas</h4>
-            <div className="space-y-2">
+        {/* ────── LATERAL ────── */}
+        <aside className="xl:sticky xl:top-6 space-y-4">
+          <section className="rounded-[22px] border border-[var(--line-2)] bg-[#0d0f18] overflow-hidden">
+            <span aria-hidden className="cp-modal-bar" />
+            <div className="p-5">
+              <p className="cp-kicker">Próxima consulta</p>
+              <p className="cp-display mt-1 text-[22px] font-bold first-letter:uppercase">
+                {nextConsult ? fmtDate(nextConsult, { weekday: 'long', day: 'numeric', month: 'long' }) : 'Não agendada'}
+              </p>
+            </div>
+            <div className="px-3 pb-3 space-y-1">
               {[
-                { label: 'Nova Consulta', icon: Plus, color: '#f59e0b', action: () => navigate(`/nutritionist/consulta/${id}`) },
-                { label: 'Editar Plano Alimentar', icon: Edit, color: '#5a64b4', action: () => navigate(`/nutritionist/criar-plano/${id}`) },
-                { label: 'Ver Progresso', icon: BarChart3, color: '#3b82f6', action: () => setActiveTab('progress') },
-                { label: 'Histórico de Consultas', icon: FileText, color: '#8b5cf6', action: () => setActiveTab('consultations') },
-              ].map(({ label, icon: Icon, color, action }) => (
+                { label: 'Registrar consulta', icon: Plus, action: () => navigate(`/nutritionist/consulta/${id}`) },
+                { label: 'Editar plano alimentar', icon: Edit, action: () => navigate(`/nutritionist/criar-plano/${id}`) },
+                { label: 'Preencher anamnese', icon: ClipboardList, action: () => navigate(`/nutritionist/anamnese/${id}`) },
+                { label: 'Ver progresso', icon: BarChart3, action: () => setActiveTab('progress') },
+              ].map(({ label, icon: Icon, action }) => (
                 <button
                   key={label}
+                  type="button"
                   onClick={action}
-                  className="w-full flex items-center gap-3 px-4 py-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50 dark:border-zinc-700 border border-slate-200 hover:dark:border-zinc-600 hover:border-slate-300 transition-all text-sm dark:text-zinc-300 text-slate-700 text-left"
+                  className="w-full flex items-center gap-3 rounded-2xl px-3 py-2.5 text-left text-[14px] hover:bg-white/[0.05] transition-colors"
                 >
-                  <div className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{ backgroundColor: `${color}20` }}>
-                    <Icon className="w-4 h-4" style={{ color }} />
-                  </div>
+                  <span className="w-9 h-9 rounded-xl grid place-items-center bg-[rgba(85,70,255,0.14)]">
+                    <Icon className="w-4 h-4 text-[var(--brand-300)]" />
+                  </span>
                   {label}
                 </button>
               ))}
             </div>
-          </div>
+          </section>
 
-          {/* Diet Summary */}
-          <div className="dark:bg-zinc-900 bg-white rounded-3xl p-5 dark:border-zinc-800 border border-slate-200">
-            <div className="flex items-center gap-2 mb-4">
-              <Flame className="w-4 h-4 text-orange-500" />
-              <h4 className="dark:text-white text-slate-900 text-sm" style={{ fontWeight: 600 }}>Resumo Calórico Hoje</h4>
+          <section className="rounded-[22px] border border-[var(--line)] bg-white/[0.025] p-5">
+            <p className="flex items-center gap-2 text-[14px] font-semibold">
+              <Flame className="w-4 h-4 text-[var(--amber)]" /> Meta calórica diária
+            </p>
+            <p className="mt-3 cp-display text-[36px] font-bold leading-none">
+              {mockMealPlan.calories.toLocaleString('pt-BR')}
+              <span className="ml-1 text-[13px] font-medium text-[var(--muted)]">kcal</span>
+            </p>
+            <div className="mt-4 flex h-2.5 rounded-full overflow-hidden bg-white/[0.06]">
+              <span style={{ width: `${proteinPct}%`, background: MACRO.protein }} title={`Proteína ${proteinPct}%`} />
+              <span style={{ width: `${carbsPct}%`, background: MACRO.carbs }} title={`Carboidrato ${carbsPct}%`} />
+              <span style={{ width: `${fatPct}%`, background: MACRO.fat }} title={`Gordura ${fatPct}%`} />
             </div>
-            <div className="text-center mb-4">
-              <p className="text-3xl dark:text-white text-slate-900" style={{ fontWeight: 800 }}>
-                {mockMealPlan.calories}
+            <div className="mt-2 flex justify-between cp-mono text-[11.5px]">
+              <span style={{ color: MACRO.protein }}>P {proteinPct}%</span>
+              <span style={{ color: MACRO.carbs }}>C {carbsPct}%</span>
+              <span style={{ color: MACRO.fat }}>G {fatPct}%</span>
+            </div>
+          </section>
+
+          <section className="rounded-[22px] border border-[var(--line)] bg-white/[0.025] p-5">
+            <p className="text-[14px] font-semibold">Adesão ao plano</p>
+            <div className="mt-3 flex items-center gap-4">
+              <AdherenceRing value={p.adherence} />
+              <p className="text-[13px] text-[var(--muted)] leading-relaxed">
+                {p.adherence >= 80
+                  ? `${p.name.split(' ')[0]} está seguindo bem o plano. Continue monitorando.`
+                  : `Vale conversar com ${p.name.split(' ')[0]} sobre as dificuldades com o plano.`}
               </p>
-              <p className="text-xs dark:text-zinc-500 text-slate-400">kcal / dia</p>
             </div>
-            <div className="w-full h-3 dark:bg-zinc-800 bg-slate-200 rounded-full overflow-hidden flex">
-              <div className="h-full bg-blue-500 rounded-l-full transition-all" style={{ width: `${proteinPct}%` }} title={`Proteína ${proteinPct}%`} />
-              <div className="h-full bg-amber-500 transition-all" style={{ width: `${carbsPct}%` }} title={`Carb ${carbsPct}%`} />
-              <div className="h-full bg-pink-500 rounded-r-full transition-all" style={{ width: `${fatPct}%` }} title={`Gordura ${fatPct}%`} />
-            </div>
-            <div className="flex justify-between mt-2 text-xs dark:text-zinc-500 text-slate-400">
-              <span className="text-blue-400">P {proteinPct}%</span>
-              <span className="text-amber-400">C {carbsPct}%</span>
-              <span className="text-pink-400">G {fatPct}%</span>
-            </div>
-          </div>
-
-          {/* Adherence */}
-          <div
-            className="rounded-3xl p-5 border"
-            style={{ background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(217,119,6,0.08))', borderColor: 'rgba(245,158,11,0.2)' }}
-          >
-            <CheckCircle className="w-8 h-8 text-amber-500 mb-3" />
-            <p className="text-sm dark:text-white text-slate-900 mb-1" style={{ fontWeight: 600 }}>
-              Adesão ao Plano
-            </p>
-            <p className="text-3xl text-amber-500 mb-2" style={{ fontWeight: 800 }}>{patientData.adherence}%</p>
-            <p className="text-xs dark:text-zinc-400 text-slate-500">
-              {patientData.name} está seguindo bem o plano alimentar. Continue monitorando.
-            </p>
-          </div>
-        </div>
+          </section>
+        </aside>
       </div>
-    </div>
+    </Page>
+  );
+}
+
+function AdherenceRing({ value }: { value: number }) {
+  const r = 30;
+  const c = 2 * Math.PI * r;
+  return (
+    <svg width="76" height="76" viewBox="0 0 76 76" className="shrink-0" role="img" aria-label={`Adesão de ${value}%`}>
+      <circle cx="38" cy="38" r={r} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+      <motion.circle
+        cx="38"
+        cy="38"
+        r={r}
+        fill="none"
+        stroke="#8c82ff"
+        strokeWidth="7"
+        strokeLinecap="round"
+        strokeDasharray={c}
+        initial={{ strokeDashoffset: c }}
+        animate={{ strokeDashoffset: c * (1 - value / 100) }}
+        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+        transform="rotate(-90 38 38)"
+      />
+      <text x="38" y="43" textAnchor="middle" fill="#f4f6fb" fontSize="16" fontWeight="700">
+        {value}%
+      </text>
+    </svg>
   );
 }

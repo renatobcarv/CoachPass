@@ -104,6 +104,18 @@ export async function patchJson<T>(
   return data as T
 }
 
+export async function deleteJson<T>(url: string, authToken: string): Promise<T> {
+  const res = await fetch(url, {
+    method: 'DELETE',
+    headers: { Authorization: `JWT ${authToken}` },
+  })
+  const data = (await res.json().catch(() => ({}))) as unknown
+  if (!res.ok) {
+    throw new PayloadApiError(res.status, data)
+  }
+  return data as T
+}
+
 export function qs(params: Record<string, string | number | boolean | undefined | null>): string {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(params)) {

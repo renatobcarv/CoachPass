@@ -16,6 +16,14 @@ import {
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 import { CTAButton } from '../brand/Brand'
 import { Badge, Card, LoadingPage, Page, PageHeader } from '../student/ui'
+import {
+  birthDateBounds,
+  birthDateError,
+  maskPhoneBR,
+  nameError,
+  phoneError,
+  rangeError,
+} from '../../lib/validation'
 
 const equipmentOptions: { value: EquipmentAccess; label: string }[] = [
   { value: 'full_gym', label: 'Academia completa' },
@@ -104,6 +112,20 @@ export function StudentProfileEditor() {
       toast.error('Preencha os campos obrigatórios.')
       return
     }
+    // Mesmas regras do servidor: avisa antes de enviar, com a mensagem exata do campo
+    const problem =
+      nameError(form.displayName) ||
+      phoneError(form.phone, true) ||
+      birthDateError(form.birthDate) ||
+      rangeError('heightCm', form.heightCm, true) ||
+      rangeError('weightKg', form.weightKg, true) ||
+      rangeError('bodyFatPercent', form.bodyFatPercent) ||
+      rangeError('trainingDaysPerWeek', form.trainingDaysPerWeek) ||
+      rangeError('sessionMinutes', form.sessionMinutes)
+    if (problem) {
+      toast.error('Confira os dados do perfil', { description: problem })
+      return
+    }
     setSaving(true)
     try {
       const saved = await saveStudentProfile(
@@ -186,13 +208,26 @@ export function StudentProfileEditor() {
         <FormCard title="Dados pessoais" kicker="Obrigatório">
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Nome">
-              <input className="cp-field pl-4" value={form.displayName} onChange={(e) => set('displayName', e.target.value)} />
+              <input className="cp-field pl-4" value={form.displayName} maxLength={120} autoComplete="name" aria-invalid={Boolean(nameError(form.displayName))} onChange={(e) => set('displayName', e.target.value)} />
+              {nameError(form.displayName) && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{nameError(form.displayName)}</p>}
             </Field>
             <Field label="Telefone">
-              <input className="cp-field pl-4" value={form.phone} onChange={(e) => set('phone', e.target.value)} />
+              <input
+                type="tel"
+                inputMode="numeric"
+                autoComplete="tel-national"
+                maxLength={15}
+                placeholder="(11) 98765-4321"
+                className="cp-field pl-4"
+                value={form.phone}
+                aria-invalid={Boolean(phoneError(form.phone, true))}
+                onChange={(e) => set('phone', maskPhoneBR(e.target.value))}
+              />
+              {phoneError(form.phone, true) && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{phoneError(form.phone, true)}</p>}
             </Field>
             <Field label="Nascimento">
-              <input type="date" className="cp-field pl-4" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} />
+              <input type="date" min={birthDateBounds().min} max={birthDateBounds().max} className="cp-field pl-4" value={form.birthDate} onChange={(e) => set('birthDate', e.target.value)} />
+              {form.birthDate && birthDateError(form.birthDate) && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{birthDateError(form.birthDate)}</p>}
             </Field>
             <Field label="Sexo">
               <select
@@ -213,10 +248,12 @@ export function StudentProfileEditor() {
         <FormCard title="Corpo e objetivo" kicker="Obrigatório">
           <div className="grid sm:grid-cols-2 gap-4">
             <Field label="Altura (cm)">
-              <input type="number" className="cp-field pl-4" value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} />
+              <input type="number" min={50} max={250} className="cp-field pl-4" value={form.heightCm} onChange={(e) => set('heightCm', e.target.value)} />
+              {form.heightCm && rangeError('heightCm', form.heightCm) && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{rangeError('heightCm', form.heightCm)}</p>}
             </Field>
             <Field label="Peso (kg)">
-              <input type="number" step="0.1" className="cp-field pl-4" value={form.weightKg} onChange={(e) => set('weightKg', e.target.value)} />
+              <input type="number" step="0.1" min={20} max={400} className="cp-field pl-4" value={form.weightKg} onChange={(e) => set('weightKg', e.target.value)} />
+              {form.weightKg && rangeError('weightKg', form.weightKg) && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{rangeError('weightKg', form.weightKg)}</p>}
             </Field>
           </div>
           <p className="cp-mono mt-6 mb-2 text-[11.5px] uppercase tracking-[0.12em] text-[var(--muted)]">Objetivo</p>
@@ -301,7 +338,7 @@ export function StudentProfileEditor() {
               ] as const
             ).map(([key, label]) => (
               <Field key={key} label={label} className={key === 'medications' ? 'sm:col-span-2' : ''}>
-                <textarea className="cp-field" value={form[key]} onChange={(e) => set(key, e.target.value)} />
+                <textarea className="cp-field" maxLength={500} value={form[key]} onChange={(e) => set(key, e.target.value)} />
               </Field>
             ))}
           </div>

@@ -2,6 +2,7 @@ import type { CollectionConfig, Where } from 'payload'
 
 import { isSuperUser } from '../access/isSuper'
 import { studentOwnsProfile, userId, userRole } from '../access/roles'
+import { phoneField } from './validators'
 
 export const StudentProfiles: CollectionConfig = {
   slug: 'student-profiles',
@@ -64,6 +65,8 @@ export const StudentProfiles: CollectionConfig = {
       type: 'text',
       label: 'Telefone',
       required: true,
+      maxLength: 20,
+      validate: phoneField(true),
     },
     {
       name: 'birthDate',

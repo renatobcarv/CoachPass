@@ -5,6 +5,8 @@ import {
   Calendar,
   ChevronRight,
   ClipboardList,
+  Copy,
+  Link as LinkIcon,
   Mail,
   Search,
   Stethoscope,
@@ -13,6 +15,7 @@ import {
   Users,
   Utensils,
 } from 'lucide-react'
+import { toast } from 'sonner'
 import { AddPatientModal } from '../AddPatientModal'
 import { useAuth } from '../../context/AuthContext'
 import { PROFESSIONAL_LINKS_API, getJson, qs } from '@/lib/cms'
@@ -41,6 +44,7 @@ type LinkDoc = {
         name?: string
         email?: string
       }
+  studentInfo?: { name?: string | null; email?: string | null } | null
 }
 
 type ListResponse = { docs: LinkDoc[] }
@@ -53,12 +57,9 @@ function mapLink(doc: LinkDoc): PatientRow | null {
       ? String(student.id)
       : String(student || '')
   if (!id) return null
-  const name =
-    typeof student === 'object' && student
-      ? student.name || student.email || 'Paciente'
-      : 'Paciente'
-  const email =
-    typeof student === 'object' && student ? student.email || '' : ''
+  const obj = typeof student === 'object' && student ? student : null
+  const email = obj?.email || doc.studentInfo?.email || ''
+  const name = obj?.name || doc.studentInfo?.name || email || 'Paciente'
   return {
     id,
     linkId: String(doc.id),
@@ -128,6 +129,17 @@ export function NutritionistDashboard() {
   const proProfile = loadProProfile(user?.id)
   const activeCount = patients.filter((p) => p.status === 'active').length
   const pendingCount = patients.filter((p) => p.status === 'pending').length
+
+  const bioSlug = user?.email?.split('@')[0] || 'nutri'
+  const bioLink = `coachpass.app/${bioSlug}`
+  const copyBioLink = async () => {
+    try {
+      await navigator.clipboard.writeText(`https://${bioLink}`)
+      toast.success('Link copiado', { description: bioLink })
+    } catch {
+      toast.error('Não foi possível copiar o link.')
+    }
+  }
 
   const kpis = [
     { label: 'Pacientes ativos', value: String(activeCount), icon: Users, live: true },
@@ -265,6 +277,7 @@ export function NutritionistDashboard() {
           )}
         </Card>
 
+        <div className="space-y-6">
         <Card className="p-5 sm:p-6" delay={0.16}>
           <h2 className="cp-display text-[18px] font-bold mb-4">Ações rápidas</h2>
           <div className="grid gap-2">
@@ -292,6 +305,30 @@ export function NutritionistDashboard() {
             ))}
           </div>
         </Card>
+
+        {/* Link de captação (do antigo perfil) */}
+        <Card className="p-5 sm:p-6 overflow-hidden" delay={0.2}>
+          <div className="flex items-center gap-2">
+            <LinkIcon className="w-4 h-4 text-[var(--brand-300)]" />
+            <p className="cp-kicker">Link da bio · captação</p>
+          </div>
+          <div className="mt-4 rounded-2xl px-4 py-3 border border-[var(--line-2)] bg-white/[0.03]">
+            <p className="text-[12px] text-[var(--dim)]">Seu link personalizado</p>
+            <p className="mt-0.5 text-[15px] font-semibold truncate">{bioLink}</p>
+          </div>
+          <button type="button" onClick={copyBioLink} className="cp-btn-sm mt-3 w-full justify-center h-11">
+            <Copy className="w-4 h-4" />
+            Copiar link
+          </button>
+          <p className="mt-3 text-[12px] text-[var(--dim)]">
+            Edite nome, WhatsApp e registro em{' '}
+            <button type="button" onClick={() => navigate('/nutritionist/configuracoes')} className="underline underline-offset-2 hover:text-white">
+              Configurações
+            </button>
+            .
+          </p>
+        </Card>
+        </div>
       </div>
 
       <AddPatientModal

@@ -19,7 +19,6 @@ import {
   Droplets,
   Dumbbell,
   Flame,
-  Github,
   HeartHandshake,
   LineChart,
   Lock,
@@ -34,7 +33,6 @@ import {
 } from 'lucide-react';
 import { Backdrop, CTAButton, Counter, Grain, Logo, Reveal, ScrollProgress, SplitWords } from '../brand/Brand';
 
-const REPO_URL = 'https://github.com/renatobcarv/CoachPass';
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 
 const nav = [
@@ -1063,12 +1061,6 @@ export function Home() {
                   <span className="w-2 h-2 rounded-full bg-[var(--amber)]" />
                   Projeto em desenvolvimento · MVP
                 </p>
-                <div>
-                  <a href={REPO_URL} target="_blank" rel="noreferrer" className="cp-btn-ghost mt-5 h-10 text-[13px]">
-                    <Github className="w-4 h-4" />
-                    Repositório no GitHub
-                  </a>
-                </div>
               </div>
               <div>
                 <h4 className="cp-kicker">Plataforma</h4>

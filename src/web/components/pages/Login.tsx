@@ -1,12 +1,14 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { AnimatePresence, motion } from 'motion/react';
-import { CheckCircle, Dumbbell, Lock, Mail, Salad, TrendingUp, X } from 'lucide-react';
+import { CheckCircle, Dumbbell, Mail, Salad, TrendingUp, X } from 'lucide-react';
 import { useAuth, UserRole } from '../../context/AuthContext';
 import { toast } from 'sonner';
 import { postJson, PayloadApiError, extractPayloadMessage, USERS_API } from '@/lib/cms';
 import { AuthShell, FieldLabel } from '../brand/AuthShell';
 import { CTAButton, Reveal } from '../brand/Brand';
+import { PasswordInput } from '../forms/PasswordInput';
+import { isValidEmail } from '../../lib/validation';
 
 function pathForRole(role: UserRole) {
   if (role === 'student') return '/app';
@@ -29,6 +31,13 @@ export function Login() {
   const [forgotEmail, setForgotEmail] = useState('');
   const [forgotSent, setForgotSent] = useState(false);
   const [forgotLoading, setForgotLoading] = useState(false);
+  // Intervalo entre pedidos de recuperação, para evitar abuso/spam de e-mails
+  const [forgotCooldown, setForgotCooldown] = useState(0);
+  useEffect(() => {
+    if (forgotCooldown <= 0) return;
+    const t = window.setTimeout(() => setForgotCooldown((s) => s - 1), 1000);
+    return () => window.clearTimeout(t);
+  }, [forgotCooldown]);
   const { login, user, isAuthenticated } = useAuth();
   const navigate = useNavigate();
 
@@ -49,11 +58,16 @@ export function Login() {
 
   const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!forgotEmail || forgotLoading) return;
+    if (!forgotEmail || forgotLoading || forgotCooldown > 0) return;
+    if (!isValidEmail(forgotEmail)) {
+      toast.error('Informe um e-mail válido.');
+      return;
+    }
     setForgotLoading(true);
     try {
       await postJson(`${USERS_API}/forgot-password`, { email: forgotEmail.trim() });
       setForgotSent(true);
+      setForgotCooldown(60);
       toast.success(`Se o e-mail existir, enviamos o link de recuperação para ${forgotEmail}`);
       setTimeout(() => {
         setShowForgotPassword(false);
@@ -138,8 +152,12 @@ export function Login() {
                       required
                     />
                   </div>
-                  <CTAButton type="submit" block disabled={!forgotEmail || forgotLoading}>
-                    {forgotLoading ? 'Enviando…' : 'Enviar link de recuperação'}
+                  <CTAButton type="submit" block disabled={!forgotEmail || forgotLoading || forgotCooldown > 0}>
+                    {forgotLoading
+                      ? 'Enviando…'
+                      : forgotCooldown > 0
+                        ? `Aguarde ${forgotCooldown}s para reenviar`
+                        : 'Enviar link de recuperação'}
                   </CTAButton>
                 </form>
               ) : (
@@ -205,20 +223,12 @@ export function Login() {
                   Esqueci a senha
                 </button>
               </div>
-              <div className="relative">
-                <Lock className={iconCls} />
-                <input
-                  id="login-password"
-                  type="password"
-                  autoFocus={Boolean(email)}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Sua senha"
-                  autoComplete="current-password"
-                  className="cp-field"
-                  required
-                />
-              </div>
+              <PasswordInput
+                id="login-password"
+                value={password}
+                onChange={setPassword}
+                autoFocus={Boolean(email)}
+              />
             </div>
             <div className="pt-2">
               <CTAButton type="submit" block disabled={loading || !email || !password}>

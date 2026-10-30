@@ -29,6 +29,24 @@ import {
 } from '../../lib/studentApi'
 import { PayloadApiError, extractPayloadMessage } from '@/lib/cms'
 import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
+import {
+  birthDateBounds,
+  birthDateError,
+  maskPhoneBR,
+  nameError,
+  phoneError,
+  rangeError,
+} from '../../lib/validation'
+
+/** Mensagem de erro do campo — só aparece depois que a pessoa começou a digitar. */
+function FieldError({ show, message }: { show: boolean; message: string | null }) {
+  if (!show || !message) return null
+  return (
+    <p role="alert" className="mt-3 text-[13.5px] text-[#ff8a95]">
+      {message}
+    </p>
+  )
+}
 
 type FormState = {
   displayName: string
@@ -335,11 +353,11 @@ export function StudentOnboarding() {
 
   const step1Valid = useMemo(() => {
     return Boolean(
-      form.displayName.trim() &&
-        form.phone.trim() &&
-        form.birthDate &&
-        form.heightCm &&
-        form.weightKg &&
+      !nameError(form.displayName) &&
+        !phoneError(form.phone, true) &&
+        !birthDateError(form.birthDate) &&
+        !rangeError('heightCm', form.heightCm, true) &&
+        !rangeError('weightKg', form.weightKg, true) &&
         form.sex &&
         form.goal,
     )
@@ -351,15 +369,19 @@ export function StudentOnboarding() {
     (id: StepId) => {
       switch (id) {
         case 'name':
-          return Boolean(form.displayName.trim())
+          return !nameError(form.displayName)
         case 'phone':
-          return Boolean(form.phone.trim())
+          return !phoneError(form.phone, true)
         case 'birth':
-          return Boolean(form.birthDate)
+          return !birthDateError(form.birthDate)
         case 'sex':
           return Boolean(form.sex)
         case 'body':
-          return Boolean(form.heightCm && form.weightKg)
+          return !rangeError('heightCm', form.heightCm, true) && !rangeError('weightKg', form.weightKg, true)
+        case 'bodyfat':
+          return !rangeError('bodyFatPercent', form.bodyFatPercent)
+        case 'minutes':
+          return !rangeError('sessionMinutes', form.sessionMinutes)
         case 'goal':
           return Boolean(form.goal)
         case 'review':
@@ -512,6 +534,7 @@ export function StudentOnboarding() {
     switch (current.id) {
       case 'name':
         return (
+          <>
           <input
             autoFocus
             className="cp-field cp-field-lg"
@@ -519,31 +542,43 @@ export function StudentOnboarding() {
             onChange={(e) => setField('displayName', e.target.value)}
             placeholder="Seu nome"
             autoComplete="name"
+            maxLength={120}
           />
+          <FieldError show={form.displayName.length > 0} message={nameError(form.displayName)} />
+          </>
         )
       case 'phone':
         return (
-          <input
-            autoFocus
-            type="tel"
-            inputMode="tel"
-            className="cp-field cp-field-lg"
-            value={form.phone}
-            onChange={(e) => setField('phone', e.target.value)}
-            placeholder="(11) 99999-9999"
-            autoComplete="tel"
-          />
+          <>
+            <input
+              autoFocus
+              type="tel"
+              inputMode="numeric"
+              className="cp-field cp-field-lg"
+              value={form.phone}
+              onChange={(e) => setField('phone', maskPhoneBR(e.target.value))}
+              placeholder="(11) 98765-4321"
+              autoComplete="tel-national"
+              maxLength={15}
+              aria-invalid={Boolean(form.phone) && Boolean(phoneError(form.phone, true))}
+            />
+            <FieldError show={form.phone.length > 0} message={phoneError(form.phone, true)} />
+          </>
         )
       case 'birth':
         return (
-          <input
-            autoFocus
-            type="date"
-            className="cp-field cp-field-lg"
-            value={form.birthDate}
-            onChange={(e) => setField('birthDate', e.target.value)}
-            max={new Date().toISOString().slice(0, 10)}
-          />
+          <>
+            <input
+              autoFocus
+              type="date"
+              className="cp-field cp-field-lg"
+              value={form.birthDate}
+              onChange={(e) => setField('birthDate', e.target.value)}
+              min={birthDateBounds().min}
+              max={birthDateBounds().max}
+            />
+            <FieldError show={form.birthDate.length > 0} message={birthDateError(form.birthDate)} />
+          </>
         )
       case 'sex':
         return (
@@ -573,6 +608,8 @@ export function StudentOnboarding() {
                     className="cp-field cp-field-lg pr-14"
                     value={form.heightCm}
                     onChange={(e) => setField('heightCm', e.target.value)}
+                    min={50}
+                    max={250}
                     placeholder="175"
                   />
                   <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">cm</span>
@@ -588,12 +625,22 @@ export function StudentOnboarding() {
                     className="cp-field cp-field-lg pr-14"
                     value={form.weightKg}
                     onChange={(e) => setField('weightKg', e.target.value)}
+                    min={20}
+                    max={400}
                     placeholder="75.5"
                   />
                   <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">kg</span>
                 </div>
               </label>
             </div>
+            <FieldError
+              show={Boolean(form.heightCm || form.weightKg)}
+              message={
+                (form.heightCm && rangeError('heightCm', form.heightCm)) ||
+                (form.weightKg && rangeError('weightKg', form.weightKg)) ||
+                null
+              }
+            />
             <AnimatePresence>
               {bmi && (
                 <motion.p
@@ -680,6 +727,7 @@ export function StudentOnboarding() {
                 className="cp-field h-11 w-28 pl-4"
                 value={minutesOptions.includes(form.sessionMinutes) ? '' : form.sessionMinutes}
                 onChange={(e) => setField('sessionMinutes', e.target.value)}
+                aria-invalid={Boolean(rangeError('sessionMinutes', form.sessionMinutes))}
                 placeholder="min"
               />
             </label>
@@ -712,9 +760,12 @@ export function StudentOnboarding() {
               className="cp-field cp-field-lg pr-12"
               value={form.bodyFatPercent}
               onChange={(e) => setField('bodyFatPercent', e.target.value)}
+              min={1}
+              max={70}
               placeholder="18"
             />
             <span className="cp-mono absolute right-5 top-1/2 -translate-y-1/2 text-[14px] text-[var(--dim)]">%</span>
+            <FieldError show={Boolean(form.bodyFatPercent)} message={rangeError('bodyFatPercent', form.bodyFatPercent)} />
           </div>
         )
       case 'food':
@@ -723,6 +774,7 @@ export function StudentOnboarding() {
             <label className="block">
               <FieldCaption>Alergias alimentares</FieldCaption>
               <textarea
+                maxLength={500}
                 autoFocus
                 className="cp-field"
                 value={form.foodAllergies}
@@ -733,6 +785,7 @@ export function StudentOnboarding() {
             <label className="block">
               <FieldCaption>Restrições alimentares</FieldCaption>
               <textarea
+                maxLength={500}
                 className="cp-field"
                 value={form.dietaryRestrictions}
                 onChange={(e) => setField('dietaryRestrictions', e.target.value)}
@@ -754,6 +807,7 @@ export function StudentOnboarding() {
               <label key={key} className="block">
                 <FieldCaption>{label}</FieldCaption>
                 <textarea
+                  maxLength={500}
                   autoFocus={i === 0}
                   className="cp-field min-h-[76px]"
                   value={form[key]}

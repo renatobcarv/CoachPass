@@ -13,6 +13,7 @@ import { ProfessionalLinks } from './collections/ProfessionalLinks'
 import { Workouts } from './collections/Workouts'
 import { MealPlans } from './collections/MealPlans'
 import { AiGenerations } from './collections/AiGenerations'
+import { Anamneses } from './collections/Anamneses'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -49,7 +50,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, StudentProfiles, ProfessionalLinks, Workouts, MealPlans, AiGenerations],
+  collections: [Users, Media, StudentProfiles, ProfessionalLinks, Workouts, MealPlans, AiGenerations, Anamneses],
   editor: lexicalEditor(),
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {

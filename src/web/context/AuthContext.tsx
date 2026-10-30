@@ -146,9 +146,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           : e instanceof Error
             ? e.message
             : '';
-      const msg = /incorrect|invalid|unauthorized/i.test(raw)
-        ? 'E-mail ou senha incorretos.'
-        : raw || 'E-mail ou senha incorretos.';
+      const msg = /locked/i.test(raw)
+        ? 'Muitas tentativas. Por segurança, a conta foi bloqueada por 10 minutos.'
+        : /incorrect|invalid|unauthorized/i.test(raw)
+          ? 'E-mail ou senha incorretos.'
+          : raw || 'E-mail ou senha incorretos.';
       toast.error(msg);
       throw e;
     }

@@ -12,9 +12,35 @@ import { motion, AnimatePresence } from 'motion/react';
 import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
-import { projectId, publicAnonKey } from '@/lib/supabase/info';
+import { USERS_API, PayloadApiError, extractPayloadMessage, patchJson, postJson } from '@/lib/cms';
+import { PasswordStrength } from '../forms/PasswordInput';
+import { credentialError, isStrongEnough, maskPhoneBR, nameError, phoneError } from '../../lib/validation';
 
-const serverUrl = `https://${projectId}.supabase.co/functions/v1/make-server-da3e276b`;
+// Preferências (notificações, privacidade, bio/cidade/Instagram) ainda não têm campos no backend:
+// ficam salvas neste dispositivo. Nada é enviado a serviços de terceiros.
+const prefsKey = (id: string | number) => `coachpass-settings:${id}`;
+function loadPrefs(id?: string | number | null): Record<string, any> {
+  if (!id) return {};
+  try {
+    return JSON.parse(localStorage.getItem(prefsKey(id)) || '{}');
+  } catch {
+    return {};
+  }
+}
+function savePrefs(id: string | number, patch: Record<string, any>) {
+  try {
+    localStorage.setItem(prefsKey(id), JSON.stringify({ ...loadPrefs(id), ...patch }));
+  } catch {
+    /* sem storage disponível */
+  }
+}
+
+const errMsg = (err: unknown, fallback: string) =>
+  err instanceof PayloadApiError
+    ? extractPayloadMessage(err.data) || err.message
+    : err instanceof Error
+      ? err.message
+      : fallback;
 
 type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'appearance' | 'billing' | 'data';
 
@@ -105,81 +131,90 @@ export function Settings() {
     profilePublic: false, showStats: true, shareProgress: true, analyticsEnabled: true,
   });
 
-  // Fetch settings from server
+  // Preferências salvas neste dispositivo
   useEffect(() => {
     if (!user) return;
-    const fetchSettings = async () => {
-      try {
-        const res = await fetch(`${serverUrl}/settings/${user.id}`, {
-          headers: { Authorization: `Bearer ${publicAnonKey}` },
-        });
-        if (res.ok) {
-          const { settings } = await res.json();
-          if (settings?.notifications) setNotifications(prev => ({ ...prev, ...settings.notifications }));
-          if (settings?.privacy) setPrivacy(prev => ({ ...prev, ...settings.privacy }));
-        }
-      } catch (err) {
-        console.error('Erro ao buscar configurações:', err);
-      }
-    };
-    fetchSettings();
-  }, [user]);
+    const prefs = loadPrefs(user.id);
+    if (prefs.notifications) setNotifications((prev) => ({ ...prev, ...prefs.notifications }));
+    if (prefs.privacy) setPrivacy((prev) => ({ ...prev, ...prefs.privacy }));
+    if (prefs.profileExtra) setProfileForm((prev) => ({ ...prev, ...prefs.profileExtra }));
+  }, [user?.id]);
 
   const saveSettings = async (section: string, data: any) => {
-    setSaving(true);
-    try {
-      const token = user?.accessToken || publicAnonKey;
-      await fetch(`${serverUrl}/settings/${user?.id}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ [section]: data }),
-      });
-      toast.success('Configurações salvas!');
-    } catch (err) {
-      console.error('Erro ao salvar:', err);
-      toast.info('Configurações salvas localmente!');
-    } finally {
-      setSaving(false);
-    }
+    if (!user) return;
+    savePrefs(user.id, { [section]: data });
+    toast.success('Preferências salvas neste dispositivo.');
   };
 
   const saveProfile = async () => {
+    if (!user?.accessToken) return;
+    const isPro = user.role === 'personal' || user.role === 'nutritionist';
+    const problem =
+      nameError(profileForm.name) ||
+      phoneError(profileForm.whatsapp, false) ||
+      (isPro ? credentialError(profileForm.professionalId, user.role === 'nutritionist' ? 'nutritionist' : 'personal') : null);
+    if (problem) {
+      toast.error('Confira os dados do perfil', { description: problem });
+      return;
+    }
     setSaving(true);
     try {
-      const token = user?.accessToken || publicAnonKey;
-      const res = await fetch(`${serverUrl}/profile/${user?.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+      // Nome, WhatsApp e registro vão para a conta (API do CoachPass)
+      await patchJson(
+        `${USERS_API}/${user.id}`,
+        {
+          name: profileForm.name.trim(),
+          whatsapp: profileForm.whatsapp.trim() || null,
+          ...(isPro ? { professionalId: profileForm.professionalId.trim().toUpperCase() } : {}),
         },
-        body: JSON.stringify(profileForm),
+        user.accessToken,
+      );
+      savePrefs(user.id, {
+        profileExtra: { bio: profileForm.bio, specialty: profileForm.specialty, city: profileForm.city, instagram: profileForm.instagram },
       });
-      if (res.ok) {
-        updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-        toast.success('Perfil atualizado com sucesso!');
-      } else {
-        updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-        toast.success('Perfil salvo localmente!');
-      }
+      updateUser({
+        name: profileForm.name.trim(),
+        whatsapp: profileForm.whatsapp.trim(),
+        ...(isPro ? { professionalId: profileForm.professionalId.trim().toUpperCase() } : {}),
+      });
+      toast.success('Perfil atualizado com sucesso!');
     } catch (err) {
-      updateUser({ name: profileForm.name, whatsapp: profileForm.whatsapp });
-      toast.success('Perfil salvo localmente!');
+      toast.error('Não foi possível salvar o perfil', { description: errMsg(err, 'Tente novamente.') });
     } finally {
       setSaving(false);
     }
   };
 
-  const handlePasswordChange = () => {
+  const [changingPassword, setChangingPassword] = useState(false);
+  const handlePasswordChange = async () => {
+    if (!user?.accessToken || !user.email) return;
     if (!passwordForm.current) { toast.error('Informe a senha atual'); return; }
-    if (passwordForm.new.length < 6) { toast.error('Nova senha deve ter ao menos 6 caracteres'); return; }
+    if (!isStrongEnough(passwordForm.new)) {
+      toast.error('Senha fraca', { description: 'Use 8+ caracteres, com pelo menos uma letra e um número.' });
+      return;
+    }
+    if (passwordForm.new === passwordForm.current) { toast.error('A nova senha precisa ser diferente da atual'); return; }
     if (passwordForm.new !== passwordForm.confirm) { toast.error('Senhas não coincidem'); return; }
-    toast.success('Senha alterada com sucesso!');
-    setShowPasswordModal(false);
-    setPasswordForm({ current: '', new: '', confirm: '' });
+    setChangingPassword(true);
+    try {
+      // 1) confirma a senha atual (evita troca por alguém com o aparelho desbloqueado)
+      try {
+        await postJson(`${USERS_API}/login`, { email: user.email, password: passwordForm.current });
+      } catch (err) {
+        const raw = errMsg(err, '');
+        toast.error(/locked/i.test(raw) ? 'Muitas tentativas. Aguarde 10 minutos.' : 'Senha atual incorreta.');
+        return;
+      }
+      // 2) grava a nova senha na conta
+      await patchJson(`${USERS_API}/${user.id}`, { password: passwordForm.new }, user.accessToken);
+      toast.success('Senha alterada com sucesso!');
+      setShowPasswordModal(false);
+      setPasswordForm({ current: '', new: '', confirm: '' });
+    } catch (err) {
+      toast.error('Não foi possível alterar a senha', { description: errMsg(err, 'Tente novamente.') });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   const handleLogout = () => {
@@ -341,9 +376,16 @@ export function Settings() {
                             <input
                               type="text"
                               value={(profileForm as any)[field] || ''}
-                              onChange={e => setProfileForm(p => ({ ...p, [field]: e.target.value }))}
-                              placeholder={placeholder}
+                              onChange={e =>
+                                setProfileForm(p => ({
+                                  ...p,
+                                  [field]: field === 'whatsapp' ? maskPhoneBR(e.target.value) : e.target.value,
+                                }))
+                              }
+                              placeholder={field === 'whatsapp' ? '(11) 98765-4321' : placeholder}
                               disabled={disabled}
+                              maxLength={field === 'whatsapp' ? 15 : 120}
+                              inputMode={field === 'whatsapp' ? 'numeric' : undefined}
                               className="w-full pl-10 pr-4 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 placeholder:dark:text-zinc-600 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30 disabled:opacity-50 transition-all"
                             />
                           </div>
@@ -478,9 +520,7 @@ export function Settings() {
 
                   <div className="space-y-4">
                     {[
-                      { key: 'profilePublic', label: 'Perfil Público', desc: 'Permitir que outros vejam seu perfil no CoachPass', icon: Eye },
                       { key: 'showStats', label: 'Mostrar Estatísticas', desc: 'Exibir suas estatísticas de treino no perfil', icon: Activity },
-                      { key: 'shareProgress', label: 'Compartilhar Progresso', desc: 'Permitir que seu profissional veja seu progresso', icon: Zap },
                       { key: 'analyticsEnabled', label: 'Analytics de Uso', desc: 'Ajude a melhorar o CoachPass com dados anônimos', icon: Star },
                     ].map(({ key, label, desc, icon: Icon }) => (
                       <div key={key} className="flex items-center justify-between p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
@@ -1000,21 +1040,29 @@ export function Settings() {
                         type={show ? 'text' : 'password'}
                         value={(passwordForm as any)[key]}
                         onChange={e => setPasswordForm(p => ({ ...p, [key]: e.target.value }))}
+                        maxLength={128}
+                        autoComplete={key === 'current' ? 'current-password' : 'new-password'}
+                        spellCheck={false}
                         className="w-full pl-10 pr-10 py-3 rounded-xl dark:bg-zinc-800 bg-slate-50 border dark:border-zinc-700 border-slate-200 dark:text-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-[#000326]/30 dark:ring-white/30"
                         placeholder="••••••••"
                       />
-                      <button type="button" onClick={toggle} className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400">
+                      <button type="button" onClick={toggle} aria-label={show ? 'Ocultar senha' : 'Mostrar senha'} className="absolute right-3 top-1/2 -translate-y-1/2 dark:text-zinc-500 text-slate-400">
                         {show ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                       </button>
                     </div>
+                    {key === 'new' && <PasswordStrength value={passwordForm.new} />}
+                    {key === 'confirm' && passwordForm.confirm && passwordForm.confirm !== passwordForm.new && (
+                      <p className="mt-2 text-[12.5px] text-[#ff8a95]">As senhas não coincidem.</p>
+                    )}
                   </div>
                 ))}
                 <button
                   onClick={handlePasswordChange}
-                  className="w-full py-3 rounded-xl text-sm text-white transition-all hover:opacity-90"
-                  style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
+                  disabled={changingPassword}
+                  className="cp-selected w-full py-3 rounded-xl text-sm transition-all hover:brightness-110 disabled:opacity-50"
+                  style={{ fontWeight: 600 }}
                 >
-                  Salvar Nova Senha
+                  {changingPassword ? 'Alterando…' : 'Salvar nova senha'}
                 </button>
               </div>
             </motion.div>
