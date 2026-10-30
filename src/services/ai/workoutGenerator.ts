@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
-import type { Workout } from '../../payload-types'
 
+import type { User, Workout } from '@/payload-types'
 import { catalogForPrompt } from './catalog'
 import { generateWeekWithGemini, type GeneratedWorkout } from './geminiProvider'
 import { enrichWorkout, generateWeekFromCatalog } from './localWorkoutGenerator'
@@ -23,6 +23,22 @@ type ProfileDoc = {
   birthDate?: string | null
   foodAllergies?: string | null
   dietaryRestrictions?: string | null
+}
+
+type Weekday = NonNullable<Workout['weekday']>
+
+const WEEKDAYS: readonly Weekday[] = [
+  'monday',
+  'tuesday',
+  'wednesday',
+  'thursday',
+  'friday',
+  'saturday',
+  'sunday',
+]
+
+function toWeekday(value?: string | null): Weekday | undefined {
+  return WEEKDAYS.find((day) => day === value)
 }
 
 function ageFromBirthDate(birthDate?: string | null): number | null {
@@ -100,7 +116,7 @@ async function generateWeekWorkouts(
 
 export async function createAiWorkoutForStudent(args: {
   payload: Payload
-  userId: string | number
+  userId: User['id']
   profile: ProfileDoc
 }): Promise<
   | {
@@ -112,16 +128,14 @@ export async function createAiWorkoutForStudent(args: {
     }
   | { ok: false; code: string; message: string; remaining?: number }
 > {
-  const { payload, profile } = args
-  // IDs do Postgres são numéricos; a assinatura aceita string por compatibilidade (só tipagem).
-  const userId = args.userId as number
+  const { payload, userId, profile } = args
 
   const quota = await getAiQuota(payload, userId)
   if (quota.blocked) {
     return {
       ok: false,
       code: 'QUOTA_EXCEEDED',
-      message: 'Você atingiu o limite de 2 gerações gratuitas neste mês. Veja os planos.',
+      message: 'Você atingiu o limite de 2 gerações de treino neste mês.',
       remaining: 0,
     }
   }
@@ -158,7 +172,25 @@ export async function createAiWorkoutForStudent(args: {
     overrideAccess: true,
   })
 
+  const reserved = await getAiQuota(payload, userId)
+  if (reserved.used > reserved.limit) {
+    await payload.update({
+      collection: 'ai-generations',
+      id: pending.id,
+      data: { status: 'failed', provider: 'quota', errorMessage: 'QUOTA_EXCEEDED' },
+      overrideAccess: true,
+    })
+    return {
+      ok: false,
+      code: 'QUOTA_EXCEEDED',
+      message: 'Você atingiu o limite de 2 gerações de treino neste mês.',
+      remaining: 0,
+    }
+  }
+
   const { workouts, provider } = await generateWeekWorkouts(profile)
+  const disclaimer =
+    'Conteúdo gerado por IA. Não substitui avaliação presencial. Procure um profissional se houver dor ou desconforto.'
   const publishedAt = new Date().toISOString()
   const createdIds: Array<string | number> = []
 
@@ -172,8 +204,8 @@ export async function createAiWorkoutForStudent(args: {
           author: userId,
           status: 'published',
           source: 'ai',
-          observations: workout.observations,
-          weekday: workout.weekday as Workout['weekday'],
+          observations: [workout.observations, disclaimer].filter(Boolean).join('\n\n'),
+          weekday: toWeekday(workout.weekday),
           splitLabel: workout.splitLabel,
           publishedAt,
           exercises: workout.exercises,

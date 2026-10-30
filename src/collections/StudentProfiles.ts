@@ -1,8 +1,9 @@
 import type { CollectionConfig, Where } from 'payload'
 
+import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
+import { studentOwnsProfile } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
-import { studentOwnsProfile, userId, userRole } from '../access/roles'
-import { phoneField } from './validators'
+import { userId, userRole } from '../access/roles'
 
 export const StudentProfiles: CollectionConfig = {
   slug: 'student-profiles',
@@ -34,8 +35,10 @@ export const StudentProfiles: CollectionConfig = {
       ({ data, operation, req }) => {
         if (!data) return data
         if (operation === 'create' && req.user && userRole(req) === 'student') {
-          data.user = req.user.id
+          const actorId = toNumericRelationId(req.user.id)
+          if (actorId !== null) data.user = actorId
         }
+        coerceNumericRelations(data, ['user'])
         if (data.firstName || data.lastName || data.displayName) {
           const composed = [data.firstName, data.lastName].filter(Boolean).join(' ').trim()
           data.displayName = data.displayName || composed || undefined
@@ -65,8 +68,6 @@ export const StudentProfiles: CollectionConfig = {
       type: 'text',
       label: 'Telefone',
       required: true,
-      maxLength: 20,
-      validate: phoneField(true),
     },
     {
       name: 'birthDate',

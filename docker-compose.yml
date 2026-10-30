@@ -1,45 +1,28 @@
-version: '3'
+version: '3.8'
 
 services:
   payload:
-    image: node:18-alpine
+    build: .
     ports:
       - '3000:3000'
-    volumes:
-      - .:/home/node/app
-      - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
-    depends_on:
-      - mongo
-      - postgres
     env_file:
       - .env
-
-  mongo:
-    image: mongo:latest
-    ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
-    volumes:
-      - data:/data/db
-    logging:
-      driver: none
+    depends_on:
+      - postgres
+    environment:
+      PAYLOAD_DATABASE_PUSH: 'false'
 
   postgres:
     restart: always
-    image: postgres:latest
+    image: postgres:17
     environment:
-      POSTGRES_USER: fitsync
-      POSTGRES_PASSWORD: fitsync
-      POSTGRES_DB: fitsync
+      POSTGRES_USER: coachpass
+      POSTGRES_PASSWORD: coachpass
+      POSTGRES_DB: coachpass
     volumes:
       - pgdata:/var/lib/postgresql
     ports:
       - '5433:5432'
 
 volumes:
-  data:
   pgdata:
-  node_modules:

@@ -28,14 +28,19 @@ export function currentMonthBounds(now = new Date()): { start: Date; end: Date; 
   return { start, end, label: `${year}-${month}` }
 }
 
-export async function getAiQuota(payload: Payload, userId: string | number) {
+export async function getAiQuota(
+  payload: Payload,
+  userId: string | number,
+  type: 'workout' | 'meal_plan' = 'workout',
+) {
   const { start, end, label } = currentMonthBounds()
   const result = await payload.find({
     collection: 'ai-generations',
     where: {
       and: [
         { user: { equals: userId } },
-        { status: { equals: 'succeeded' } },
+        { type: { equals: type } },
+        { status: { in: ['pending', 'succeeded'] } },
         { createdAt: { greater_than_equal: start.toISOString() } },
         { createdAt: { less_than: end.toISOString() } },
       ],
@@ -53,6 +58,50 @@ export async function getAiQuota(payload: Payload, userId: string | number) {
     remaining,
     month: label,
     blocked: remaining <= 0,
+  }
+}
+
+export const CHAT_DAILY_LIMIT = 30
+
+export function currentDayBounds(now = new Date()): { start: Date; end: Date } {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone: TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const parts = fmt.formatToParts(now)
+  const year = parts.find((p) => p.type === 'year')?.value
+  const month = parts.find((p) => p.type === 'month')?.value
+  const day = parts.find((p) => p.type === 'day')?.value
+  const start = new Date(`${year}-${month}-${day}T03:00:00.000Z`)
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000)
+  return { start, end }
+}
+
+export async function getChatQuota(payload: Payload, userId: string | number) {
+  const { start, end } = currentDayBounds()
+  const result = await payload.find({
+    collection: 'ai-generations',
+    where: {
+      and: [
+        { user: { equals: userId } },
+        { type: { equals: 'chat' } },
+        { status: { in: ['pending', 'succeeded'] } },
+        { createdAt: { greater_than_equal: start.toISOString() } },
+        { createdAt: { less_than: end.toISOString() } },
+      ],
+    },
+    limit: 100,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const used = result.totalDocs
+  return {
+    limit: CHAT_DAILY_LIMIT,
+    used,
+    remaining: Math.max(0, CHAT_DAILY_LIMIT - used),
+    blocked: used >= CHAT_DAILY_LIMIT,
   }
 }
 

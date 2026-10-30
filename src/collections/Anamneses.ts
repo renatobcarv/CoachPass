@@ -1,106 +1,93 @@
-import type { CollectionConfig, Where } from 'payload'
+import type { CollectionConfig } from 'payload'
+import { ValidationError } from 'payload'
 
+import { hasActiveLink } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
-import { userId, userRole } from '../access/roles'
+import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
+import { professionalOrStudentOnRecord, userId, userRole } from '../access/roles'
 
 export const Anamneses: CollectionConfig = {
   slug: 'anamneses',
   admin: {
-    useAsTitle: 'id',
-    defaultColumns: ['patient', 'author', 'status', 'updatedAt'],
+    defaultColumns: ['student', 'professional', 'status', 'completedAt'],
   },
   access: {
     create: ({ req }) => {
       if (isSuperUser(req)) return true
-      const role = userRole(req)
-      return role === 'nutritionist'
+      return userRole(req) === 'nutritionist'
     },
-    read: ({ req }): boolean | Where => {
+    read: professionalOrStudentOnRecord,
+    update: ({ req }) => {
       if (isSuperUser(req)) return true
       const id = userId(req)
-      if (!id) return false
-      const role = userRole(req)
-      if (role === 'student') return { patient: { equals: id } }
-      if (role === 'nutritionist') return { author: { equals: id } }
-      return false
+      if (!id || userRole(req) !== 'nutritionist') return false
+      return { professional: { equals: id } }
     },
-    update: ({ req }): boolean | Where => {
+    delete: ({ req }) => {
       if (isSuperUser(req)) return true
       const id = userId(req)
-      if (!id) return false
-      if (userRole(req) === 'nutritionist') return { author: { equals: id } }
-      return false
-    },
-    delete: ({ req }): boolean | Where => {
-      if (isSuperUser(req)) return true
-      const id = userId(req)
-      if (!id) return false
-      if (userRole(req) === 'nutritionist') return { author: { equals: id } }
-      return false
+      if (!id || userRole(req) !== 'nutritionist') return false
+      return { professional: { equals: id } }
     },
   },
   hooks: {
     beforeValidate: [
-      ({ data, req, operation }) => {
+      async ({ data, operation, req, collection, originalDoc }) => {
         if (!data) return data
-        // Força o autor a ser o nutricionista logado
-        if (operation === 'create' && req.user && userRole(req) === 'nutritionist') {
-          data.author = req.user.id
+        const relations = ['student', 'professional'] as const
+        if (!req.user || isSuperUser(req) || req.context?.seedDemo) {
+          coerceNumericRelations(data, relations)
+          return data
         }
+
+        const actorId = toNumericRelationId(req.user.id)
+
+        if (operation === 'update' && originalDoc) {
+          const student = toNumericRelationId(originalDoc.student)
+          const professional = toNumericRelationId(originalDoc.professional)
+          if (student !== null) data.student = student
+          if (professional !== null) data.professional = professional
+        }
+
+        if (operation === 'create' && actorId && userRole(req) === 'nutritionist') {
+          data.professional = actorId
+          const student = toNumericRelationId(data.student)
+          if (
+            !student ||
+            !(await hasActiveLink({
+              req,
+              studentId: student,
+              professionalId: actorId,
+              professionalRole: 'nutritionist',
+            }))
+          ) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'student', message: 'Só é possível registrar anamnese de paciente vinculado.' }],
+            })
+          }
+          data.student = student
+        }
+
+        coerceNumericRelations(data, relations)
         return data
       },
     ],
   },
   fields: [
-    {
-      name: 'author',
-      type: 'relationship',
-      relationTo: 'users',
-      required: true,
-      index: true,
-      admin: {
-        description: 'Nutricionista responsável pela anamnese',
-      },
-    },
-    {
-      name: 'patient',
-      type: 'relationship',
-      relationTo: 'users',
-      required: true,
-      index: true,
-      admin: {
-        description: 'Paciente associado',
-      },
-    },
+    { name: 'student', type: 'relationship', relationTo: 'users', required: true, index: true },
+    { name: 'professional', type: 'relationship', relationTo: 'users', required: true, index: true },
+    { name: 'answers', type: 'json', required: false },
     {
       name: 'status',
       type: 'select',
       required: true,
       defaultValue: 'draft',
-      index: true,
       options: [
         { label: 'Rascunho', value: 'draft' },
-        { label: 'Concluído', value: 'completed' },
+        { label: 'Concluída', value: 'completed' },
       ],
     },
-    {
-      name: 'templateId',
-      type: 'text',
-      required: false,
-      defaultValue: 'webdiet',
-    },
-    {
-      name: 'data',
-      type: 'json',
-      required: false,
-      admin: {
-        description: 'Respostas estruturadas das seções da anamnese',
-      },
-    },
-    {
-      name: 'completedAt',
-      type: 'date',
-      required: false,
-    },
+    { name: 'completedAt', type: 'date', required: false },
   ],
 }

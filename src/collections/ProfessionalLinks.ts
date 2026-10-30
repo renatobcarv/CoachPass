@@ -1,6 +1,9 @@
 import type { CollectionConfig, Where } from 'payload'
+import { ValidationError } from 'payload'
 
+import { expectedProfessionalRole } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
+import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
 import { userId, userRole } from '../access/roles'
 
 export const ProfessionalLinks: CollectionConfig = {
@@ -31,48 +34,110 @@ export const ProfessionalLinks: CollectionConfig = {
       const id = userId(req)
       if (!id) return false
       const role = userRole(req)
-      // Aluno pode aceitar ou revogar seu próprio vínculo
       if (role === 'student') return { student: { equals: id } }
-      // Profissional pode alterar notas ou revogar vínculo criado por ele
       if (role === 'personal' || role === 'nutritionist') {
         return { professional: { equals: id } }
       }
       return false
     },
-    delete: ({ req }): boolean | Where => {
-      if (isSuperUser(req)) return true
-      const id = userId(req)
-      if (!id) return false
-      const role = userRole(req)
-      // Permite que o profissional remova vínculos criados por ele
-      if (role === 'personal' || role === 'nutritionist') {
-        return { professional: { equals: id } }
-      }
-      return false
-    },
+    delete: ({ req }) => isSuperUser(req),
   },
   hooks: {
-    beforeChange: [
-      ({ req, operation, data, originalDoc }) => {
-        if (!req.user || isSuperUser(req)) return data
-        const role = userRole(req)
-        const id = userId(req)
+    beforeValidate: [
+      async ({ data, operation, req, collection, originalDoc }) => {
+        if (!data) return data
+        const relations = ['student', 'professional'] as const
+        if (!req.user || isSuperUser(req) || req.context?.seedDemo) {
+          coerceNumericRelations(data, relations)
+          return data
+        }
 
-        // Aluno só pode atualizar o status para active ou revoked
-        if (operation === 'update' && role === 'student') {
-          // Garante que o vínculo pertence ao aluno
-          const currentStudentId = typeof originalDoc?.student === 'object' && originalDoc?.student ? originalDoc.student.id : originalDoc?.student
-          if (String(currentStudentId) !== String(id)) {
-            throw new Error('Não autorizado a alterar este vínculo.')
+        const actorId = toNumericRelationId(req.user?.id)
+        const role = expectedProfessionalRole(req)
+
+        if (operation === 'create') {
+          if (!actorId || !role) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'professional', message: 'Apenas personal ou nutricionista podem criar vínculos.' }],
+            })
+          }
+          data.professional = actorId
+          data.professionalRole = role
+          data.status = 'pending'
+          data.acceptedAt = null
+          data.revokedAt = null
+
+          const student = toNumericRelationId(data.student)
+          if (!student) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'student', message: 'Informe o aluno.' }],
+            })
+          }
+          data.student = student
+          if (student === actorId) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'student', message: 'Você não pode vincular a si mesmo.' }],
+            })
           }
 
-          // Aluno não pode trocar profissional ou campos estruturais
-          return {
-            ...originalDoc,
-            status: data?.status === 'active' || data?.status === 'revoked' ? data.status : originalDoc?.status,
+          const existing = await req.payload.find({
+            collection: 'professional-links',
+            where: {
+              and: [
+                { student: { equals: student } },
+                { professional: { equals: actorId } },
+                { professionalRole: { equals: role } },
+                { status: { in: ['pending', 'active'] } },
+              ],
+            },
+            limit: 1,
+            depth: 0,
+            overrideAccess: true,
+            req,
+          })
+          if (existing.docs[0]) {
+            throw new ValidationError({
+              collection: collection?.slug,
+              errors: [{ path: 'student', message: 'Já existe um convite ou vínculo ativo com este aluno.' }],
+            })
           }
         }
 
+        if (operation === 'update' && originalDoc) {
+          const student = toNumericRelationId(originalDoc.student)
+          const professional = toNumericRelationId(originalDoc.professional)
+          if (student !== null) data.student = student
+          if (professional !== null) data.professional = professional
+          data.professionalRole = originalDoc.professionalRole
+
+          const currentStatus = String(originalDoc?.status || '')
+          const nextStatus = data.status ? String(data.status) : currentStatus
+          const actorRole = userRole(req)
+
+          if (actorRole === 'student') {
+            if (currentStatus !== 'pending' || (nextStatus !== 'active' && nextStatus !== 'revoked')) {
+              throw new ValidationError({
+                collection: collection?.slug,
+                errors: [{ path: 'status', message: 'O aluno só pode aceitar ou recusar um convite pendente.' }],
+              })
+            }
+            if (nextStatus === 'active') data.acceptedAt = new Date().toISOString()
+            if (nextStatus === 'revoked') data.revokedAt = new Date().toISOString()
+          } else if (actorRole === 'personal' || actorRole === 'nutritionist') {
+            if (nextStatus !== 'revoked') {
+              throw new ValidationError({
+                collection: collection?.slug,
+                errors: [{ path: 'status', message: 'O profissional só pode encerrar o vínculo.' }],
+              })
+            }
+            data.revokedAt = new Date().toISOString()
+          }
+        }
+
+        coerceNumericRelations(data, relations)
         return data
       },
     ],
@@ -114,44 +179,21 @@ export const ProfessionalLinks: CollectionConfig = {
       ],
     },
     {
+      name: 'acceptedAt',
+      type: 'date',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
+      name: 'revokedAt',
+      type: 'date',
+      required: false,
+      admin: { readOnly: true },
+    },
+    {
       name: 'notes',
       type: 'textarea',
       required: false,
-    },
-    {
-      // Nome e e-mail do aluno para o profissional do vínculo (o profissional não lê a coleção users).
-      // Virtual: não vira coluna no banco. Só aparece para quem já tem acesso a este vínculo.
-      name: 'studentInfo',
-      type: 'json',
-      virtual: true,
-      admin: { hidden: true },
-      access: {
-        create: () => false,
-        update: () => false,
-      },
-      hooks: {
-        afterRead: [
-          async ({ siblingData, req }) => {
-            if (!req.user) return null
-            const raw = siblingData?.student
-            const id = raw && typeof raw === 'object' ? (raw as { id?: unknown }).id : raw
-            if (id === undefined || id === null || id === '') return null
-            try {
-              const u = await req.payload.findByID({
-                collection: 'users',
-                id: id as string | number,
-                depth: 0,
-                overrideAccess: true,
-                select: { name: true, email: true },
-                req,
-              })
-              return { name: u?.name ?? null, email: u?.email ?? null }
-            } catch {
-              return null
-            }
-          },
-        ],
-      },
     },
   ],
 }
