@@ -83,7 +83,8 @@ export const WorkoutLogs: CollectionConfig = {
   },
   fields: [
     { name: 'student', type: 'relationship', relationTo: 'users', required: true, index: true },
-    { name: 'workout', type: 'relationship', relationTo: 'workouts', required: true, index: true },
+    // Obrigatório só na criação (hook acima); se o treino for apagado depois, o histórico fica sem vínculo
+    { name: 'workout', type: 'relationship', relationTo: 'workouts', required: false, index: true },
     { name: 'performedAt', type: 'date', required: true, defaultValue: () => new Date().toISOString() },
     {
       name: 'status',

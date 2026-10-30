@@ -475,7 +475,7 @@ export interface Anamnesis {
 export interface WorkoutLog {
   id: number;
   student: number | User;
-  workout: number | Workout;
+  workout?: (number | null) | Workout;
   performedAt: string;
   status: 'completed' | 'partial' | 'skipped';
   rpe?: number | null;

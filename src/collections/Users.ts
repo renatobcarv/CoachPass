@@ -72,15 +72,19 @@ async function readUsersAccess({ req }: { req: PayloadRequest }): Promise<boolea
   return { id: { equals: id } }
 }
 
+/**
+ * Dados apagados junto com a conta (campos obrigatórios que apontam para o usuário).
+ * `author` de treinos/dietas fica de fora de propósito: o plano pertence ao aluno e só perde o autor.
+ * A ordem importa: registros de treino saem antes dos treinos.
+ */
 const USER_DEPENDENTS = [
+  { collection: 'workout-logs' as const, field: 'student' },
   { collection: 'ai-generations' as const, field: 'user' },
   { collection: 'student-profiles' as const, field: 'user' },
   { collection: 'professional-links' as const, field: 'student' },
   { collection: 'professional-links' as const, field: 'professional' },
   { collection: 'workouts' as const, field: 'student' },
-  { collection: 'workouts' as const, field: 'author' },
   { collection: 'meal-plans' as const, field: 'student' },
-  { collection: 'meal-plans' as const, field: 'author' },
   { collection: 'assessments' as const, field: 'student' },
   { collection: 'assessments' as const, field: 'professional' },
   { collection: 'sessions' as const, field: 'student' },
@@ -89,8 +93,32 @@ const USER_DEPENDENTS = [
   { collection: 'restrictions' as const, field: 'professional' },
   { collection: 'anamneses' as const, field: 'student' },
   { collection: 'anamneses' as const, field: 'professional' },
+  { collection: 'transactions' as const, field: 'student' },
+  { collection: 'transactions' as const, field: 'professional' },
   { collection: 'media' as const, field: 'owner' },
 ]
+
+/** Apaga tudo o que pertence ao usuário, em lotes, na mesma transação da exclusão. */
+async function deleteUserData(req: PayloadRequest, id: string | number) {
+  for (const { collection, field } of USER_DEPENDENTS) {
+    // Lotes até esvaziar (sem teto fixo); a trava evita laço infinito se algo não puder ser apagado
+    for (let round = 0; round < 100; round++) {
+      const result = await req.payload.delete({
+        collection,
+        where: { [field]: { equals: id } },
+        overrideAccess: true,
+        req,
+        context: { skipUserCascade: true },
+      })
+      if (result.errors.length > 0) {
+        throw new ValidationError({
+          errors: [{ path: 'id', message: `Não foi possível apagar dados de ${collection}. Tente de novo.` }],
+        })
+      }
+      if (result.docs.length === 0) break
+    }
+  }
+}
 
 export const Users: CollectionConfig = {
   slug: 'users',
@@ -207,41 +235,16 @@ export const Users: CollectionConfig = {
       },
     ],
     beforeDelete: [
-      async ({ req, id }) => {
+      async ({ req, id, context }) => {
         const actorId = userId(req)
         if (!isSuperUser(req) && String(actorId) !== String(id)) {
           throw new ValidationError({
             errors: [{ path: 'id', message: 'Você só pode excluir a própria conta.' }],
           })
         }
-      },
-    ],
-    afterDelete: [
-      async ({ req, id, context }) => {
-        if (context?.skipUserCascade) return
-        for (const { collection, field } of USER_DEPENDENTS) {
-          try {
-            const related = await req.payload.find({
-              collection,
-              where: { [field]: { equals: id } },
-              limit: 200,
-              depth: 0,
-              overrideAccess: true,
-              req,
-            })
-            for (const doc of related.docs) {
-              await req.payload.delete({
-                collection,
-                id: doc.id,
-                overrideAccess: true,
-                req,
-                context: { skipUserCascade: true },
-              })
-            }
-          } catch {
-            // Collection pode ainda não existir em ambientes antigos.
-          }
-        }
+        // Antes de apagar o usuário: as chaves no banco são obrigatórias (NOT NULL),
+        // então os dependentes precisam sair primeiro (LGPD: exclusão completa)
+        if (!context?.skipUserCascade) await deleteUserData(req, id)
       },
     ],
   },
