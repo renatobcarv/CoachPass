@@ -192,3 +192,24 @@ Plano V2 completo em `docs/PLANO_V2_PERIODIZACAO_ACESSOS.md` (MuscleWiki, papéi
 5. SMTP real não configurado (o app nem sobe em produção sem ele — comportamento correto).
 6. Sem monitoramento nem rotina de backup testada.
 7. Telas principais do profissional ainda sem integração (G2.7).
+
+---
+
+## Status das correções (30/10/2026)
+
+| Item | Situação | Commit | Como foi verificado |
+| - | - | - | - |
+| G1.1 Exclusão de conta (B1, B2) | ✅ Corrigido | `72c7451` | DELETE da própria conta com perfil, vínculo e registros → 200; nenhum vínculo restante |
+| G1.2 Exclusão de treino com registros (B3) | ✅ Corrigido | `72c7451` | DELETE → 200; o registro continua, sem vínculo com o treino |
+| G1.3 Build quebrado (C1) | ✅ Corrigido | `72c7451` | `next lint` 0 erros; `npm run build` concluído (com SMTP fictício só no comando, já que produção exige SMTP real) |
+| C3 Telas mortas | ✅ 9 removidas | `72c7451` | Financeiro e Periodização mantidas para o plano V2 |
+| G2.1 Troca de área profissional (B4) | ✅ Corrigido | `8b9ce9b` | PATCH personal → nutricionista: 400; o onboarding ainda escolhe a área |
+| G2.2 Aceite de convite | ✅ Implementado | `8b9ce9b` | Convite com o nome do profissional; aceito pela tela (captura) |
+| G2.3 Excluir conta pela tela | ✅ Implementado | `8b9ce9b` | Chama a API real |
+| — Exportar dados pela tela | ✅ Corrigido | `8b9ce9b` | Antes baixava o objeto local com o token de sessão; agora usa `/api/me/export` |
+| B12 Exportação com teto de 200 | ✅ Corrigido | `8b9ce9b` | `pagination: false` |
+| G2.4 Chat de IA real | ✅ Implementado | `8b9ce9b` | POST `/api/ai/chat` → 200 com resposta do Gemini |
+| G2.5 Rate limit no cadastro (B7) | ✅ Implementado | `8b9ce9b` | Requisições após a 5ª no minuto → 429 |
+| G2.6 Dependências (B10) | ⚠️ Parcial | `8b9ce9b` | `zod` corrigido (18 → 17); o restante depende de atualizações do Payload/Next |
+| G2.7 Telas sem integração | ⏳ Pendente | — | Plano V2, Frente 3 |
+| Média prioridade (G3.x) | ⏳ Pendente | — | — |
