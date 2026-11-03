@@ -40,7 +40,8 @@ export async function linkedStudentIds(
   const result = await req.payload.find({
     collection: 'professional-links',
     where: { and },
-    limit: 200,
+    // Sem teto: o Elite tem alunos ilimitados
+    pagination: false,
     depth: 0,
     overrideAccess: true,
     req,

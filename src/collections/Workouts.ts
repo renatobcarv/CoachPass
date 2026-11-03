@@ -1,6 +1,7 @@
 import type { CollectionConfig, Where } from 'payload'
-import { ValidationError } from 'payload'
+import { APIError, ValidationError } from 'payload'
 
+import { reqHasStudentPro } from '../access/entitlements'
 import { hasActiveLink } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
 import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
@@ -24,8 +25,12 @@ export const Workouts: CollectionConfig = {
       if (!id) return false
       const role = userRole(req)
       if (role === 'student') {
+        // Publicados pelo profissional + os que o próprio aluno criou (mesmo em rascunho)
         return {
-          and: [{ student: { equals: id } }, { status: { equals: 'published' } }],
+          and: [
+            { student: { equals: id } },
+            { or: [{ status: { equals: 'published' } }, { author: { equals: id } }] },
+          ],
         }
       }
       if (role === 'personal') {
@@ -38,6 +43,8 @@ export const Workouts: CollectionConfig = {
       const id = userId(req)
       if (!id) return false
       if (userRole(req) === 'personal') return { author: { equals: id } }
+      // Aluno mexe só nos treinos que ele mesmo criou
+      if (userRole(req) === 'student') return { and: [{ student: { equals: id } }, { author: { equals: id } }] }
       return false
     },
     delete: ({ req }): boolean | Where => {
@@ -45,6 +52,7 @@ export const Workouts: CollectionConfig = {
       const id = userId(req)
       if (!id) return false
       if (userRole(req) === 'personal') return { author: { equals: id } }
+      if (userRole(req) === 'student') return { and: [{ student: { equals: id } }, { author: { equals: id } }] }
       return false
     },
   },
@@ -69,7 +77,14 @@ export const Workouts: CollectionConfig = {
           if (role === 'student') {
             data.student = actorId
             data.author = actorId
-            if (data.source !== 'ai') data.source = 'ai'
+            if (data.source !== 'ai') {
+              // Treino montado pelo próprio aluno: recurso do Aluno Pro (profissional no modo aluno também)
+              if (!reqHasStudentPro(req)) {
+                throw new APIError('Criar os próprios treinos é um recurso do Aluno Pro.', 402, { code: 'STUDENT_PRO_REQUIRED' }, true)
+              }
+              data.source = 'self'
+              if (!data.status) data.status = 'published'
+            }
           } else if (role === 'personal') {
             data.author = actorId
             data.source = 'professional'
@@ -152,6 +167,7 @@ export const Workouts: CollectionConfig = {
       options: [
         { label: 'Profissional', value: 'professional' },
         { label: 'IA', value: 'ai' },
+        { label: 'Próprio aluno', value: 'self' },
       ],
     },
     {
@@ -186,13 +202,22 @@ export const Workouts: CollectionConfig = {
       type: 'date',
       required: false,
     },
+    // Periodização: a que ciclo/fase/semanas este treino pertence
+    { name: 'cycle', type: 'relationship', relationTo: 'training-cycles', index: true },
+    { name: 'phaseIndex', type: 'number', min: 0 },
+    { name: 'weekFrom', type: 'number', min: 0, label: 'Da semana' },
+    { name: 'weekTo', type: 'number', min: 0, label: 'Até a semana' },
     {
       name: 'exercises',
       type: 'array',
       required: false,
       fields: [
         { name: 'name', type: 'text', required: true },
+        { name: 'exercise', type: 'relationship', relationTo: 'exercises' },
         { name: 'sets', type: 'number', required: false },
+        { name: 'targetRir', type: 'number', min: 0, max: 6, label: 'RIR alvo' },
+        { name: 'intensityPct', type: 'number', min: 30, max: 100, label: '%1RM' },
+        { name: 'tempo', type: 'text', label: 'Cadência' },
         { name: 'reps', type: 'text', required: false },
         { name: 'weight', type: 'text', required: false },
         { name: 'rest', type: 'text', required: false },

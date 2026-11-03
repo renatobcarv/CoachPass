@@ -78,6 +78,11 @@ async function readUsersAccess({ req }: { req: PayloadRequest }): Promise<boolea
  * A ordem importa: registros de treino saem antes dos treinos.
  */
 const USER_DEPENDENTS = [
+  { collection: 'cycle-weeks' as const, field: 'student' },
+  { collection: 'training-cycles' as const, field: 'student' },
+  { collection: 'body-metrics' as const, field: 'student' },
+  { collection: 'weekly-checkins' as const, field: 'student' },
+  { collection: 'exercises' as const, field: 'author' },
   { collection: 'workout-logs' as const, field: 'student' },
   { collection: 'ai-generations' as const, field: 'user' },
   { collection: 'student-profiles' as const, field: 'user' },
@@ -187,7 +192,9 @@ export const Users: CollectionConfig = {
     beforeValidate: [
       async ({ data, operation, req, collection, originalDoc }) => {
         const bypass =
-          req.context?.allowMasterCreate === true || req.context?.seedMaster === true
+          req.context?.allowMasterCreate === true ||
+          req.context?.seedMaster === true ||
+          req.context?.roleSwitch === true
         if (!data || bypass || isSuperUser(req)) return data
 
         if (operation === 'create') {
@@ -243,11 +250,54 @@ export const Users: CollectionConfig = {
                   },
                 ],
               })
+            } else if (PROFESSIONAL_ROLES.has(currentRole) && nextRole === 'student') {
+              // Profissional usa o painel do aluno pela troca de painel, que preserva os papéis
+              throw new ValidationError({
+                collection: collection?.slug,
+                errors: [{ path: 'role', message: 'Use “Trocar painel” para entrar no painel do aluno.' }],
+              })
             }
           }
         }
 
         return data
+      },
+    ],
+    afterChange: [
+      // Mantém `roles`/`primaryProRole` coerentes com o cadastro e o onboarding (sem depender do cliente)
+      async ({ doc, req, context }) => {
+        if (context?.skipRoleSync) return doc
+        const role = String(doc.role || 'student')
+        if (role === 'master') return doc
+        const roles: string[] = Array.isArray(doc.roles) ? doc.roles : []
+        let next: string[] | null = null
+        let primary: string | null = doc.primaryProRole ?? null
+
+        if (PROFESSIONAL_ROLES.has(role) && !String(doc.professionalId || '').trim()) {
+          // Ainda no onboarding: a área escolhida é a principal
+          next = [role, 'student']
+          primary = role
+        } else if (!roles.includes(role) || !roles.includes('student')) {
+          next = Array.from(new Set([...roles, role, 'student']))
+          if (PROFESSIONAL_ROLES.has(role) && !primary) primary = role
+        }
+
+        const same =
+          next !== null &&
+          next.length === roles.length &&
+          next.every((r) => roles.includes(r)) &&
+          primary === (doc.primaryProRole ?? null)
+        if (!next || same) return doc
+
+        const updated = await req.payload.update({
+          collection: 'users',
+          id: doc.id,
+          data: { roles: next as never, primaryProRole: (primary ?? undefined) as never },
+          overrideAccess: true,
+          req,
+          context: { skipRoleSync: true, roleSwitch: true },
+        })
+        return { ...doc, roles: updated.roles, primaryProRole: updated.primaryProRole }
       },
     ],
     beforeDelete: [
@@ -294,6 +344,59 @@ export const Users: CollectionConfig = {
         { label: 'Nutricionista', value: 'nutritionist' },
       ],
       saveToJWT: true,
+    },
+    // Papéis que a conta pode usar; `role` é o painel ativo. Só muda pelas rotas /api/me/*
+    {
+      name: 'roles',
+      type: 'select',
+      hasMany: true,
+      label: 'Papéis liberados',
+      options: [
+        { label: 'Aluno', value: 'student' },
+        { label: 'Personal trainer', value: 'personal' },
+        { label: 'Nutricionista', value: 'nutritionist' },
+      ],
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    {
+      name: 'primaryProRole',
+      type: 'select',
+      label: 'Área profissional principal',
+      options: [
+        { label: 'Personal trainer', value: 'personal' },
+        { label: 'Nutricionista', value: 'nutritionist' },
+      ],
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    {
+      name: 'secondaryProfessionalId',
+      type: 'text',
+      label: 'Registro da segunda área (CREF/CRN)',
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
+    },
+    // Plano do aluno (Aluno Pro): criar treino, dieta e periodização próprios
+    {
+      name: 'studentTier',
+      type: 'select',
+      label: 'Plano do aluno',
+      defaultValue: 'free',
+      options: [
+        { label: 'Grátis', value: 'free' },
+        { label: 'Aluno Pro', value: 'pro' },
+      ],
+      access: {
+        create: ({ req }) => isSuperUser(req),
+        update: ({ req }) => isSuperUser(req),
+      },
     },
     {
       name: 'whatsapp',
@@ -440,6 +543,9 @@ export const Users: CollectionConfig = {
           options: [
             { label: 'Pro', value: 'pro' },
             { label: 'Elite', value: 'elite' },
+            { label: 'Aluno Pro mensal', value: 'student_monthly' },
+            { label: 'Aluno Pro semestral', value: 'student_semester' },
+            { label: 'Aluno Pro anual', value: 'student_annual' },
           ],
           access: {
             create: ({ req }) => isSuperUser(req),

@@ -20,6 +20,11 @@ import { Anamneses } from './collections/Anamneses'
 import { WorkoutLogs } from './collections/WorkoutLogs'
 import { Foods } from './collections/Foods'
 import { Transactions } from './collections/Transactions'
+import { Exercises } from './collections/Exercises'
+import { TrainingCycles } from './collections/TrainingCycles'
+import { CycleWeeks } from './collections/CycleWeeks'
+import { BodyMetrics } from './collections/BodyMetrics'
+import { WeeklyCheckins } from './collections/WeeklyCheckins'
 import { assertRequiredEnv, env, hasSmtpConfig } from './lib/env'
 
 const filename = fileURLToPath(import.meta.url)
@@ -84,6 +89,11 @@ export default buildConfig({
     WorkoutLogs,
     Foods,
     Transactions,
+    Exercises,
+    TrainingCycles,
+    CycleWeeks,
+    BodyMetrics,
+    WeeklyCheckins,
   ],
   editor: lexicalEditor(),
   secret: env.payloadSecret(),

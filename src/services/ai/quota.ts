@@ -1,6 +1,9 @@
 import type { Payload } from 'payload'
 
-const FREE_MONTHLY_LIMIT = 2
+import { hasStudentPro } from '../../access/entitlements'
+import { STUDENT_FREE_AI, STUDENT_PRO_AI } from '../../lib/studentPlans'
+
+const FREE_MONTHLY_LIMIT = STUDENT_FREE_AI
 const TIME_ZONE = 'America/Sao_Paulo'
 
 export function currentMonthBounds(now = new Date()): { start: Date; end: Date; label: string } {
@@ -51,9 +54,14 @@ export async function getAiQuota(
   })
 
   const used = result.totalDocs
-  const remaining = Math.max(0, FREE_MONTHLY_LIMIT - used)
+  // Aluno Pro (e profissional no modo aluno) tem mais gerações por mês
+  const owner = await payload
+    .findByID({ collection: 'users', id: userId, depth: 0, overrideAccess: true })
+    .catch(() => null)
+  const limit = hasStudentPro(owner as never) ? STUDENT_PRO_AI : FREE_MONTHLY_LIMIT
+  const remaining = Math.max(0, limit - used)
   return {
-    limit: FREE_MONTHLY_LIMIT,
+    limit,
     used,
     remaining,
     month: label,

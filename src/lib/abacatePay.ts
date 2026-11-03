@@ -1,11 +1,12 @@
 import crypto from 'node:crypto'
 import type { Payload } from 'payload'
 
-import { isProTier, PRO_TIERS, tierFromAmount, type ProTier } from './proPlans'
+import { type ProTier } from './proPlans'
+import { STUDENT_PLANS, type StudentCycle } from './studentPlans'
 
 /**
- * Integração com o AbacatePay (API v2) para as assinaturas dos profissionais.
- * Só roda no servidor: usa a chave secreta de ABACATE_PAY.
+ * Integração com o AbacatePay (API v2): assinaturas dos profissionais (Pro/Elite)
+ * e do aluno (Aluno Pro mensal/semestral/anual). Só roda no servidor (chave ABACATE_PAY).
  */
 
 const API = 'https://api.abacatepay.com/v2'
@@ -13,6 +14,39 @@ const API = 'https://api.abacatepay.com/v2'
 /** Chave pública oficial do AbacatePay para o HMAC dos webhooks (documentação "Segurança de webhooks"). */
 const ABACATEPAY_WEBHOOK_HMAC_KEY =
   't9dXRhHHo3yDEj5pVDYz0frf7q6bMKyMRmxxCPIPp3RCplBfXRxqlC6ZpiWmOqj4L63qEaeUOtrCI8P0VMUgo6iIga2ri9ogaHFs0WIIywSMg0q7RmBfybe1E5XJcfC4IW3alNqym0tXoAKkzvfEjZxV6bE0oG2zJrNNYmUCKZyV0KZ3JS8Votf9EAWWYdiDkMkpbMdPggfh1EqHlVkMiTady6jOR3hyzGEHrIz2Ret0xHKMbiqkr9HS1JhNHDX9'
+
+export type ProductKey = 'pro' | 'elite' | 'student_monthly' | 'student_semester' | 'student_annual'
+export type Audience = 'pro' | 'student'
+
+const PRODUCT_ENV: Record<ProductKey, string> = {
+  pro: 'ABACATE_PRODUCT_PRO',
+  elite: 'ABACATE_PRODUCT_ELITE',
+  student_monthly: 'ABACATE_PRODUCT_STUDENT_MONTHLY',
+  student_semester: 'ABACATE_PRODUCT_STUDENT_SEMESTER',
+  student_annual: 'ABACATE_PRODUCT_STUDENT_ANNUAL',
+}
+
+/** Meses pagos por ciclo de cada produto */
+const PRODUCT_MONTHS: Record<ProductKey, number> = {
+  pro: 1,
+  elite: 1,
+  student_monthly: STUDENT_PLANS.monthly.months,
+  student_semester: STUDENT_PLANS.semester.months,
+  student_annual: STUDENT_PLANS.annual.months,
+}
+
+/** Valor por ciclo em centavos (confere o que o AbacatePay cobrou, dentro do mesmo público) */
+const PRODUCT_CENTS: Record<ProductKey, number> = {
+  pro: 1990,
+  elite: 2990,
+  student_monthly: Math.round(STUDENT_PLANS.monthly.price * 100),
+  student_semester: Math.round(STUDENT_PLANS.semester.price * 100),
+  student_annual: Math.round(STUDENT_PLANS.annual.price * 100),
+}
+
+export const audienceOf = (key: ProductKey): Audience => (key.startsWith('student_') ? 'student' : 'pro')
+export const studentProductKey = (cycle: StudentCycle): ProductKey => `student_${cycle}` as ProductKey
+export const isProductKey = (v: unknown): v is ProductKey => typeof v === 'string' && v in PRODUCT_ENV
 
 export class AbacatePayError extends Error {
   constructor(
@@ -23,19 +57,20 @@ export class AbacatePayError extends Error {
   }
 }
 
-export function abacateConfigured(): boolean {
-  return Boolean(process.env.ABACATE_PAY && productIdFor('pro') && productIdFor('elite'))
+export function productIdFor(key: ProductKey): string | null {
+  return process.env[PRODUCT_ENV[key]]?.trim() || null
 }
 
-export function productIdFor(tier: ProTier): string | null {
-  if (tier === 'pro') return process.env.ABACATE_PRODUCT_PRO?.trim() || null
-  if (tier === 'elite') return process.env.ABACATE_PRODUCT_ELITE?.trim() || null
-  return null
-}
-
-export function tierForProduct(productId: string | null | undefined): ProTier | null {
+export function keyForProduct(productId: string | null | undefined): ProductKey | null {
   if (!productId) return null
-  return PRO_TIERS.find((t) => t !== 'free' && productIdFor(t) === productId) ?? null
+  return (Object.keys(PRODUCT_ENV) as ProductKey[]).find((k) => productIdFor(k) === productId) ?? null
+}
+
+/** Pagamento liberado para o público (chave + produtos configurados). */
+export function abacateConfigured(audience: Audience = 'pro'): boolean {
+  if (!process.env.ABACATE_PAY) return false
+  if (audience === 'pro') return Boolean(productIdFor('pro') && productIdFor('elite'))
+  return Boolean(productIdFor('student_monthly') || productIdFor('student_semester') || productIdFor('student_annual'))
 }
 
 async function call<T>(
@@ -75,12 +110,12 @@ export type AbacateSubscription = {
 }
 
 export async function createSubscriptionCheckout(args: {
-  tier: ProTier
+  product: ProductKey
   userId: number | string
   customerId?: string | null
   appUrl: string
 }): Promise<{ id: string; url: string }> {
-  const productId = productIdFor(args.tier)
+  const productId = productIdFor(args.product)
   if (!productId) throw new AbacatePayError('Produto do plano não configurado.', 503)
   const body = {
     items: [{ id: productId, quantity: 1 }],
@@ -89,7 +124,7 @@ export async function createSubscriptionCheckout(args: {
     returnUrl: `${args.appUrl}/planos`,
     completionUrl: `${args.appUrl}/planos?assinatura=retorno`,
     externalId: `coachpass-user-${args.userId}-${Date.now()}`,
-    metadata: { userId: String(args.userId), tier: args.tier },
+    metadata: { userId: String(args.userId), product: args.product },
     ...(args.customerId ? { customerId: args.customerId } : {}),
   }
   try {
@@ -127,8 +162,8 @@ export async function createPortalLink(customerId: string, checkoutId: string): 
   return data.url
 }
 
-export async function changeSubscriptionPlan(subscriptionId: string, tier: ProTier): Promise<void> {
-  const productId = productIdFor(tier)
+export async function changeSubscriptionPlan(subscriptionId: string, product: ProductKey): Promise<void> {
+  const productId = productIdFor(product)
   if (!productId) throw new AbacatePayError('Produto do plano não configurado.', 503)
   await call('/subscriptions/change-plan', {
     method: 'POST',
@@ -156,15 +191,22 @@ function addMonths(date: Date, months: number): Date {
   return d
 }
 
-const RANK: Record<ProTier, number> = { free: 0, pro: 1, elite: 2 }
-const higher = (a: ProTier | null, b: ProTier | null): ProTier | null => {
+/** Produto pelo valor cobrado, só entre os produtos do mesmo público (Elite e Aluno mensal custam igual). */
+export function keyFromAmount(cents: number | null | undefined, audience: Audience): ProductKey | null {
+  if (!cents) return null
+  return (Object.keys(PRODUCT_CENTS) as ProductKey[]).find((k) => audienceOf(k) === audience && PRODUCT_CENTS[k] === cents) ?? null
+}
+
+const PRO_RANK: Record<string, number> = { pro: 1, elite: 2 }
+const higherPro = (a: ProductKey | null, b: ProductKey | null): ProductKey | null => {
   if (!a) return b
   if (!b) return a
-  return RANK[a] >= RANK[b] ? a : b
+  return (PRO_RANK[a] ?? 0) >= (PRO_RANK[b] ?? 0) ? a : b
 }
 
 type BillingUser = {
   id: number
+  role?: string | null
   proTier?: string | null
   paidUntil?: string | null
   checkoutTier?: string | null
@@ -193,27 +235,30 @@ export async function syncUserSubscription(payload: Payload, user: BillingUser, 
   if (!sub && user.abacateCheckoutId) sub = await findSubscriptionByCheckout(user.abacateCheckoutId)
   if (!sub) return { changed: false as const }
 
-  const checkoutTier = isProTier(user.checkoutTier) ? user.checkoutTier : null
-  // Valor cobrado manda; um upgrade pedido (troca de plano agendada) já libera o plano maior
-  const tier = higher(higher(tierForProduct(hint.productId), tierFromAmount(sub.amount)), checkoutTier) ?? 'pro'
+  const chosen = isProductKey(user.checkoutTier) ? user.checkoutTier : null
+  const audience: Audience = chosen ? audienceOf(chosen) : user.role === 'student' ? 'student' : 'pro'
+  const charged = keyForProduct(hint.productId) ?? keyFromAmount(sub.amount, audience)
+  // Profissional: valor cobrado manda, mas um upgrade pedido (troca agendada) já libera o plano maior
+  const product: ProductKey =
+    audience === 'pro' ? (higherPro(charged, chosen) ?? 'pro') : (charged ?? chosen ?? 'student_monthly')
+  const months = PRODUCT_MONTHS[product]
 
   if (sub.status === 'ACTIVE') {
     const now = new Date()
     const base = hint.paidAt ? new Date(hint.paidAt) : user.paidUntil ? null : new Date(sub.createdAt)
     let paidUntil = user.paidUntil ? new Date(user.paidUntil) : null
     if (base) {
-      const next = addMonths(base, 1)
+      const next = addMonths(base, months)
       if (!paidUntil || next > paidUntil) paidUntil = next
     }
     // Assinatura segue ativa no AbacatePay mas não recebemos a renovação: avança os ciclos
-    while (paidUntil && paidUntil < now) paidUntil = addMonths(paidUntil, 1)
+    while (paidUntil && paidUntil < now) paidUntil = addMonths(paidUntil, months)
 
     await payload.update({
       collection: 'users',
       id: user.id,
       data: {
-        proTier: tier,
-        trialEndsAt: null,
+        ...(audience === 'pro' ? { proTier: product as ProTier, trialEndsAt: null } : { studentTier: 'pro' }),
         subscriptionStatus: 'active',
         abacateSubscriptionId: sub.id,
         abacateCustomerId: sub.customerId,
@@ -223,7 +268,7 @@ export async function syncUserSubscription(payload: Payload, user: BillingUser, 
       overrideAccess: true,
       context: { billingSync: true },
     })
-    return { changed: true as const, status: 'active' as const, tier }
+    return { changed: true as const, status: 'active' as const, product }
   }
 
   // Cancelada: imediato quando o AbacatePay cortou na hora; senão o acesso segue até o fim do ciclo pago
@@ -234,12 +279,14 @@ export async function syncUserSubscription(payload: Payload, user: BillingUser, 
     data: {
       subscriptionStatus: 'cancelled',
       abacateSubscriptionId: sub.id,
-      ...(immediate ? { proTier: 'free', paidUntil: null } : {}),
+      ...(immediate
+        ? { ...(audience === 'pro' ? { proTier: 'free' } : { studentTier: 'free' }), paidUntil: null }
+        : {}),
     },
     overrideAccess: true,
     context: { billingSync: true },
   })
-  return { changed: true as const, status: 'cancelled' as const, tier: immediate ? ('free' as const) : tier }
+  return { changed: true as const, status: 'cancelled' as const, product }
 }
 
 export function appBaseUrl(): string {

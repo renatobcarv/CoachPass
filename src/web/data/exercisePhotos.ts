@@ -4,7 +4,7 @@
  * Cada exercício tem 2 fotos: posição inicial (0.jpg) e final (1.jpg). Servidas pelo CDN jsDelivr.
  * Chave = nome usado no CoachPass; valor = id/pasta do exercício na free-exercise-db.
  */
-const PHOTO_IDS: Record<string, string> = {
+export const PHOTO_IDS: Record<string, string> = {
   "Flexão de Braço": "Pushups", // Pushups (2 fotos)
   "Supino Reto com Halteres": "Dumbbell_Bench_Press", // Dumbbell Bench Press (2 fotos)
   "Crucifixo na Máquina": "Butterfly", // Butterfly (2 fotos)

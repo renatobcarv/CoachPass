@@ -7,6 +7,7 @@ import * as migration_20261030_041106_pro_plans from './20261030_041106_pro_plan
 import * as migration_20261030_044608_abacate_billing from './20261030_044608_abacate_billing';
 import * as migration_20261030_051312_workout_log_optional_workout from './20261030_051312_workout_log_optional_workout';
 import * as migration_20261030_052008_link_professional_name from './20261030_052008_link_professional_name';
+import * as migration_20261030_142337_v2_periodization_roles_exercises from './20261030_142337_v2_periodization_roles_exercises';
 
 export const migrations = [
   {
@@ -52,6 +53,11 @@ export const migrations = [
   {
     up: migration_20261030_052008_link_professional_name.up,
     down: migration_20261030_052008_link_professional_name.down,
-    name: '20261030_052008_link_professional_name'
+    name: '20261030_052008_link_professional_name',
+  },
+  {
+    up: migration_20261030_142337_v2_periodization_roles_exercises.up,
+    down: migration_20261030_142337_v2_periodization_roles_exercises.down,
+    name: '20261030_142337_v2_periodization_roles_exercises'
   },
 ];

@@ -4,6 +4,7 @@ import { ValidationError } from 'payload'
 import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
 import { linkedStudentIds } from '../access/links'
 import { isSuperUser } from '../access/isSuper'
+import { recomputeForStudentDate } from '../lib/periodization/engine'
 import { userId, userRole } from '../access/roles'
 
 export const WorkoutLogs: CollectionConfig = {
@@ -80,6 +81,13 @@ export const WorkoutLogs: CollectionConfig = {
         return data
       },
     ],
+    afterChange: [
+      // Treino registrado: atualiza o realizado da semana no ciclo ativo
+      async ({ doc, req }) => {
+        await recomputeForStudentDate(req.payload, doc.student, doc.performedAt, req)
+        return doc
+      },
+    ],
   },
   fields: [
     { name: 'student', type: 'relationship', relationTo: 'users', required: true, index: true },
@@ -98,6 +106,9 @@ export const WorkoutLogs: CollectionConfig = {
       ],
     },
     { name: 'rpe', type: 'number', min: 1, max: 10, required: false },
+    // Carga interna da sessão (sRPE × duração, Foster)
+    { name: 'sessionRpe', type: 'number', min: 1, max: 10, label: 'Esforço da sessão (1–10)' },
+    { name: 'durationMin', type: 'number', min: 1, max: 600, label: 'Duração (min)' },
     { name: 'notes', type: 'textarea', required: false },
     {
       name: 'exercises',
@@ -105,9 +116,23 @@ export const WorkoutLogs: CollectionConfig = {
       required: false,
       fields: [
         { name: 'name', type: 'text', required: true },
+        { name: 'exercise', type: 'relationship', relationTo: 'exercises' },
+        { name: 'muscleGroup', type: 'text', label: 'Grupo muscular (para o volume semanal)' },
         { name: 'setsCompleted', type: 'number', required: false },
         { name: 'load', type: 'text', required: false },
         { name: 'notes', type: 'text', required: false },
+        {
+          name: 'sets',
+          type: 'array',
+          label: 'Séries',
+          maxRows: 20,
+          fields: [
+            { name: 'reps', type: 'number', min: 0, max: 100 },
+            { name: 'loadKg', type: 'number', min: 0, max: 1000 },
+            { name: 'rir', type: 'number', min: 0, max: 10, label: 'Repetições em reserva' },
+            { name: 'done', type: 'checkbox', defaultValue: true },
+          ],
+        },
       ],
     },
   ],

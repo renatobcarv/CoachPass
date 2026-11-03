@@ -2,7 +2,7 @@
 import crypto from 'node:crypto'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { tierForProduct, verifyWebhook } from '@/lib/abacatePay'
+import { keyForProduct, keyFromAmount, verifyWebhook } from '@/lib/abacatePay'
 import { effectiveTier, PAYMENT_GRACE_DAYS, recommendTier, tierFromAmount } from '@/lib/proPlans'
 
 // Chave pública do AbacatePay para o HMAC (a mesma da documentação)
@@ -73,9 +73,18 @@ describe('preços e produtos', () => {
   it('mapeia o produto do AbacatePay para o plano', () => {
     process.env.ABACATE_PRODUCT_PRO = 'prod_pro'
     process.env.ABACATE_PRODUCT_ELITE = 'prod_elite'
-    expect(tierForProduct('prod_pro')).toBe('pro')
-    expect(tierForProduct('prod_elite')).toBe('elite')
-    expect(tierForProduct('prod_x')).toBe(null)
+    process.env.ABACATE_PRODUCT_STUDENT_ANNUAL = 'prod_aluno_anual'
+    expect(keyForProduct('prod_pro')).toBe('pro')
+    expect(keyForProduct('prod_elite')).toBe('elite')
+    expect(keyForProduct('prod_aluno_anual')).toBe('student_annual')
+    expect(keyForProduct('prod_x')).toBe(null)
+  })
+
+  it('Elite e Aluno mensal custam igual: o público desempata', () => {
+    expect(keyFromAmount(2990, 'pro')).toBe('elite')
+    expect(keyFromAmount(2990, 'student')).toBe('student_monthly')
+    expect(keyFromAmount(24990, 'student')).toBe('student_annual')
+    expect(keyFromAmount(1990, 'student')).toBe(null)
   })
 
   it('recomenda o menor plano que comporta a carteira', () => {

@@ -1,13 +1,13 @@
 import { NextResponse } from 'next/server'
 
 import { AbacatePayError, createPortalLink } from '@/lib/abacatePay'
-import { authError, authProfessional } from '@/lib/proBilling'
+import { authError, authBillingUser } from '@/lib/proBilling'
 
 export const dynamic = 'force-dynamic'
 
 /** Link do portal do AbacatePay: cancelar, trocar cartão e ver pagamentos. */
 export async function POST() {
-  const { user, status } = await authProfessional()
+  const { user, status } = await authBillingUser()
   if (!user) return authError(status as 401 | 403)
   if (!user.abacateCustomerId || !user.abacateCheckoutId) {
     return NextResponse.json({ error: 'Você ainda não tem assinatura paga.', code: 'NO_SUBSCRIPTION' }, { status: 404 })

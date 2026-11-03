@@ -1,7 +1,8 @@
 import type { CollectionConfig, Where } from 'payload'
-import { ValidationError } from 'payload'
+import { APIError, ValidationError } from 'payload'
 
 import { hasActiveLink } from '../access/links'
+import { reqHasStudentPro } from '../access/entitlements'
 import { isSuperUser } from '../access/isSuper'
 import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
 import { userId, userRole } from '../access/roles'
@@ -24,8 +25,12 @@ export const MealPlans: CollectionConfig = {
       if (!id) return false
       const role = userRole(req)
       if (role === 'student') {
+        // Publicados pelo profissional + os que o próprio aluno criou (mesmo em rascunho)
         return {
-          and: [{ student: { equals: id } }, { status: { equals: 'published' } }],
+          and: [
+            { student: { equals: id } },
+            { or: [{ status: { equals: 'published' } }, { author: { equals: id } }] },
+          ],
         }
       }
       if (role === 'nutritionist') {
@@ -38,6 +43,7 @@ export const MealPlans: CollectionConfig = {
       const id = userId(req)
       if (!id) return false
       if (userRole(req) === 'nutritionist') return { author: { equals: id } }
+      if (userRole(req) === 'student') return { and: [{ student: { equals: id } }, { author: { equals: id } }] }
       return false
     },
     delete: ({ req }): boolean | Where => {
@@ -45,6 +51,7 @@ export const MealPlans: CollectionConfig = {
       const id = userId(req)
       if (!id) return false
       if (userRole(req) === 'nutritionist') return { author: { equals: id } }
+      if (userRole(req) === 'student') return { and: [{ student: { equals: id } }, { author: { equals: id } }] }
       return false
     },
   },
@@ -69,7 +76,17 @@ export const MealPlans: CollectionConfig = {
           if (role === 'student') {
             data.student = actorId
             data.author = actorId
-            data.isInformational = true
+            if (data.source === 'ai') {
+              data.isInformational = true
+            } else {
+              // Dieta montada pelo próprio aluno: recurso do Aluno Pro
+              if (!reqHasStudentPro(req)) {
+                throw new APIError('Montar a própria dieta é um recurso do Aluno Pro.', 402, { code: 'STUDENT_PRO_REQUIRED' }, true)
+              }
+              data.source = 'self'
+              data.isInformational = false
+              if (!data.status) data.status = 'published'
+            }
           } else if (role === 'nutritionist') {
             data.author = actorId
             data.source = 'professional'
@@ -154,6 +171,7 @@ export const MealPlans: CollectionConfig = {
       options: [
         { label: 'Profissional', value: 'professional' },
         { label: 'IA', value: 'ai' },
+        { label: 'Próprio aluno', value: 'self' },
       ],
     },
     {

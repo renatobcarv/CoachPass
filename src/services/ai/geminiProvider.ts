@@ -282,3 +282,14 @@ export async function generateWeekWithGemini(prompt: string): Promise<GeminiWeek
     }
   }
 }
+
+/** JSON livre do Gemini (quem chama valida o formato). */
+export async function generateJsonWithGemini(prompt: string): Promise<{ ok: true; data: unknown } | { ok: false; error: string }> {
+  const call = await callGeminiJson(prompt)
+  if (!call.ok) return { ok: false, error: call.error }
+  try {
+    return { ok: true, data: JSON.parse(call.raw) }
+  } catch {
+    return { ok: false, error: 'JSON inválido do Gemini' }
+  }
+}

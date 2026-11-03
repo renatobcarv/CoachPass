@@ -81,6 +81,11 @@ export interface Config {
     'workout-logs': WorkoutLog;
     foods: Food;
     transactions: Transaction;
+    exercises: Exercise;
+    'training-cycles': TrainingCycle;
+    'cycle-weeks': CycleWeek;
+    'body-metrics': BodyMetric;
+    'weekly-checkins': WeeklyCheckin;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -102,6 +107,11 @@ export interface Config {
     'workout-logs': WorkoutLogsSelect<false> | WorkoutLogsSelect<true>;
     foods: FoodsSelect<false> | FoodsSelect<true>;
     transactions: TransactionsSelect<false> | TransactionsSelect<true>;
+    exercises: ExercisesSelect<false> | ExercisesSelect<true>;
+    'training-cycles': TrainingCyclesSelect<false> | TrainingCyclesSelect<true>;
+    'cycle-weeks': CycleWeeksSelect<false> | CycleWeeksSelect<true>;
+    'body-metrics': BodyMetricsSelect<false> | BodyMetricsSelect<true>;
+    'weekly-checkins': WeeklyCheckinsSelect<false> | WeeklyCheckinsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -153,6 +163,10 @@ export interface User {
    */
   isSuperAdmin?: boolean | null;
   role?: ('master' | 'student' | 'personal' | 'nutritionist') | null;
+  roles?: ('student' | 'personal' | 'nutritionist')[] | null;
+  primaryProRole?: ('personal' | 'nutritionist') | null;
+  secondaryProfessionalId?: string | null;
+  studentTier?: ('free' | 'pro') | null;
   whatsapp?: string | null;
   professionalId?: string | null;
   bio?: string | null;
@@ -178,7 +192,7 @@ export interface User {
    * Fim do ciclo pago. Depois dele (+ folga de cobrança) volta para o Grátis.
    */
   paidUntil?: string | null;
-  checkoutTier?: ('pro' | 'elite') | null;
+  checkoutTier?: ('pro' | 'elite' | 'student_monthly' | 'student_semester' | 'student_annual') | null;
   abacateCheckoutId?: string | null;
   abacateSubscriptionId?: string | null;
   abacateCustomerId?: string | null;
@@ -294,15 +308,23 @@ export interface Workout {
   student: number | User;
   author?: (number | null) | User;
   status: 'draft' | 'published';
-  source: 'professional' | 'ai';
+  source: 'professional' | 'ai' | 'self';
   observations?: string | null;
   weekday?: ('monday' | 'tuesday' | 'wednesday' | 'thursday' | 'friday' | 'saturday' | 'sunday') | null;
   splitLabel?: string | null;
   publishedAt?: string | null;
+  cycle?: (number | null) | TrainingCycle;
+  phaseIndex?: number | null;
+  weekFrom?: number | null;
+  weekTo?: number | null;
   exercises?:
     | {
         name: string;
+        exercise?: (number | null) | Exercise;
         sets?: number | null;
+        targetRir?: number | null;
+        intensityPct?: number | null;
+        tempo?: string | null;
         reps?: string | null;
         weight?: string | null;
         rest?: string | null;
@@ -319,6 +341,169 @@ export interface Workout {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "training-cycles".
+ */
+export interface TrainingCycle {
+  id: number;
+  title: string;
+  student: number | User;
+  author?: (number | null) | User;
+  coach?: (number | null) | User;
+  nutritionist?: (number | null) | User;
+  goal: 'hypertrophy' | 'strength' | 'fat_loss' | 'recomposition' | 'conditioning' | 'performance';
+  model?: ('linear' | 'undulating_weekly' | 'undulating_daily' | 'block' | 'reverse') | null;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  startDate: string;
+  sessionsPerWeek?: number | null;
+  status: 'draft' | 'active' | 'completed' | 'archived';
+  templateId?: string | null;
+  baseline?: {
+    weightKg?: number | null;
+    bodyFatPercent?: number | null;
+    waistCm?: number | null;
+    lifts?:
+      | {
+          exercise?: (number | null) | Exercise;
+          name: string;
+          e1rm?: number | null;
+          id?: string | null;
+        }[]
+      | null;
+  };
+  targets?: {
+    weightKg?: number | null;
+    bodyFatPercent?: number | null;
+    notes?: string | null;
+  };
+  phases?:
+    | {
+        name?: string | null;
+        kind:
+          | 'adaptation'
+          | 'accumulation'
+          | 'hypertrophy'
+          | 'strength'
+          | 'intensification'
+          | 'power'
+          | 'realization'
+          | 'deload'
+          | 'transition'
+          | 'cutting';
+        weeks: number;
+        repRange?: string | null;
+        rirStart?: number | null;
+        rirEnd?: number | null;
+        intensityMin?: number | null;
+        intensityMax?: number | null;
+        setsStart?: number | null;
+        setsEnd?: number | null;
+        cardioMin?: number | null;
+        dietPhase?: ('deficit' | 'maintenance' | 'surplus' | 'diet_break') | null;
+        kcalDelta?: number | null;
+        proteinGPerKg?: number | null;
+        notes?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  totalWeeks?: number | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exercises".
+ */
+export interface Exercise {
+  id: number;
+  name: string;
+  nameEn?: string | null;
+  slug: string;
+  muscleGroup?: ('Peito' | 'Costas' | 'Ombro' | 'Bíceps' | 'Tríceps' | 'Pernas' | 'Glúteos' | 'Abdômen') | null;
+  primaryMuscles?:
+    | (
+        | 'chest'
+        | 'lats'
+        | 'middle back'
+        | 'lower back'
+        | 'traps'
+        | 'shoulders'
+        | 'biceps'
+        | 'triceps'
+        | 'forearms'
+        | 'quadriceps'
+        | 'hamstrings'
+        | 'glutes'
+        | 'adductors'
+        | 'abductors'
+        | 'calves'
+        | 'abdominals'
+        | 'neck'
+      )[]
+    | null;
+  secondaryMuscles?:
+    | (
+        | 'chest'
+        | 'lats'
+        | 'middle back'
+        | 'lower back'
+        | 'traps'
+        | 'shoulders'
+        | 'biceps'
+        | 'triceps'
+        | 'forearms'
+        | 'quadriceps'
+        | 'hamstrings'
+        | 'glutes'
+        | 'adductors'
+        | 'abductors'
+        | 'calves'
+        | 'abdominals'
+        | 'neck'
+      )[]
+    | null;
+  equipment?:
+    | (
+        | 'barbell'
+        | 'dumbbell'
+        | 'machine'
+        | 'cable'
+        | 'body only'
+        | 'kettlebells'
+        | 'bands'
+        | 'medicine ball'
+        | 'exercise ball'
+        | 'e-z curl bar'
+        | 'foam roll'
+        | 'other'
+      )
+    | null;
+  level?: ('beginner' | 'intermediate' | 'expert') | null;
+  mechanic?: ('compound' | 'isolation') | null;
+  category?:
+    | ('strength' | 'stretching' | 'plyometrics' | 'cardio' | 'powerlifting' | 'olympic weightlifting' | 'strongman')
+    | null;
+  instructions?:
+    | {
+        text: string;
+        id?: string | null;
+      }[]
+    | null;
+  instructionsLang?: ('pt' | 'en') | null;
+  images?:
+    | {
+        url: string;
+        id?: string | null;
+      }[]
+    | null;
+  youtubeUrl?: string | null;
+  isCustom?: boolean | null;
+  author?: (number | null) | User;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "meal-plans".
  */
 export interface MealPlan {
@@ -327,7 +512,7 @@ export interface MealPlan {
   student: number | User;
   author?: (number | null) | User;
   status: 'draft' | 'published';
-  source: 'professional' | 'ai';
+  source: 'professional' | 'ai' | 'self';
   observations?: string | null;
   isInformational?: boolean | null;
   publishedAt?: string | null;
@@ -483,13 +668,26 @@ export interface WorkoutLog {
   performedAt: string;
   status: 'completed' | 'partial' | 'skipped';
   rpe?: number | null;
+  sessionRpe?: number | null;
+  durationMin?: number | null;
   notes?: string | null;
   exercises?:
     | {
         name: string;
+        exercise?: (number | null) | Exercise;
+        muscleGroup?: string | null;
         setsCompleted?: number | null;
         load?: string | null;
         notes?: string | null;
+        sets?:
+          | {
+              reps?: number | null;
+              loadKg?: number | null;
+              rir?: number | null;
+              done?: boolean | null;
+              id?: string | null;
+            }[]
+          | null;
         id?: string | null;
       }[]
     | null;
@@ -530,6 +728,110 @@ export interface Transaction {
   status: 'pending' | 'paid' | 'overdue' | 'cancelled';
   dueDate?: string | null;
   paidAt?: string | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cycle-weeks".
+ */
+export interface CycleWeek {
+  id: number;
+  cycle: number | TrainingCycle;
+  student: number | User;
+  author?: (number | null) | User;
+  coach?: (number | null) | User;
+  nutritionist?: (number | null) | User;
+  index: number;
+  phaseIndex: number;
+  phaseName?: string | null;
+  phaseKind?: string | null;
+  weekInPhase?: number | null;
+  startDate: string;
+  endDate: string;
+  isDeload?: boolean | null;
+  planned?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  expected?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  actual?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  status?: ('on_track' | 'behind' | 'ahead' | 'attention' | 'no_data' | 'upcoming') | null;
+  reasons?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  suggestions?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  coachNote?: string | null;
+  computedAt?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "body-metrics".
+ */
+export interface BodyMetric {
+  id: number;
+  student: number | User;
+  recordedBy?: (number | null) | User;
+  date: string;
+  weightKg?: number | null;
+  waistCm?: number | null;
+  bodyFatPercent?: number | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "weekly-checkins".
+ */
+export interface WeeklyCheckin {
+  id: number;
+  student: number | User;
+  date: string;
+  sleep?: number | null;
+  energy?: number | null;
+  soreness?: number | null;
+  stress?: number | null;
+  hunger?: number | null;
+  dietAdherence?: number | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -613,6 +915,26 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'transactions';
         value: number | Transaction;
+      } | null)
+    | ({
+        relationTo: 'exercises';
+        value: number | Exercise;
+      } | null)
+    | ({
+        relationTo: 'training-cycles';
+        value: number | TrainingCycle;
+      } | null)
+    | ({
+        relationTo: 'cycle-weeks';
+        value: number | CycleWeek;
+      } | null)
+    | ({
+        relationTo: 'body-metrics';
+        value: number | BodyMetric;
+      } | null)
+    | ({
+        relationTo: 'weekly-checkins';
+        value: number | WeeklyCheckin;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -664,6 +986,10 @@ export interface UsersSelect<T extends boolean = true> {
   name?: T;
   isSuperAdmin?: T;
   role?: T;
+  roles?: T;
+  primaryProRole?: T;
+  secondaryProfessionalId?: T;
+  studentTier?: T;
   whatsapp?: T;
   professionalId?: T;
   bio?: T;
@@ -787,11 +1113,19 @@ export interface WorkoutsSelect<T extends boolean = true> {
   weekday?: T;
   splitLabel?: T;
   publishedAt?: T;
+  cycle?: T;
+  phaseIndex?: T;
+  weekFrom?: T;
+  weekTo?: T;
   exercises?:
     | T
     | {
         name?: T;
+        exercise?: T;
         sets?: T;
+        targetRir?: T;
+        intensityPct?: T;
+        tempo?: T;
         reps?: T;
         weight?: T;
         rest?: T;
@@ -947,14 +1281,27 @@ export interface WorkoutLogsSelect<T extends boolean = true> {
   performedAt?: T;
   status?: T;
   rpe?: T;
+  sessionRpe?: T;
+  durationMin?: T;
   notes?: T;
   exercises?:
     | T
     | {
         name?: T;
+        exercise?: T;
+        muscleGroup?: T;
         setsCompleted?: T;
         load?: T;
         notes?: T;
+        sets?:
+          | T
+          | {
+              reps?: T;
+              loadKg?: T;
+              rir?: T;
+              done?: T;
+              id?: T;
+            };
         id?: T;
       };
   updatedAt?: T;
@@ -992,6 +1339,165 @@ export interface TransactionsSelect<T extends boolean = true> {
   status?: T;
   dueDate?: T;
   paidAt?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "exercises_select".
+ */
+export interface ExercisesSelect<T extends boolean = true> {
+  name?: T;
+  nameEn?: T;
+  slug?: T;
+  muscleGroup?: T;
+  primaryMuscles?: T;
+  secondaryMuscles?: T;
+  equipment?: T;
+  level?: T;
+  mechanic?: T;
+  category?: T;
+  instructions?:
+    | T
+    | {
+        text?: T;
+        id?: T;
+      };
+  instructionsLang?: T;
+  images?:
+    | T
+    | {
+        url?: T;
+        id?: T;
+      };
+  youtubeUrl?: T;
+  isCustom?: T;
+  author?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "training-cycles_select".
+ */
+export interface TrainingCyclesSelect<T extends boolean = true> {
+  title?: T;
+  student?: T;
+  author?: T;
+  coach?: T;
+  nutritionist?: T;
+  goal?: T;
+  model?: T;
+  level?: T;
+  startDate?: T;
+  sessionsPerWeek?: T;
+  status?: T;
+  templateId?: T;
+  baseline?:
+    | T
+    | {
+        weightKg?: T;
+        bodyFatPercent?: T;
+        waistCm?: T;
+        lifts?:
+          | T
+          | {
+              exercise?: T;
+              name?: T;
+              e1rm?: T;
+              id?: T;
+            };
+      };
+  targets?:
+    | T
+    | {
+        weightKg?: T;
+        bodyFatPercent?: T;
+        notes?: T;
+      };
+  phases?:
+    | T
+    | {
+        name?: T;
+        kind?: T;
+        weeks?: T;
+        repRange?: T;
+        rirStart?: T;
+        rirEnd?: T;
+        intensityMin?: T;
+        intensityMax?: T;
+        setsStart?: T;
+        setsEnd?: T;
+        cardioMin?: T;
+        dietPhase?: T;
+        kcalDelta?: T;
+        proteinGPerKg?: T;
+        notes?: T;
+        id?: T;
+      };
+  totalWeeks?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cycle-weeks_select".
+ */
+export interface CycleWeeksSelect<T extends boolean = true> {
+  cycle?: T;
+  student?: T;
+  author?: T;
+  coach?: T;
+  nutritionist?: T;
+  index?: T;
+  phaseIndex?: T;
+  phaseName?: T;
+  phaseKind?: T;
+  weekInPhase?: T;
+  startDate?: T;
+  endDate?: T;
+  isDeload?: T;
+  planned?: T;
+  expected?: T;
+  actual?: T;
+  status?: T;
+  reasons?: T;
+  suggestions?: T;
+  coachNote?: T;
+  computedAt?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "body-metrics_select".
+ */
+export interface BodyMetricsSelect<T extends boolean = true> {
+  student?: T;
+  recordedBy?: T;
+  date?: T;
+  weightKg?: T;
+  waistCm?: T;
+  bodyFatPercent?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "weekly-checkins_select".
+ */
+export interface WeeklyCheckinsSelect<T extends boolean = true> {
+  student?: T;
+  date?: T;
+  sleep?: T;
+  energy?: T;
+  soreness?: T;
+  stress?: T;
+  hunger?: T;
+  dietAdherence?: T;
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
