@@ -327,7 +327,10 @@ export interface Workout {
         tempo?: string | null;
         reps?: string | null;
         weight?: string | null;
+        loadKg?: number | null;
+        targetRpe?: number | null;
         rest?: string | null;
+        restSec?: number | null;
         muscle?: string | null;
         notes?: string | null;
         instructions?: string | null;
@@ -666,6 +669,8 @@ export interface WorkoutLog {
   student: number | User;
   workout?: (number | null) | Workout;
   performedAt: string;
+  cycle?: (number | null) | TrainingCycle;
+  weekIndex?: number | null;
   status: 'completed' | 'partial' | 'skipped';
   rpe?: number | null;
   sessionRpe?: number | null;
@@ -676,6 +681,16 @@ export interface WorkoutLog {
         name: string;
         exercise?: (number | null) | Exercise;
         muscleGroup?: string | null;
+        planned?: {
+          sets?: number | null;
+          reps?: string | null;
+          loadKg?: number | null;
+          rir?: number | null;
+          rpe?: number | null;
+          restSec?: number | null;
+        };
+        change?: ('none' | 'substituted' | 'added' | 'skipped') | null;
+        replacedName?: string | null;
         setsCompleted?: number | null;
         load?: string | null;
         notes?: string | null;
@@ -684,6 +699,8 @@ export interface WorkoutLog {
               reps?: number | null;
               loadKg?: number | null;
               rir?: number | null;
+              rpe?: number | null;
+              restSec?: number | null;
               done?: boolean | null;
               id?: string | null;
             }[]
@@ -813,7 +830,21 @@ export interface BodyMetric {
   date: string;
   weightKg?: number | null;
   waistCm?: number | null;
+  abdomenCm?: number | null;
+  hipCm?: number | null;
+  chestCm?: number | null;
+  armCm?: number | null;
+  thighCm?: number | null;
+  calfCm?: number | null;
   bodyFatPercent?: number | null;
+  bodyFatMethod?: string | null;
+  photos?:
+    | {
+        url: string;
+        angle?: ('front' | 'side' | 'back') | null;
+        id?: string | null;
+      }[]
+    | null;
   notes?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -831,6 +862,10 @@ export interface WeeklyCheckin {
   soreness?: number | null;
   stress?: number | null;
   hunger?: number | null;
+  fatigue?: number | null;
+  readiness?: number | null;
+  jointPain?: number | null;
+  recovery?: number | null;
   dietAdherence?: number | null;
   notes?: string | null;
   updatedAt: string;
@@ -1128,7 +1163,10 @@ export interface WorkoutsSelect<T extends boolean = true> {
         tempo?: T;
         reps?: T;
         weight?: T;
+        loadKg?: T;
+        targetRpe?: T;
         rest?: T;
+        restSec?: T;
         muscle?: T;
         notes?: T;
         instructions?: T;
@@ -1279,6 +1317,8 @@ export interface WorkoutLogsSelect<T extends boolean = true> {
   student?: T;
   workout?: T;
   performedAt?: T;
+  cycle?: T;
+  weekIndex?: T;
   status?: T;
   rpe?: T;
   sessionRpe?: T;
@@ -1290,6 +1330,18 @@ export interface WorkoutLogsSelect<T extends boolean = true> {
         name?: T;
         exercise?: T;
         muscleGroup?: T;
+        planned?:
+          | T
+          | {
+              sets?: T;
+              reps?: T;
+              loadKg?: T;
+              rir?: T;
+              rpe?: T;
+              restSec?: T;
+            };
+        change?: T;
+        replacedName?: T;
         setsCompleted?: T;
         load?: T;
         notes?: T;
@@ -1299,6 +1351,8 @@ export interface WorkoutLogsSelect<T extends boolean = true> {
               reps?: T;
               loadKg?: T;
               rir?: T;
+              rpe?: T;
+              restSec?: T;
               done?: T;
               id?: T;
             };
@@ -1480,7 +1534,21 @@ export interface BodyMetricsSelect<T extends boolean = true> {
   date?: T;
   weightKg?: T;
   waistCm?: T;
+  abdomenCm?: T;
+  hipCm?: T;
+  chestCm?: T;
+  armCm?: T;
+  thighCm?: T;
+  calfCm?: T;
   bodyFatPercent?: T;
+  bodyFatMethod?: T;
+  photos?:
+    | T
+    | {
+        url?: T;
+        angle?: T;
+        id?: T;
+      };
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -1497,6 +1565,10 @@ export interface WeeklyCheckinsSelect<T extends boolean = true> {
   soreness?: T;
   stress?: T;
   hunger?: T;
+  fatigue?: T;
+  readiness?: T;
+  jointPain?: T;
+  recovery?: T;
   dietAdherence?: T;
   notes?: T;
   updatedAt?: T;

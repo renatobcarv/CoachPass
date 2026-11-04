@@ -70,8 +70,34 @@ export const BodyMetrics: CollectionConfig = {
     { name: 'recordedBy', type: 'relationship', relationTo: 'users' },
     { name: 'date', type: 'date', required: true, index: true, defaultValue: () => new Date().toISOString() },
     { name: 'weightKg', type: 'number', min: 20, max: 400 },
-    { name: 'waistCm', type: 'number', min: 30, max: 250 },
-    { name: 'bodyFatPercent', type: 'number', min: 2, max: 70 },
+    { name: 'waistCm', type: 'number', min: 30, max: 250, label: 'Cintura (cm)' },
+    { name: 'abdomenCm', type: 'number', min: 30, max: 250, label: 'Abdômen (cm)' },
+    { name: 'hipCm', type: 'number', min: 30, max: 250, label: 'Quadril (cm)' },
+    { name: 'chestCm', type: 'number', min: 30, max: 250, label: 'Peitoral (cm)' },
+    { name: 'armCm', type: 'number', min: 10, max: 100, label: 'Braço (cm)' },
+    { name: 'thighCm', type: 'number', min: 20, max: 150, label: 'Coxa (cm)' },
+    { name: 'calfCm', type: 'number', min: 15, max: 80, label: 'Panturrilha (cm)' },
+    // Só quando medido por método adequado (bioimpedância, dobras, DEXA); o app não estima
+    { name: 'bodyFatPercent', type: 'number', min: 2, max: 70, label: '% de gordura medido' },
+    { name: 'bodyFatMethod', type: 'text', label: 'Método da medição de gordura' },
+    {
+      name: 'photos',
+      type: 'array',
+      label: 'Fotos de evolução',
+      maxRows: 4,
+      fields: [
+        { name: 'url', type: 'text', required: true },
+        {
+          name: 'angle',
+          type: 'select',
+          options: [
+            { label: 'Frente', value: 'front' },
+            { label: 'Lado', value: 'side' },
+            { label: 'Costas', value: 'back' },
+          ],
+        },
+      ],
+    },
     { name: 'notes', type: 'text' },
   ],
 }

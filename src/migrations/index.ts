@@ -8,6 +8,7 @@ import * as migration_20261030_044608_abacate_billing from './20261030_044608_ab
 import * as migration_20261030_051312_workout_log_optional_workout from './20261030_051312_workout_log_optional_workout';
 import * as migration_20261030_052008_link_professional_name from './20261030_052008_link_professional_name';
 import * as migration_20261030_142337_v2_periodization_roles_exercises from './20261030_142337_v2_periodization_roles_exercises';
+import * as migration_20261104_032340_performance_tracking from './20261104_032340_performance_tracking';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20261030_142337_v2_periodization_roles_exercises.up,
     down: migration_20261030_142337_v2_periodization_roles_exercises.down,
-    name: '20261030_142337_v2_periodization_roles_exercises'
+    name: '20261030_142337_v2_periodization_roles_exercises',
+  },
+  {
+    up: migration_20261104_032340_performance_tracking.up,
+    down: migration_20261104_032340_performance_tracking.down,
+    name: '20261104_032340_performance_tracking'
   },
 ];
