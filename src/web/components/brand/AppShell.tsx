@@ -1,11 +1,12 @@
 import React from 'react'
-import { Link, NavLink, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { motion, MotionConfig } from 'motion/react'
 import { LogOut, Settings } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AIChat } from '../AIChat'
 import { BrandLogo, Grain } from './Brand'
 import { useSpotlight } from './fx'
+import { RoleSwitcher } from './RoleSwitcher'
 
 export type ShellNavItem = {
   to: string
@@ -13,6 +14,8 @@ export type ShellNavItem = {
   label: string
   short: string
   exact?: boolean
+  /** Some das abas inferiores do celular (continua no menu lateral) */
+  desktopOnly?: boolean
 }
 
 function initials(name?: string) {
@@ -56,7 +59,11 @@ export function AppShell({
 }) {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
+  const { pathname } = useLocation()
+  // Durante a execução do treino o botão do assistente cobriria a barra de concluir
+  const hideAssistant = pathname.startsWith('/app/treino/')
   const spotlightRef = useSpotlight<HTMLDivElement>()
+  const mobileItems = navItems.filter((i) => !i.desktopOnly).slice(0, 5)
 
   const handleLogout = () => {
     logout()
@@ -105,6 +112,7 @@ export function AppShell({
           </nav>
 
           <div className="px-4 pb-4 space-y-3">
+            <RoleSwitcher />
             {aside}
 
             <div className="flex items-center gap-3 rounded-2xl p-3 border border-[var(--line)] bg-white/[0.02]">
@@ -141,6 +149,7 @@ export function AppShell({
             <BrandLogo size={22} />
           </Link>
           <div className="flex items-center gap-2">
+            <RoleSwitcher compact />
             <NavLink
               to={settingsTo}
               aria-label="Configurações"
@@ -169,8 +178,8 @@ export function AppShell({
           className="lg:hidden fixed bottom-0 inset-x-0 z-40 border-t border-[var(--line)] bg-[rgba(8,9,16,0.88)] backdrop-blur-xl"
           style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
         >
-          <div className={`grid ${TAB_COLS[navItems.length] || 'grid-cols-5'} h-[68px]`}>
-            {navItems.map(({ to, icon: Icon, short, exact }) => (
+          <div className={`grid ${TAB_COLS[mobileItems.length] || 'grid-cols-5'} h-[68px]`}>
+            {mobileItems.map(({ to, icon: Icon, short, exact }) => (
               <NavLink key={to} to={to} end={exact} className="relative flex flex-col items-center justify-center gap-1">
                 {({ isActive }) => (
                   <>
@@ -189,7 +198,7 @@ export function AppShell({
           </div>
         </nav>
 
-        <AIChat />
+        {!hideAssistant && <AIChat />}
       </div>
     </MotionConfig>
   )

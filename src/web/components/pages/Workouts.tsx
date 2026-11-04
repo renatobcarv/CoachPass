@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { Dumbbell, ExternalLink, PlayCircle, Sparkles } from 'lucide-react'
+import { Link } from 'react-router'
+import { Dumbbell, ExternalLink, Play, PlayCircle, Plus } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import {
   WorkoutDoc,
@@ -15,14 +16,12 @@ import {
   Page,
   PageHeader,
   Skeleton,
-  SoonButton,
   WEEKDAY_ORDER,
   WEEKDAY_PT,
   WEEKDAY_SHORT,
   todayWeekday,
   workoutTitle,
 } from '../student/ui'
-import { DemoFinder } from '../musclewiki/DemoFinder'
 import { PhotoLoop } from '../exercise/PhotoLoop'
 import { exercisePhotos } from '../../data/exercisePhotos'
 
@@ -91,8 +90,12 @@ export function Workouts() {
         kicker="Treinos"
         title="Sua semana de"
         accent="treino."
-        lead="Treinos publicados pelo personal ou gerados por IA aparecem aqui."
-        action={<SoonButton icon={Sparkles}>Gerar semana com IA</SoonButton>}
+        lead="Treinos publicados pelo personal, gerados por IA ou montados por você. Toque em Iniciar para registrar cada série."
+        action={
+          <Link to="/app/treinos/novo" className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--line-2)] px-4 text-[14px] font-semibold text-[var(--muted)] hover:text-white">
+            <Plus className="h-4 w-4" /> Criar treino
+          </Link>
+        }
       />
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
@@ -106,8 +109,7 @@ export function Workouts() {
 
       {!loading && sorted.length === 0 && (
         <EmptyState icon={Dumbbell} title="Nenhum treino ainda">
-          Quando um personal publicar um treino — ou quando a geração com IA estiver disponível — ele será listado
-          aqui.
+          Quando um personal publicar um treino, ele aparece aqui. Com o Aluno Pro você também monta os seus.
         </EmptyState>
       )}
 
@@ -205,6 +207,7 @@ function WorkoutCard({ workout, isToday }: { workout: WorkoutDoc; isToday: boole
           {day && <Badge>{day}</Badge>}
           {workout.splitLabel && <Badge tone="blue">{workout.splitLabel}</Badge>}
           {workout.source === 'ai' && <Badge tone="violet">IA</Badge>}
+          {workout.source === 'self' && <Badge tone="amber">Criado por você</Badge>}
         </div>
         <h2 className="cp-display mt-4 text-[26px] sm:text-[30px] font-bold leading-tight">
           {workoutTitle(workout.title, workout.weekday)}
@@ -220,6 +223,12 @@ function WorkoutCard({ workout, isToday }: { workout: WorkoutDoc; isToday: boole
         {workout.observations && (
           <p className="mt-4 text-[14.5px] leading-relaxed text-[var(--muted)]">{workout.observations}</p>
         )}
+        <Link
+          to={`/app/treino/${workout.id}`}
+          className="mt-5 inline-flex h-12 items-center gap-2 rounded-full bg-[var(--paper)] px-6 text-[15px] font-semibold text-[var(--paper-ink)] transition hover:bg-white active:scale-[0.98]"
+        >
+          <Play className="h-4 w-4" /> Iniciar treino
+        </Link>
       </div>
 
       <ol>
@@ -251,14 +260,14 @@ function WorkoutCard({ workout, isToday }: { workout: WorkoutDoc; isToday: boole
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {ex.sets ? <Metric k="Séries" v={String(ex.sets)} /> : null}
                 {ex.reps ? <Metric k="Reps" v={ex.reps} /> : null}
-                {ex.weight ? <Metric k="Carga" v={ex.weight} /> : null}
+                {ex.loadKg ? <Metric k="Carga" v={`${ex.loadKg} kg`} /> : ex.weight ? <Metric k="Carga" v={ex.weight} /> : null}
+                {ex.targetRir != null ? <Metric k="RIR" v={String(ex.targetRir)} /> : null}
                 {ex.rest ? <Metric k="Descanso" v={ex.rest} /> : null}
                 {ex.muscle ? <Metric k="Alvo" v={ex.muscle} /> : null}
               </div>
               {ex.instructions && (
                 <p className="mt-3 text-[13.5px] leading-relaxed text-[var(--muted)]">{ex.instructions}</p>
               )}
-              <DemoFinder exerciseName={ex.name} />
               {ex.youtubeUrl && (
                 <a
                   href={ex.youtubeUrl}

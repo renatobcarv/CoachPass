@@ -21,6 +21,10 @@ export interface User {
   whatsapp?: string;
   professionalId?: string;
   plan?: 'free' | 'monthly' | 'semester' | 'annual';
+  /** Painéis liberados na conta (o profissional sempre tem o de aluno) */
+  roles?: Array<'student' | 'personal' | 'nutritionist'>;
+  /** Área profissional principal (para voltar do painel do aluno) */
+  primaryProRole?: 'personal' | 'nutritionist' | null;
   createdAt?: string;
   accessToken?: string;
 }
@@ -32,6 +36,8 @@ interface AuthContextType {
   register: (email: string, password: string, role: UserRole, additionalData?: Partial<User>) => Promise<void>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
+  /** Troca o painel ativo (ex.: personal → aluno) e devolve a rota inicial do novo painel */
+  switchRole: (role: 'student' | 'personal' | 'nutritionist') => Promise<string>;
   isAuthenticated: boolean;
 }
 
@@ -48,6 +54,8 @@ type PayloadUserDoc = {
   whatsapp?: string;
   professionalId?: string;
   plan?: User['plan'];
+  roles?: User['roles'];
+  primaryProRole?: User['primaryProRole'];
   createdAt?: string;
 };
 
@@ -67,6 +75,8 @@ function buildUser(doc: PayloadUserDoc, accessToken: string): User {
     whatsapp: doc.whatsapp,
     professionalId: doc.professionalId,
     plan: doc.plan,
+    roles: doc.roles ?? undefined,
+    primaryProRole: doc.primaryProRole ?? null,
     createdAt: doc.createdAt,
     accessToken,
   };
@@ -227,6 +237,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const switchRole = async (role: 'student' | 'personal' | 'nutritionist'): Promise<string> => {
+    if (!user?.accessToken) throw new Error('Sessão expirada. Entre novamente.');
+    try {
+      const res = await postJson<{ token?: string | null }>('/api/me/switch-role', { role }, user.accessToken);
+      const token = res.token || user.accessToken;
+      const me = await getJson<{ user: PayloadUserDoc | null }>(`${USERS_API}/me`, token);
+      if (!me.user) throw new Error('Não foi possível trocar de painel.');
+      const built = buildUser(me.user, token);
+      setUser(built);
+      persistSession(built);
+      return built.role === 'personal' ? '/personal' : built.role === 'nutritionist' ? '/nutritionist' : '/app';
+    } catch (e) {
+      const msg = e instanceof PayloadApiError ? extractPayloadMessage(e.data) || e.message : e instanceof Error ? e.message : '';
+      throw new Error(msg || 'Não foi possível trocar de painel.');
+    }
+  };
+
   const updateUser = (data: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return prev
@@ -245,6 +272,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         register,
         logout,
         updateUser,
+        switchRole,
         isAuthenticated: !!user,
       }}
     >

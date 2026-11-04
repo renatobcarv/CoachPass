@@ -1,5 +1,5 @@
 import React from 'react'
-import { Apple, Calendar, ClipboardList, Dumbbell, LayoutDashboard, User, Users, Utensils } from 'lucide-react'
+import { Apple, Calendar, CalendarRange, ClipboardList, Dumbbell, LayoutDashboard, User, Users, Utensils } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { AppShell, type ShellNavItem } from '../brand/AppShell'
 import { PlanMeter } from '../pricing/PlanMeter'
@@ -7,6 +7,7 @@ import { PlanMeter } from '../pricing/PlanMeter'
 const personalNav: ShellNavItem[] = [
   { to: '/personal', icon: LayoutDashboard, label: 'Painel', short: 'Painel', exact: true },
   { to: '/personal/criar-treino', icon: Dumbbell, label: 'Criar treino', short: 'Treino' },
+  { to: '/personal/periodizacao', icon: CalendarRange, label: 'Periodização', short: 'Ciclos' },
   { to: '/personal/avaliacao', icon: ClipboardList, label: 'Avaliação física', short: 'Avaliação' },
   { to: '/personal/agenda', icon: Calendar, label: 'Agenda & sessões', short: 'Agenda' },
 ]

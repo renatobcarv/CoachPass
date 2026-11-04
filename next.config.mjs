@@ -32,6 +32,8 @@ const securityHeaders = [
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  // Pasta do build configurável: permite validar o build sem mexer no servidor de desenvolvimento
+  distDir: process.env.NEXT_DIST_DIR || '.next',
   output: 'standalone',
   poweredByHeader: false,
   allowedDevOrigins: ['*.trycloudflare.com', '*.ngrok-free.dev', '*.ngrok.io'],

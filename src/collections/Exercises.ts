@@ -7,7 +7,7 @@ import { CATEGORIES, EQUIPMENT, LEVELS, MECHANICS, MUSCLES, MUSCLE_GROUPS, group
 const isPro = (role: string | null) => role === 'personal' || role === 'nutritionist'
 
 /**
- * Biblioteca de exercícios (substitui a MuscleWiki).
+ * Biblioteca de exercícios própria.
  * Base pública importada da free-exercise-db (domínio público) + exercícios próprios de profissionais.
  */
 export const Exercises: CollectionConfig = {

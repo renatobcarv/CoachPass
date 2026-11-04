@@ -5,15 +5,12 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/pages/Dashboard';
 import { Workouts } from './components/pages/Workouts';
 import { Diet } from './components/pages/Diet';
-import { Evolution } from './components/pages/Evolution';
 import { Profile } from './components/pages/Profile';
 import { Home } from './components/pages/Home';
 import { Login } from './components/pages/Login';
 import { Register } from './components/pages/Register';
 import { PersonalDashboard } from './components/pages/PersonalDashboard';
 import { NutritionistDashboard } from './components/pages/NutritionistDashboard';
-import { CreateWorkout } from './components/pages/CreateWorkout';
-import { StudentDetails } from './components/pages/StudentDetails';
 import { StudentMeasurement } from './components/pages/StudentMeasurement';
 import { StudentRestriction } from './components/pages/StudentRestriction';
 import { StudentReport } from './components/pages/StudentReport';
@@ -32,6 +29,22 @@ import { StudentOnboarding } from './components/pages/StudentOnboarding';
 import { ProfessionalOnboarding } from './components/pages/ProfessionalOnboarding';
 import { Plans } from './components/pages/Plans';
 import { PrivacyPolicy, TermsOfUse } from './components/pages/PrivacyPolicy';
+import { PerformanceDashboard, ExerciseHistoryPage } from './components/performance/Dashboard';
+import { CyclesHome, CycleEditor, CycleView } from './components/performance/Periodization';
+import { SessionLogger } from './components/performance/SessionLogger';
+import { WorkoutBuilder } from './components/performance/WorkoutBuilder';
+
+// Variações por painel (aluno vê o próprio; personal vê o do aluno)
+const StudentCycles = () => <CyclesHome mode="student" />;
+const StudentCycleEditor = () => <CycleEditor mode="student" />;
+const StudentCycleView = () => <CycleView mode="student" />;
+const StudentWorkoutBuilder = () => <WorkoutBuilder mode="student" />;
+const CoachCycles = () => <CyclesHome mode="coach" />;
+const CoachCycleEditor = () => <CycleEditor mode="coach" />;
+const CoachCycleView = () => <CycleView mode="coach" />;
+const CoachWorkoutBuilder = () => <WorkoutBuilder mode="coach" />;
+const CoachDashboard = () => <PerformanceDashboard coach />;
+const CoachExerciseHistory = () => <ExerciseHistoryPage coach />;
 
 export const router = createBrowserRouter([
   { path: '/', Component: Home },
@@ -74,8 +87,15 @@ export const router = createBrowserRouter([
             children: [
               { index: true, Component: Dashboard },
               { path: 'treinos', Component: Workouts },
+              { path: 'treinos/novo', Component: StudentWorkoutBuilder },
+              { path: 'treino/:workoutId', Component: SessionLogger },
+              { path: 'periodizacao', Component: StudentCycles },
+              { path: 'periodizacao/novo', Component: StudentCycleEditor },
+              { path: 'periodizacao/:id', Component: StudentCycleView },
+              { path: 'periodizacao/:id/editar', Component: StudentCycleEditor },
               { path: 'dieta', Component: Diet },
-              { path: 'evolucao', Component: Evolution },
+              { path: 'evolucao', Component: PerformanceDashboard },
+              { path: 'exercicio/:key', Component: ExerciseHistoryPage },
               { path: 'perfil', Component: Profile },
               { path: 'configuracoes', Component: Settings },
             ],
@@ -92,8 +112,14 @@ export const router = createBrowserRouter([
         Component: Layout,
         children: [
           { index: true, Component: PersonalDashboard },
-          { path: 'criar-treino', Component: CreateWorkout },
-          { path: 'aluno/:id', Component: StudentDetails },
+          { path: 'criar-treino', Component: CoachWorkoutBuilder },
+          { path: 'periodizacao', Component: CoachCycles },
+          { path: 'periodizacao/novo', Component: CoachCycleEditor },
+          { path: 'periodizacao/:id', Component: CoachCycleView },
+          { path: 'periodizacao/:id/editar', Component: CoachCycleEditor },
+          { path: 'aluno/:id', element: <Navigate to="evolucao" replace /> },
+          { path: 'aluno/:id/evolucao', Component: CoachDashboard },
+          { path: 'aluno/:id/exercicio/:key', Component: CoachExerciseHistory },
           { path: 'aluno/:id/medicao', Component: StudentMeasurement },
           { path: 'aluno/:id/restricao', Component: StudentRestriction },
           { path: 'aluno/:id/relatorio', Component: StudentReport },
@@ -117,6 +143,7 @@ export const router = createBrowserRouter([
         children: [
           { index: true, Component: NutritionistDashboard },
           { path: 'paciente/:id', Component: NutritionistPatientDetails },
+          { path: 'paciente/:id/evolucao', Component: CoachDashboard },
           { path: 'criar-plano', Component: CreateDietPlan },
           { path: 'criar-plano/:patientId', Component: CreateDietPlan },
           { path: 'consulta/:patientId', Component: NutritionConsultation },

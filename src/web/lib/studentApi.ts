@@ -94,7 +94,7 @@ export type WorkoutDoc = {
   title: string
   student?: string | { id: string | number }
   status: 'draft' | 'published'
-  source: 'professional' | 'ai'
+  source: 'professional' | 'ai' | 'self'
   observations?: string | null
   weekday?: string | null
   splitLabel?: string | null
@@ -105,6 +105,9 @@ export type WorkoutDoc = {
     sets?: number | null
     reps?: string | null
     weight?: string | null
+    loadKg?: number | null
+    targetRir?: number | null
+    restSec?: number | null
     rest?: string | null
     muscle?: string | null
     notes?: string | null
