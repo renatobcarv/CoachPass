@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
-import { Check, Circle, Minus, Plus, Printer, Search, ShoppingCart, Sparkles, Utensils, X, User } from 'lucide-react';
+import { Check, Circle, Minus, Plus, Printer, Search, ShoppingCart, Utensils, X, User } from 'lucide-react';
 import { toast } from 'sonner';
 import { CTAButton } from '../brand/Brand';
-import { Badge, Page, PageHeader, SoonButton } from '../student/ui';
+import { Badge, Page, PageHeader } from '../student/ui';
 import { FieldLabel, MobileActionBar, PersonChip, Segmented } from '../pro/ui';
 import { useAuth } from '../../context/AuthContext';
+import { useFoodCatalog } from '../../lib/useFoodCatalog';
 import { fetchNutriPatients, createMealPlan, type NutriPatient, type PlanMeal } from '../../lib/nutriApi';
 
 // ────────────────── DATA ──────────────────
@@ -21,47 +22,6 @@ export interface FoodItem {
   unit: string;
 }
 
-export const foodDatabase: FoodItem[] = [
-  // Proteínas
-  { id: 'f1', name: 'Frango grelhado', category: 'protein', calories: 165, protein: 31, carbs: 0, fat: 3.6, unit: 'g' },
-  { id: 'f2', name: 'Carne bovina magra', category: 'protein', calories: 215, protein: 26, carbs: 0, fat: 12, unit: 'g' },
-  { id: 'f3', name: 'Salmão', category: 'protein', calories: 208, protein: 20, carbs: 0, fat: 13, unit: 'g' },
-  { id: 'f4', name: 'Atum em água', category: 'protein', calories: 116, protein: 26, carbs: 0, fat: 1, unit: 'g' },
-  { id: 'f5', name: 'Ovo inteiro cozido', category: 'protein', calories: 155, protein: 13, carbs: 1, fat: 11, unit: 'g' },
-  { id: 'f6', name: 'Clara de ovo', category: 'protein', calories: 52, protein: 11, carbs: 0.7, fat: 0.2, unit: 'g' },
-  { id: 'f7', name: 'Peito de peru', category: 'protein', calories: 135, protein: 29, carbs: 2, fat: 1.5, unit: 'g' },
-  { id: 'f8', name: 'Tilápia', category: 'protein', calories: 96, protein: 20, carbs: 0, fat: 2, unit: 'g' },
-  // Carboidratos
-  { id: 'c1', name: 'Arroz integral cozido', category: 'carb', calories: 111, protein: 2.6, carbs: 23, fat: 0.9, unit: 'g' },
-  { id: 'c2', name: 'Batata-doce cozida', category: 'carb', calories: 86, protein: 1.6, carbs: 20, fat: 0.1, unit: 'g' },
-  { id: 'c3', name: 'Aveia em flocos', category: 'carb', calories: 389, protein: 17, carbs: 66, fat: 7, unit: 'g' },
-  { id: 'c4', name: 'Feijão cozido', category: 'carb', calories: 132, protein: 8.7, carbs: 24, fat: 0.5, unit: 'g' },
-  { id: 'c5', name: 'Macarrão integral', category: 'carb', calories: 124, protein: 5, carbs: 23, fat: 1, unit: 'g' },
-  { id: 'c6', name: 'Tapioca', category: 'carb', calories: 358, protein: 0.2, carbs: 88, fat: 0.2, unit: 'g' },
-  { id: 'c7', name: 'Quinoa cozida', category: 'carb', calories: 120, protein: 4.4, carbs: 21, fat: 1.9, unit: 'g' },
-  { id: 'c8', name: 'Pão integral', category: 'carb', calories: 247, protein: 8, carbs: 41, fat: 3.5, unit: 'g' },
-  // Gorduras
-  { id: 'g1', name: 'Azeite de oliva', category: 'fat', calories: 884, protein: 0, carbs: 0, fat: 100, unit: 'ml' },
-  { id: 'g2', name: 'Abacate', category: 'fat', calories: 160, protein: 2, carbs: 9, fat: 15, unit: 'g' },
-  { id: 'g3', name: 'Castanha-do-Pará', category: 'fat', calories: 659, protein: 14, carbs: 12, fat: 67, unit: 'g' },
-  { id: 'g4', name: 'Pasta de amendoim', category: 'fat', calories: 588, protein: 25, carbs: 20, fat: 50, unit: 'g' },
-  { id: 'g5', name: 'Amêndoas', category: 'fat', calories: 579, protein: 21, carbs: 22, fat: 50, unit: 'g' },
-  // Vegetais
-  { id: 'v1', name: 'Brócolis', category: 'vegetable', calories: 34, protein: 2.8, carbs: 7, fat: 0.4, unit: 'g' },
-  { id: 'v2', name: 'Espinafre', category: 'vegetable', calories: 23, protein: 2.9, carbs: 3.6, fat: 0.4, unit: 'g' },
-  { id: 'v3', name: 'Abobrinha', category: 'vegetable', calories: 17, protein: 1.2, carbs: 3.1, fat: 0.3, unit: 'g' },
-  { id: 'v4', name: 'Cenoura', category: 'vegetable', calories: 41, protein: 0.9, carbs: 10, fat: 0.2, unit: 'g' },
-  { id: 'v5', name: 'Alface', category: 'vegetable', calories: 15, protein: 1.4, carbs: 2.9, fat: 0.2, unit: 'g' },
-  // Frutas
-  { id: 'fr1', name: 'Banana', category: 'fruit', calories: 89, protein: 1.1, carbs: 23, fat: 0.3, unit: 'g' },
-  { id: 'fr2', name: 'Maçã', category: 'fruit', calories: 52, protein: 0.3, carbs: 14, fat: 0.2, unit: 'g' },
-  { id: 'fr3', name: 'Morango', category: 'fruit', calories: 32, protein: 0.7, carbs: 8, fat: 0.3, unit: 'g' },
-  { id: 'fr4', name: 'Mamão papaya', category: 'fruit', calories: 43, protein: 0.5, carbs: 11, fat: 0.3, unit: 'g' },
-  // Laticínios
-  { id: 'd1', name: 'Iogurte grego sem lactose', category: 'dairy', calories: 73, protein: 9, carbs: 3.6, fat: 3, unit: 'g' },
-  { id: 'd2', name: 'Queijo cottage', category: 'dairy', calories: 98, protein: 11, carbs: 3.4, fat: 4.3, unit: 'g' },
-  { id: 'd3', name: 'Whey protein', category: 'dairy', calories: 373, protein: 78, carbs: 6, fat: 5, unit: 'g' },
-];
 
 
 const categoryLabels: Record<string, string> = {
@@ -125,10 +85,6 @@ interface ShoppingItem {
   displayMonthly: string;
 }
 
-const mockPatients = [
-  { id: '1', name: 'Ana Costa' },
-  { id: '2', name: 'Roberto Lima' },
-];
 
 // ────────────────── COMPONENT ──────────────────
 export function CreateDietPlan() {
@@ -148,7 +104,6 @@ export function CreateDietPlan() {
   const [duration, setDuration] = useState(4);
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
-  const [generatingAI, setGeneratingAI] = useState(false);
   const [showShoppingList, setShowShoppingList] = useState(false);
   const [shoppingDays, setShoppingDays] = useState(30);
 
@@ -190,7 +145,8 @@ export function CreateDietPlan() {
   const [foodSearch, setFoodSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
 
-  const filteredFoods = foodDatabase.filter((f) => {
+  const foods = useFoodCatalog();
+  const filteredFoods = foods.filter((f) => {
     const matchSearch = f.name.toLowerCase().includes(foodSearch.toLowerCase());
     const matchCat = categoryFilter === 'all' || f.category === categoryFilter;
     return matchSearch && matchCat;
@@ -279,10 +235,6 @@ export function CreateDietPlan() {
 
   const totals = getTotals();
 
-  const handleGenerateAI = () => {
-    setGeneratingAI(true);
-    setTimeout(() => { setGeneratingAI(false); toast.success('Plano alimentar gerado pela IA com sucesso!'); }, 2000);
-  };
 
   const handleSave = async () => {
     if (!planName.trim()) {
@@ -390,7 +342,6 @@ export function CreateDietPlan() {
               Lista de compras
               {totalFoodItems > 0 && <span className="cp-mono text-[11px] text-[var(--brand-200)]">{totalFoodItems}</span>}
             </button>
-            <SoonButton icon={Sparkles}>Gerar com IA</SoonButton>
           </div>
         }
       />

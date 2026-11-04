@@ -14,28 +14,11 @@ import { toast } from 'sonner';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { USERS_API, PayloadApiError, extractPayloadMessage, patchJson, postJson } from '@/lib/cms';
-import { deleteCurrentUser, exportMyData } from '../../lib/professionalApi';
+import { deleteCurrentUser, exportMyData, fetchMeUser } from '../../lib/professionalApi';
+import { uploadProfilePhoto } from '../../lib/studentApi';
+import { AuthedImage } from '../AuthedImage';
 import { PasswordStrength } from '../forms/PasswordInput';
 import { credentialError, isStrongEnough, maskPhoneBR, nameError, phoneError } from '../../lib/validation';
-
-// Preferências (notificações, privacidade, bio/cidade/Instagram) ainda não têm campos no backend:
-// ficam salvas neste dispositivo. Nada é enviado a serviços de terceiros.
-const prefsKey = (id: string | number) => `coachpass-settings:${id}`;
-function loadPrefs(id?: string | number | null): Record<string, any> {
-  if (!id) return {};
-  try {
-    return JSON.parse(localStorage.getItem(prefsKey(id)) || '{}');
-  } catch {
-    return {};
-  }
-}
-function savePrefs(id: string | number, patch: Record<string, any>) {
-  try {
-    localStorage.setItem(prefsKey(id), JSON.stringify({ ...loadPrefs(id), ...patch }));
-  } catch {
-    /* sem storage disponível */
-  }
-}
 
 const errMsg = (err: unknown, fallback: string) =>
   err instanceof PayloadApiError
@@ -44,26 +27,7 @@ const errMsg = (err: unknown, fallback: string) =>
       ? err.message
       : fallback;
 
-type SettingsTab = 'profile' | 'notifications' | 'privacy' | 'security' | 'appearance' | 'billing' | 'data';
-
-interface NotificationSettings {
-  email: boolean;
-  push: boolean;
-  sms: boolean;
-  workoutReminder: boolean;
-  dietReminder: boolean;
-  weeklyReport: boolean;
-  newStudent: boolean;
-  paymentAlert: boolean;
-  systemUpdates: boolean;
-}
-
-interface PrivacySettings {
-  profilePublic: boolean;
-  showStats: boolean;
-  shareProgress: boolean;
-  analyticsEnabled: boolean;
-}
+type SettingsTab = 'profile' | 'security' | 'appearance' | 'billing' | 'data';
 
 function SettingsToggle({
   checked,
@@ -161,36 +125,39 @@ export function Settings() {
     whatsapp: user?.whatsapp || '',
     professionalId: user?.professionalId || '',
     bio: '',
-    specialty: '',
     city: '',
     instagram: '',
   });
+  const [uploading, setUploading] = useState(false);
+  const photoInput = React.useRef<HTMLInputElement>(null);
 
-  // Notification settings
-  const [notifications, setNotifications] = useState<NotificationSettings>({
-    email: true, push: true, sms: false,
-    workoutReminder: true, dietReminder: true, weeklyReport: true,
-    newStudent: true, paymentAlert: true, systemUpdates: false,
-  });
-
-  // Privacy settings
-  const [privacy, setPrivacy] = useState<PrivacySettings>({
-    profilePublic: false, showStats: true, shareProgress: true, analyticsEnabled: true,
-  });
-
-  // Preferências salvas neste dispositivo
+  // Bio, cidade e Instagram ficam na conta: carrega do servidor
   useEffect(() => {
-    if (!user) return;
-    const prefs = loadPrefs(user.id);
-    if (prefs.notifications) setNotifications((prev) => ({ ...prev, ...prefs.notifications }));
-    if (prefs.privacy) setPrivacy((prev) => ({ ...prev, ...prefs.privacy }));
-    if (prefs.profileExtra) setProfileForm((prev) => ({ ...prev, ...prefs.profileExtra }));
-  }, [user?.id]);
+    if (!user?.accessToken) return;
+    fetchMeUser(user.accessToken)
+      .then((me) => {
+        if (!me) return;
+        setProfileForm((p) => ({ ...p, bio: me.bio || '', city: me.city || '', instagram: me.instagram || '' }));
+        if (me.avatarUrl && me.avatarUrl !== user.avatar) updateUser({ avatar: me.avatarUrl });
+      })
+      .catch(() => undefined);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.accessToken]);
 
-  const saveSettings = async (section: string, data: any) => {
-    if (!user) return;
-    savePrefs(user.id, { [section]: data });
-    toast.success('Preferências salvas neste dispositivo.');
+  const handlePhoto = async (file?: File | null) => {
+    if (!file || !user?.accessToken) return;
+    setUploading(true);
+    try {
+      const url = await uploadProfilePhoto(file, user.accessToken);
+      await patchJson(`${USERS_API}/${user.id}`, { avatarUrl: url }, user.accessToken);
+      updateUser({ avatar: url });
+      toast.success('Foto atualizada.');
+    } catch (err) {
+      toast.error('Não foi possível enviar a foto', { description: errMsg(err, 'Tente outra imagem.') });
+    } finally {
+      setUploading(false);
+      if (photoInput.current) photoInput.current.value = '';
+    }
   };
 
   const saveProfile = async () => {
@@ -212,13 +179,13 @@ export function Settings() {
         {
           name: profileForm.name.trim(),
           whatsapp: profileForm.whatsapp.trim() || null,
+          bio: profileForm.bio.trim() || null,
+          city: profileForm.city.trim() || null,
+          instagram: profileForm.instagram.trim().replace(/^@?/, profileForm.instagram.trim() ? '@' : '') || null,
           ...(isPro ? { professionalId: profileForm.professionalId.trim().toUpperCase() } : {}),
         },
         user.accessToken,
       );
-      savePrefs(user.id, {
-        profileExtra: { bio: profileForm.bio, specialty: profileForm.specialty, city: profileForm.city, instagram: profileForm.instagram },
-      });
       updateUser({
         name: profileForm.name.trim(),
         whatsapp: profileForm.whatsapp.trim(),
@@ -279,8 +246,6 @@ export function Settings() {
 
   const tabs: { id: SettingsTab; label: string; icon: React.ElementType }[] = [
     { id: 'profile', label: 'Perfil', icon: User },
-    { id: 'notifications', label: 'Notificações', icon: Bell },
-    { id: 'privacy', label: 'Privacidade', icon: Shield },
     { id: 'security', label: 'Segurança', icon: Lock },
     { id: 'appearance', label: 'Aparência', icon: Palette },
     { id: 'billing', label: 'Plano e cobrança', icon: CreditCard },
@@ -384,13 +349,24 @@ export function Settings() {
                     {/* Avatar Upload */}
                     <div className="flex items-center gap-4 mb-6">
                       <div className="relative">
-                        <img
+                        <AuthedImage
                           src={user?.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.name || 'U')}&background=10b981&color=fff`}
-                          alt={user?.name}
-                          className="w-20 h-20 rounded-2xl object-cover"
+                          alt={user?.name || 'Foto de perfil'}
+                          token={user?.accessToken}
+                          className={`w-20 h-20 rounded-2xl object-cover ${uploading ? 'opacity-50' : ''}`}
+                        />
+                        <input
+                          ref={photoInput}
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/gif"
+                          className="hidden"
+                          onChange={(e) => void handlePhoto(e.target.files?.[0])}
                         />
                         <button
-                          onClick={() => toast.info('Upload de foto em breve')}
+                          type="button"
+                          aria-label="Trocar foto de perfil"
+                          disabled={uploading}
+                          onClick={() => photoInput.current?.click()}
                           className="absolute -bottom-1 -right-1 w-7 h-7 rounded-lg bg-[#000326] text-white dark:bg-white dark:text-[#000326] flex items-center justify-center shadow-lg"
                         >
                           <Camera className="w-3.5 h-3.5" />
@@ -440,11 +416,13 @@ export function Settings() {
                       ))}
 
                       <div className="md:col-span-2">
-                        <label className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
-                          Bio / Apresentação
+                        <label htmlFor="settings-bio" className="block text-sm dark:text-zinc-300 text-slate-700 mb-2" style={{ fontWeight: 500 }}>
+                          Bio / apresentação
                         </label>
                         <textarea
+                          id="settings-bio"
                           value={profileForm.bio}
+                          maxLength={600}
                           onChange={e => setProfileForm(p => ({ ...p, bio: e.target.value }))}
                           placeholder="Conte um pouco sobre você..."
                           rows={3}
@@ -469,141 +447,6 @@ export function Settings() {
               )}
 
               {/* ── NOTIFICATIONS TAB ── */}
-              {activeTab === 'notifications' && (
-                <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                  <h3 className="dark:text-white text-slate-900 mb-6" style={{ fontWeight: 700 }}>
-                    Preferências de Notificação
-                  </h3>
-
-                  <div className="space-y-6">
-                    {/* Channels */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Canais de Notificação
-                      </p>
-                      <div className="space-y-3">
-                        {[
-                          { key: 'email', label: 'E-mail', desc: 'Receba notificações no seu e-mail', icon: Mail },
-                          { key: 'push', label: 'Push (App)', desc: 'Notificações no aplicativo', icon: Smartphone },
-                          { key: 'sms', label: 'SMS', desc: 'Mensagens de texto no celular', icon: MessageSquare },
-                        ].map(({ key, label, desc, icon: Icon }) => (
-                          <div key={key} className="flex items-center justify-between p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                            <div className="flex items-center gap-3">
-                              <div className="w-9 h-9 rounded-xl dark:bg-zinc-700 bg-white flex items-center justify-center">
-                                <Icon className="w-4 h-4 dark:text-zinc-300 text-slate-600" />
-                              </div>
-                              <div>
-                                <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 500 }}>{label}</p>
-                                <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
-                              </div>
-                            </div>
-                            <SettingsToggle
-                              label={label}
-                              checked={Boolean((notifications as any)[key])}
-                              onChange={() =>
-                                setNotifications((p) => ({
-                                  ...p,
-                                  [key]: !p[key as keyof NotificationSettings],
-                                }))
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Categories */}
-                    <div>
-                      <p className="text-xs dark:text-zinc-500 text-slate-400 uppercase tracking-widest mb-3" style={{ fontWeight: 600 }}>
-                        Categorias
-                      </p>
-                      <div className="space-y-3">
-                        {[
-                          { key: 'workoutReminder', label: 'Lembrete de Treino', desc: 'Notificação antes do horário do treino' },
-                          { key: 'dietReminder', label: 'Lembrete de Refeição', desc: 'Alerta para registrar as refeições' },
-                          { key: 'weeklyReport', label: 'Relatório Semanal', desc: 'Resumo do progresso toda semana' },
-                          ...(user?.role !== 'student' ? [
-                            { key: 'newStudent', label: 'Novo Aluno/Paciente', desc: 'Quando alguém aceitar seu convite' },
-                            { key: 'paymentAlert', label: 'Alertas de Pagamento', desc: 'Mensalidades vencendo ou atrasadas' },
-                          ] : []),
-                          { key: 'systemUpdates', label: 'Atualizações do Sistema', desc: 'Novidades e melhorias do CoachPass' },
-                        ].map(({ key, label, desc }) => (
-                          <div key={key} className="flex items-center justify-between p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                            <div>
-                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 500 }}>{label}</p>
-                              <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
-                            </div>
-                            <SettingsToggle
-                              label={label}
-                              checked={Boolean((notifications as any)[key])}
-                              onChange={() =>
-                                setNotifications((p) => ({ ...p, [key]: !(p as any)[key] }))
-                              }
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    <button
-                      onClick={() => saveSettings('notifications', notifications)}
-                      disabled={saving}
-                      className="flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-                      style={{ background: 'linear-gradient(135deg,#5a64b4,#000346)', fontWeight: 600 }}
-                    >
-                      {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                      Salvar Preferências
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* ── PRIVACY TAB ── */}
-              {activeTab === 'privacy' && (
-                <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                  <h3 className="dark:text-white text-slate-900 mb-6" style={{ fontWeight: 700 }}>
-                    Configurações de Privacidade
-                  </h3>
-
-                  <div className="space-y-4">
-                    {[
-                      { key: 'showStats', label: 'Mostrar Estatísticas', desc: 'Exibir suas estatísticas de treino no perfil', icon: Activity },
-                      { key: 'analyticsEnabled', label: 'Analytics de Uso', desc: 'Ajude a melhorar o CoachPass com dados anônimos', icon: Star },
-                    ].map(({ key, label, desc, icon: Icon }) => (
-                      <div key={key} className="flex items-center justify-between p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                            <Icon className="w-5 h-5 text-blue-400" />
-                          </div>
-                          <div>
-                            <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{label}</p>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">{desc}</p>
-                          </div>
-                        </div>
-                        <SettingsToggle
-                          label={label}
-                          checked={Boolean((privacy as any)[key])}
-                          onChange={() =>
-                            setPrivacy((p) => ({ ...p, [key]: !(p as any)[key] }))
-                          }
-                        />
-                      </div>
-                    ))}
-                  </div>
-
-                  <button
-                    onClick={() => saveSettings('privacy', privacy)}
-                    disabled={saving}
-                    className="mt-6 flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm text-white transition-all hover:opacity-90 disabled:opacity-50"
-                    style={{ background: 'linear-gradient(135deg,#3b82f6,#1d4ed8)', fontWeight: 600 }}
-                  >
-                    {saving ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    Salvar Privacidade
-                  </button>
-                </div>
-              )}
-
-              {/* ── SECURITY TAB ── */}
               {activeTab === 'security' && (
                 <div className="space-y-4">
                   <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
@@ -629,22 +472,6 @@ export function Settings() {
                         <ChevronRight className="w-4 h-4 dark:text-zinc-600 text-slate-400 group-hover:dark:text-zinc-300 group-hover:text-slate-600 transition-colors" />
                       </button>
 
-                      {/* 2FA */}
-                      <div className="flex items-center justify-between p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-[#000326] dark:bg-white/10 flex items-center justify-center">
-                            <Smartphone className="w-5 h-5 text-[#5a64b4] dark:text-[#C5C5CE]" />
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>Autenticação de 2 Fatores</p>
-                              <span className="text-xs px-1.5 py-0.5 rounded-md bg-slate-500/10 dark:text-zinc-500 text-slate-400" style={{ fontWeight: 600 }}>Em breve</span>
-                            </div>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">Adicione uma camada extra de segurança</p>
-                          </div>
-                        </div>
-                        <span className="text-xs dark:text-zinc-600 text-slate-400">Desativado</span>
-                      </div>
 
                       {/* Active sessions */}
                       <div className="p-5 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">

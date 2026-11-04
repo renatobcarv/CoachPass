@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react'
-import { Apple, Sparkles } from 'lucide-react'
+import { Apple } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 import { MealPlanDoc, fetchPublishedMealPlans, relName } from '../../lib/studentApi'
-import { Badge, Card, EmptyState, ErrorBanner, Page, PageHeader, Skeleton, SoonButton } from '../student/ui'
+import { Badge, Card, EmptyState, ErrorBanner, Page, PageHeader, Skeleton } from '../student/ui'
+import { AiGenerateButton } from '../student/AiGenerateButton'
 
 
 export function Diet() {
@@ -10,6 +11,7 @@ export function Diet() {
   const [loading, setLoading] = useState(true)
   const [plans, setPlans] = useState<MealPlanDoc[]>([])
   const [error, setError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
     let cancelled = false
@@ -32,7 +34,7 @@ export function Diet() {
     return () => {
       cancelled = true
     }
-  }, [user?.accessToken, user?.id])
+  }, [user?.accessToken, user?.id, reloadKey])
 
   return (
     <Page>
@@ -41,7 +43,7 @@ export function Diet() {
         title="O que tem no"
         accent="prato hoje."
         lead="Somente planos publicados pelo nutricionista ou sugestões de IA."
-        action={<SoonButton icon={Sparkles}>Gerar sugestão com IA</SoonButton>}
+        action={<AiGenerateButton kind="meal" onDone={() => setReloadKey((k) => k + 1)} />}
       />
 
       {error && <ErrorBanner>{error}</ErrorBanner>}
@@ -55,8 +57,8 @@ export function Diet() {
 
       {!loading && plans.length === 0 && (
         <EmptyState icon={Apple} title="Nenhum plano alimentar ainda">
-          Quando um nutricionista publicar um plano — ou quando a sugestão com IA estiver disponível — ele será listado
-          aqui. Sugestões de IA são informativas e não substituem prescrição clínica.
+          Quando um nutricionista publicar um plano, ou quando você gerar uma sugestão com IA, ele aparece aqui. Sugestões de
+          IA são informativas e não substituem prescrição clínica.
         </EmptyState>
       )}
 

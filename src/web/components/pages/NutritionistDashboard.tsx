@@ -8,6 +8,7 @@ import {
   Copy,
   Link as LinkIcon,
   Mail,
+  MailPlus,
   Search,
   Stethoscope,
   TrendingUp,
@@ -18,7 +19,7 @@ import {
 import { toast } from 'sonner'
 import { AddPatientModal } from '../AddPatientModal'
 import { useAuth } from '../../context/AuthContext'
-import { PROFESSIONAL_LINKS_API, getJson, qs } from '@/lib/cms'
+import { ASSESSMENTS_API, MEAL_PLANS_API, PROFESSIONAL_LINKS_API, getJson, qs } from '@/lib/cms'
 import { CTAButton } from '../brand/Brand'
 import { Avatar } from '../brand/AppShell'
 import { RollingNumber } from '../brand/fx'
@@ -79,6 +80,45 @@ export function NutritionistDashboard() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Números reais: consultas registradas no mês e planos publicados
+  const [stats, setStats] = useState<{ consults: number; plans: number; adherence: number | null } | null>(null)
+  useEffect(() => {
+    if (!user?.accessToken || !user?.id) return
+    const token = user.accessToken
+    const monthStart = new Date()
+    monthStart.setDate(1)
+    monthStart.setHours(0, 0, 0, 0)
+    type Res = { totalDocs: number; docs: { adherenceScore?: number | null }[] }
+    void Promise.all([
+      getJson<Res>(
+        `${ASSESSMENTS_API}${qs({
+          'where[and][0][professional][equals]': user.id,
+          'where[and][1][kind][equals]': 'consultation',
+          'where[and][2][date][greater_than_equal]': monthStart.toISOString(),
+          limit: 100,
+          depth: 0,
+        })}`,
+        token,
+      ).catch(() => ({ totalDocs: 0, docs: [] })),
+      getJson<Res>(
+        `${MEAL_PLANS_API}${qs({
+          'where[and][0][author][equals]': user.id,
+          'where[and][1][status][equals]': 'published',
+          limit: 1,
+          depth: 0,
+        })}`,
+        token,
+      ).catch(() => ({ totalDocs: 0, docs: [] })),
+    ]).then(([consults, plans]) => {
+      const scores = consults.docs.map((d) => d.adherenceScore).filter((n): n is number => typeof n === 'number')
+      setStats({
+        consults: consults.totalDocs,
+        plans: plans.totalDocs,
+        adherence: scores.length ? scores.reduce((a, b) => a + b, 0) / scores.length : null,
+      })
+    })
+  }, [user?.accessToken, user?.id])
+
   const reload = useCallback(async () => {
     if (!user?.accessToken || !user?.id) {
       setPatients([])
@@ -130,22 +170,27 @@ export function NutritionistDashboard() {
   const activeCount = patients.filter((p) => p.status === 'active').length
   const pendingCount = patients.filter((p) => p.status === 'pending').length
 
-  const bioSlug = user?.email?.split('@')[0] || 'nutri'
-  const bioLink = `coachpass.app/${bioSlug}`
-  const copyBioLink = async () => {
+  // Link real de cadastro do paciente (conta grátis); depois é só convidar pelo e-mail
+  const signupLink = typeof window !== 'undefined' ? `${window.location.origin}/cadastro?perfil=aluno&plano=free` : '/cadastro'
+  const copySignupLink = async () => {
     try {
-      await navigator.clipboard.writeText(`https://${bioLink}`)
-      toast.success('Link copiado', { description: bioLink })
+      await navigator.clipboard.writeText(signupLink)
+      toast.success('Link copiado', { description: 'Envie para o paciente criar a conta grátis.' })
     } catch {
       toast.error('Não foi possível copiar o link.')
     }
   }
 
   const kpis = [
-    { label: 'Pacientes ativos', value: String(activeCount), icon: Users, live: true },
-    { label: 'Consultas hoje', value: '8', icon: Calendar },
-    { label: 'Taxa de adesão', value: '87%', icon: TrendingUp },
-    { label: 'Convites pendentes', value: String(pendingCount), icon: Mail, live: true },
+    { label: 'Pacientes ativos', value: String(activeCount), icon: Users, hint: 'vínculos aceitos' },
+    { label: 'Consultas no mês', value: stats ? String(stats.consults) : '–', icon: Calendar, hint: 'registradas por você' },
+    {
+      label: 'Adesão média',
+      value: stats?.adherence != null ? `${stats.adherence.toFixed(1).replace('.', ',')}/10` : '–',
+      icon: TrendingUp,
+      hint: stats?.adherence != null ? 'nas consultas do mês' : 'registre nas consultas',
+    },
+    { label: 'Convites pendentes', value: String(pendingCount), icon: Mail, hint: stats ? `${stats.plans} plano(s) publicado(s)` : '' },
   ]
 
   return (
@@ -175,24 +220,21 @@ export function NutritionistDashboard() {
       />
 
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, icon: Icon, live }, i) => (
+        {kpis.map(({ label, value, icon: Icon, hint }, i) => (
           <Card key={label} className="p-5 sm:p-6" delay={0.04 * i}>
             <div className="flex items-center justify-between">
               <span className="w-10 h-10 rounded-xl grid place-items-center bg-[rgba(85,70,255,0.14)] border border-[rgba(140,130,255,0.25)]">
                 <Icon className="w-[18px] h-[18px] text-[var(--brand-300)]" />
               </span>
-              <Badge tone={live ? 'teal' : 'neutral'}>Ativo</Badge>
             </div>
             <p className="cp-display mt-5 text-[clamp(30px,3.4vw,42px)] font-bold leading-none">
               <RollingNumber value={value} />
             </p>
             <p className="mt-2 text-[13.5px] text-[var(--muted)]">{label}</p>
+            {hint && <p className="mt-0.5 text-[12px] text-[var(--dim)]">{hint}</p>}
           </Card>
         ))}
       </div>
-      <p className="mt-3 cp-mono text-[11px] text-[var(--dim)]">
-        Pacientes e convites vêm dos vínculos reais · consultas hoje e adesão são valores de exemplo até a integração.
-      </p>
 
       <div className="mt-8 grid lg:grid-cols-[1.55fr_1fr] gap-6 items-start">
         <Card className="overflow-hidden" delay={0.12}>
@@ -283,7 +325,7 @@ export function NutritionistDashboard() {
           <div className="grid gap-2">
             {[
               { to: '/nutritionist/criar-plano', icon: Utensils, label: 'Criar plano alimentar', desc: 'Refeições do dia' },
-              { to: '/nutritionist/consulta/1', icon: Stethoscope, label: 'Nova consulta', desc: 'Registro do atendimento' },
+              { to: '/nutritionist/consulta', icon: Stethoscope, label: 'Nova consulta', desc: 'Registro do atendimento' },
               { to: '/nutritionist/anamnese', icon: ClipboardList, label: 'Anamnese', desc: 'Histórico e hábitos' },
               { to: '/nutritionist/alimentos', icon: Apple, label: 'Base de alimentos', desc: 'Montar o cardápio' },
             ].map(({ to, icon: Icon, label, desc }) => (
@@ -306,27 +348,25 @@ export function NutritionistDashboard() {
           </div>
         </Card>
 
-        {/* Link de captação (do antigo perfil) */}
+        {/* Link de cadastro para novos pacientes */}
         <Card className="p-5 sm:p-6 overflow-hidden" delay={0.2}>
           <div className="flex items-center gap-2">
             <LinkIcon className="w-4 h-4 text-[var(--brand-300)]" />
-            <p className="cp-kicker">Link da bio · captação</p>
+            <p className="cp-kicker">Trazer um paciente novo</p>
           </div>
-          <div className="mt-4 rounded-2xl px-4 py-3 border border-[var(--line-2)] bg-white/[0.03]">
-            <p className="text-[12px] text-[var(--dim)]">Seu link personalizado</p>
-            <p className="mt-0.5 text-[15px] font-semibold truncate">{bioLink}</p>
-          </div>
-          <button type="button" onClick={copyBioLink} className="cp-btn-sm mt-3 w-full justify-center h-11">
+          <ol className="mt-4 space-y-2 text-[13.5px] text-[var(--muted)]">
+            <li>1. Envie o link: o paciente cria a conta grátis.</li>
+            <li>2. Convide pelo e-mail que ele usou.</li>
+            <li>3. Ele aceita o convite no app e aparece aqui.</li>
+          </ol>
+          <button type="button" onClick={copySignupLink} className="cp-btn-sm mt-4 w-full justify-center h-11">
             <Copy className="w-4 h-4" />
-            Copiar link
+            Copiar link de cadastro
           </button>
-          <p className="mt-3 text-[12px] text-[var(--dim)]">
-            Edite nome, WhatsApp e registro em{' '}
-            <button type="button" onClick={() => navigate('/nutritionist/configuracoes')} className="underline underline-offset-2 hover:text-white">
-              Configurações
-            </button>
-            .
-          </p>
+          <button type="button" onClick={() => setShowAddModal(true)} className="cp-btn-ghost mt-2 w-full justify-center h-11">
+            <MailPlus className="w-4 h-4" />
+            Convidar por e-mail
+          </button>
         </Card>
         </div>
       </div>

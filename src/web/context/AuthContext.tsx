@@ -56,6 +56,7 @@ type PayloadUserDoc = {
   plan?: User['plan'];
   roles?: User['roles'];
   primaryProRole?: User['primaryProRole'];
+  avatarUrl?: string | null;
   createdAt?: string;
 };
 
@@ -71,7 +72,7 @@ function buildUser(doc: PayloadUserDoc, accessToken: string): User {
     email: doc.email || '',
     role,
     isSuperAdmin: doc.isSuperAdmin === true || doc.role === 'master',
-    avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff`,
+    avatar: doc.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=10b981&color=fff`,
     whatsapp: doc.whatsapp,
     professionalId: doc.professionalId,
     plan: doc.plan,

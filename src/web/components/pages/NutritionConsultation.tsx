@@ -1,411 +1,213 @@
-import React, { useState } from 'react';
-import { useNavigate, useParams } from 'react-router';
-import { useForm, Controller } from 'react-hook-form';
-import { Activity, Check, Circle, FileText, Heart, Ruler, Scale, Users } from 'lucide-react';
-import { motion } from 'motion/react';
-import { toast } from 'sonner';
-import { CTAButton } from '../brand/Brand';
-import { Page, PageHeader } from '../student/ui';
-import { FieldLabel, MobileActionBar, PersonChip, SectionCard } from '../pro/ui';
+import React, { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router'
+import { ClipboardList, Save, Stethoscope, Trash2, Utensils } from 'lucide-react'
+import { toast } from 'sonner'
 
-// ────────────── TYPES ──────────────
-interface ConsultationForm {
-  patientId: string;
-  date: string;
-  // Medidas Antropométricas
-  weight: number;
-  bodyFat: number;
-  muscleMass: number;
-  visceralFat: number;
-  bmr: number;
-  hydration: number;
-  // Circunferências
-  waist: number;
-  hip: number;
-  abdomen: number;
-  arm: number;
-  thigh: number;
-  // Sinais Vitais
-  bloodPressureSystolic: number;
-  bloodPressureDiastolic: number;
-  heartRate: number;
-  glucoseFasting: number;
-  // Avaliação
-  adherence: number;
-  energyLevel: number;
-  sleepQuality: number;
-  // Textuais
-  clinicalNotes: string;
-  recommendations: string;
-  dietAdjustments: string;
-  supplementation: string;
-  nextConsultation: string;
-}
+import { useAuth } from '../../context/AuthContext'
+import { ASSESSMENTS_API, deleteJson } from '@/lib/cms'
+import { createAssessment, fetchAssessmentsForStudent, type AssessmentDoc } from '../../lib/professionalApi'
+import { CTAButton } from '../brand/Brand'
+import { Card, EmptyState, ErrorBanner, Page, PageHeader, SectionTitle, Skeleton } from '../student/ui'
+import { Delta, Field, NoPeople, PersonSelect, Score, TextArea, dateToApi, errorText, fmtDate, fmtNum, num, todayISO, useLinkedPeople } from '../pro/records'
 
-const mockPatients = [
-  { id: '1', name: 'Ana Costa', avatar: 'https://ui-avatars.com/api/?name=Ana+Costa&background=f59e0b&color=fff', weight: 68.5 },
-  { id: '2', name: 'Roberto Lima', avatar: 'https://ui-avatars.com/api/?name=Roberto+Lima&background=3b82f6&color=fff', weight: 92.3 },
-];
+const EMPTY = { date: todayISO(), weightKg: '', bodyFatPercent: '', waist: '', hip: '', notes: '', nextDate: '' }
 
-// ────────────── COMPONENT ──────────────
+/** Consulta nutricional: medidas do dia, adesão, energia e sono, conduta e retorno. */
 export function NutritionConsultation() {
-  const { patientId } = useParams();
-  const navigate = useNavigate();
-  const [step, setStep] = useState<'form' | 'loading' | 'success'>('form');
+  const { user } = useAuth()
+  const token = user?.accessToken
+  const navigate = useNavigate()
+  const { patientId = '' } = useParams()
+  const { people, error: peopleError } = useLinkedPeople()
+  const [studentId, setStudentId] = useState(patientId)
+  const [history, setHistory] = useState<AssessmentDoc[] | null>(null)
+  const [form, setForm] = useState(EMPTY)
+  const [scores, setScores] = useState<{ adherence: number | null; energy: number | null; sleep: number | null }>({ adherence: null, energy: null, sleep: null })
+  const [saving, setSaving] = useState(false)
 
-  const { register, handleSubmit, watch, control, formState: { errors } } = useForm<ConsultationForm>({
-    defaultValues: {
-      patientId: patientId || '',
-      date: new Date().toISOString().split('T')[0],
-      weight: undefined as unknown as number,
-      bodyFat: undefined as unknown as number,
-      muscleMass: undefined as unknown as number,
-      visceralFat: undefined as unknown as number,
-      bmr: undefined as unknown as number,
-      hydration: undefined as unknown as number,
-      waist: undefined as unknown as number,
-      hip: undefined as unknown as number,
-      abdomen: undefined as unknown as number,
-      arm: undefined as unknown as number,
-      thigh: undefined as unknown as number,
-      bloodPressureSystolic: 120,
-      bloodPressureDiastolic: 80,
-      heartRate: 70,
-      glucoseFasting: 90,
-      adherence: 7,
-      energyLevel: 7,
-      sleepQuality: 7,
-      clinicalNotes: '',
-      recommendations: '',
-      dietAdjustments: '',
-      supplementation: '',
-      nextConsultation: '',
-    },
-  });
+  useEffect(() => setStudentId(patientId), [patientId])
 
-  const watchedPatient = watch('patientId');
-  const watchedAdherence = watch('adherence');
-  const watchedEnergy = watch('energyLevel');
-  const watchedSleep = watch('sleepQuality');
-  const selectedPatient = mockPatients.find((p) => p.id === watchedPatient);
+  const load = useCallback(async () => {
+    if (!token || !studentId) return
+    setHistory(null)
+    try {
+      setHistory(await fetchAssessmentsForStudent(studentId, token, 'consultation'))
+    } catch (err) {
+      setHistory([])
+      toast.error(errorText(err, 'Não foi possível carregar as consultas.'))
+    }
+  }, [token, studentId])
 
-  const onSubmit = (data: ConsultationForm) => {
-    setStep('loading');
-    setTimeout(() => {
-      setStep('success');
-      toast.success('Consulta registrada com sucesso!');
-      setTimeout(() => {
-        navigate(patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist');
-      }, 2000);
-    }, 1500);
-  };
+  useEffect(() => {
+    void load()
+  }, [load])
 
-  const backTo = patientId ? `/nutritionist/paciente/${patientId}` : '/nutritionist';
-  const wWeight = Number(watch('weight')) || 0;
-  const wWaist = Number(watch('waist')) || 0;
-  const wHip = Number(watch('hip')) || 0;
-  const wNotes = watch('clinicalNotes') || '';
-  const weightDelta = selectedPatient && wWeight > 0 ? +(wWeight - selectedPatient.weight).toFixed(1) : null;
-  const rcq = wWaist > 0 && wHip > 0 ? +(wWaist / wHip).toFixed(2) : null;
-  const num = { valueAsNumber: true, min: { value: 0, message: 'Valor inválido' } } as const;
+  const pick = (id: string) => {
+    setStudentId(id)
+    navigate(id ? `/nutritionist/consulta/${id}` : '/nutritionist/consulta', { replace: true })
+  }
+  const set = (k: keyof typeof EMPTY) => (v: string) => setForm((f) => ({ ...f, [k]: v }))
 
-  if (step === 'success') {
-    return (
-      <Page>
-        <div className="min-h-[60vh] grid place-items-center">
-          <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="text-center max-w-sm">
-            <span className="mx-auto w-20 h-20 rounded-full grid place-items-center cp-selected">
-              <Check className="w-9 h-9" strokeWidth={3} />
-            </span>
-            <h2 className="cp-display mt-6 text-[28px] font-bold">
-              Consulta <span className="cp-accent">registrada.</span>
-            </h2>
-            <p className="mt-2 text-[14.5px] text-[var(--muted)]">Voltando para {selectedPatient ? selectedPatient.name : 'o painel'}…</p>
-          </motion.div>
-        </div>
-      </Page>
-    );
+  const save = async () => {
+    if (!token || !studentId) return
+    if (!form.date) return toast.error('Informe a data da consulta.')
+    setSaving(true)
+    try {
+      await createAssessment(
+        {
+          kind: 'consultation',
+          student: studentId,
+          date: dateToApi(form.date),
+          weightKg: num(form.weightKg),
+          bodyFatPercent: num(form.bodyFatPercent),
+          circumferences: { waist: num(form.waist), hip: num(form.hip) },
+          adherenceScore: scores.adherence ?? undefined,
+          energyScore: scores.energy ?? undefined,
+          sleepScore: scores.sleep ?? undefined,
+          notes: form.notes.trim() || undefined,
+          nextDate: dateToApi(form.nextDate),
+        },
+        token,
+      )
+      toast.success('Consulta registrada.')
+      setForm({ ...EMPTY, date: todayISO() })
+      setScores({ adherence: null, energy: null, sleep: null })
+      await load()
+    } catch (err) {
+      toast.error(errorText(err, 'Não foi possível salvar a consulta.'))
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const remove = async (id: string) => {
+    if (!token || !window.confirm('Excluir esta consulta?')) return
+    try {
+      await deleteJson(`${ASSESSMENTS_API}/${id}`, token)
+      await load()
+    } catch (err) {
+      toast.error(errorText(err, 'Não foi possível excluir.'))
+    }
   }
 
   return (
     <Page wide>
       <PageHeader
         kicker="Consulta nutricional"
-        title="Registre o retorno"
-        accent="em poucos minutos."
-        lead="Medidas, sinais vitais, como o paciente está se sentindo e as condutas da consulta."
+        title="Registro do"
+        accent="atendimento."
+        lead="Peso e medidas do dia, como o paciente seguiu o plano e a conduta para o retorno."
+        action={
+          studentId ? (
+            <div className="flex flex-wrap gap-2">
+              <Link to={`/nutritionist/anamnese/${studentId}`} className="cp-btn-ghost">
+                <ClipboardList className="h-4 w-4" /> Anamnese
+              </Link>
+              <Link to={`/nutritionist/criar-plano/${studentId}`} className="cp-btn-ghost">
+                <Utensils className="h-4 w-4" /> Plano alimentar
+              </Link>
+            </div>
+          ) : undefined
+        }
       />
-
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="grid xl:grid-cols-[1fr_360px] gap-6 items-start">
-        <div className="space-y-6 min-w-0">
-          <SectionCard icon={Users} title="Paciente e data">
-            <Controller
-              name="patientId"
-              control={control}
-              rules={{ required: 'Selecione o paciente' }}
-              render={({ field }) => (
-                <div className="flex flex-wrap gap-2">
-                  {mockPatients.map((p) => (
-                    <PersonChip key={p.id} name={p.name} selected={field.value === p.id} onClick={() => field.onChange(p.id)} />
-                  ))}
-                </div>
-              )}
-            />
-            {errors.patientId && <p className="mt-2 text-[12.5px] text-[#ff8a95]">{errors.patientId.message}</p>}
-            <div className="mt-5 grid sm:grid-cols-2 gap-4">
-              <div>
-                <FieldLabel htmlFor="c-date">Data da consulta</FieldLabel>
-                <input id="c-date" type="date" {...register('date', { required: 'Data obrigatória' })} className="cp-field cp-field-plain h-12" />
-                {errors.date && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{errors.date.message}</p>}
-              </div>
-              <div>
-                <FieldLabel htmlFor="c-next">Próxima consulta</FieldLabel>
-                <input id="c-next" type="date" {...register('nextConsultation')} className="cp-field cp-field-plain h-12" />
-              </div>
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={Scale} title="Composição corporal">
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-              {(
-                [
-                  ['weight', 'Peso', 'kg', '68,5'],
-                  ['bodyFat', 'Gordura corporal', '%', '28,5'],
-                  ['muscleMass', 'Massa muscular', 'kg', '44,2'],
-                  ['visceralFat', 'Gordura visceral', 'nível', '7'],
-                  ['bmr', 'TMB', 'kcal', '1500'],
-                  ['hydration', 'Hidratação', '%', '55'],
-                ] as const
-              ).map(([name, label, unit, ph]) => (
-                <UnitInput key={name} id={`c-${name}`} label={label} unit={unit} placeholder={ph} {...register(name, num)} />
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={Ruler} title="Circunferências" meta={<span className="cp-mono text-[11px] text-[var(--dim)]">em cm</span>}>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-              {(
-                [
-                  ['waist', 'Cintura', '82'],
-                  ['hip', 'Quadril', '98'],
-                  ['abdomen', 'Abdômen', '85'],
-                  ['arm', 'Braço', '30'],
-                  ['thigh', 'Coxa', '55'],
-                ] as const
-              ).map(([name, label, ph]) => (
-                <UnitInput key={name} id={`c-${name}`} label={label} unit="cm" placeholder={ph} {...register(name, num)} />
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={Heart} title="Sinais vitais">
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-              <UnitInput id="c-sys" label="Pressão sistólica" unit="mmHg" {...register('bloodPressureSystolic', num)} />
-              <UnitInput id="c-dia" label="Pressão diastólica" unit="mmHg" {...register('bloodPressureDiastolic', num)} />
-              <UnitInput id="c-hr" label="Freq. cardíaca" unit="bpm" {...register('heartRate', num)} />
-              <UnitInput id="c-glu" label="Glicemia jejum" unit="mg/dL" {...register('glucoseFasting', num)} />
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={Activity} title="Como o paciente está">
-            <div className="space-y-6">
-              {(
-                [
-                  ['adherence', 'Adesão ao plano alimentar'],
-                  ['energyLevel', 'Energia e disposição'],
-                  ['sleepQuality', 'Qualidade do sono'],
-                ] as const
-              ).map(([name, label]) => (
-                <Controller
-                  key={name}
-                  name={name}
-                  control={control}
-                  render={({ field }) => <ScoreScale label={label} value={Number(field.value)} onChange={field.onChange} />}
-                />
-              ))}
-            </div>
-          </SectionCard>
-
-          <SectionCard icon={FileText} title="Condutas">
-            <div className="space-y-5">
-              <div>
-                <FieldLabel htmlFor="c-notes">Observações clínicas *</FieldLabel>
-                <textarea
-                  id="c-notes"
-                  rows={4}
-                  maxLength={2000}
-                  placeholder="Queixas, evolução desde a última consulta, achados relevantes…"
-                  {...register('clinicalNotes', {
-                    required: 'Observações são obrigatórias',
-                    validate: (v) => v.trim().length >= 10 || 'Escreva ao menos 10 caracteres',
-                  })}
-                  className="cp-field"
-                />
-                {errors.clinicalNotes && <p className="mt-1.5 text-[12.5px] text-[#ff8a95]">{errors.clinicalNotes.message}</p>}
-              </div>
-              <div className="grid lg:grid-cols-2 gap-5">
-                <div>
-                  <FieldLabel htmlFor="c-rec">Recomendações</FieldLabel>
-                  <textarea id="c-rec" rows={3} maxLength={1500} placeholder="Orientações para o próximo período" {...register('recommendations')} className="cp-field" />
-                </div>
-                <div>
-                  <FieldLabel htmlFor="c-adj">Ajustes no plano</FieldLabel>
-                  <textarea id="c-adj" rows={3} maxLength={1500} placeholder="O que muda na dieta" {...register('dietAdjustments')} className="cp-field" />
-                </div>
-              </div>
-              <div>
-                <FieldLabel htmlFor="c-sup">Suplementação</FieldLabel>
-                <textarea id="c-sup" rows={2} maxLength={1000} placeholder="Ex.: Vitamina D 2.000 UI/dia" {...register('supplementation')} className="cp-field" />
-              </div>
-            </div>
-          </SectionCard>
-        </div>
-
-        {/* Resumo */}
-        <aside className="xl:sticky xl:top-6 rounded-[22px] border border-[var(--line-2)] bg-[#0d0f18] overflow-hidden">
-          <span aria-hidden className="cp-modal-bar" />
-          <div className="p-5 sm:p-6 border-b border-[var(--line)]">
-            <p className="cp-kicker">Resumo da consulta</p>
-            <p className="cp-display mt-1 text-[22px] font-bold">
-              {selectedPatient ? selectedPatient.name : <span className="text-[var(--dim)]">Selecione o paciente</span>}
-            </p>
-            {selectedPatient && (
-              <p className="mt-0.5 text-[13px] text-[var(--muted)]">Último peso registrado: {selectedPatient.weight.toLocaleString('pt-BR')} kg</p>
-            )}
+      {peopleError && <ErrorBanner>{peopleError}</ErrorBanner>}
+      {people === null ? (
+        <Skeleton className="h-14" />
+      ) : people.length === 0 ? (
+        <NoPeople who="paciente" />
+      ) : (
+        <>
+          <div className="max-w-md">
+            <PersonSelect people={people} value={studentId} onChange={pick} who="paciente" />
           </div>
-          <dl className="p-5 sm:p-6 grid grid-cols-2 gap-3 border-b border-[var(--line)]">
-            <div className="rounded-2xl border border-[var(--line)] p-3.5">
-              <dt className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Peso atual</dt>
-              <dd className="mt-1 cp-display text-[24px] font-bold">{wWeight > 0 ? wWeight.toLocaleString('pt-BR') : '—'}</dd>
-              {weightDelta != null && (
-                <dd className={`cp-mono text-[11.5px] ${weightDelta <= 0 ? 'text-[var(--teal)]' : 'text-[var(--amber)]'}`}>
-                  {weightDelta > 0 ? '+' : ''}
-                  {weightDelta.toLocaleString('pt-BR')} kg
-                </dd>
-              )}
+          {!studentId ? (
+            <div className="mt-6">
+              <EmptyState icon={Stethoscope} title="Escolha um paciente">
+                Selecione acima para registrar a consulta de hoje e ver as anteriores.
+              </EmptyState>
             </div>
-            <div className="rounded-2xl border border-[var(--line)] p-3.5">
-              <dt className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Cintura/quadril</dt>
-              <dd className="mt-1 cp-display text-[24px] font-bold">{rcq != null ? rcq.toLocaleString('pt-BR') : '—'}</dd>
-              <dd className="cp-mono text-[11.5px] text-[var(--dim)]">{rcq != null ? 'RCQ calculada' : 'preencha cintura e quadril'}</dd>
-            </div>
-            {(
-              [
-                ['Adesão', watchedAdherence],
-                ['Energia', watchedEnergy],
-                ['Sono', watchedSleep],
-              ] as const
-            ).map(([label, v]) => (
-              <div key={label} className="col-span-2 flex items-center gap-3">
-                <span className="w-16 text-[12.5px] text-[var(--muted)]">{label}</span>
-                <span className="flex-1 h-1.5 rounded-full bg-white/[0.08] overflow-hidden">
-                  <motion.span
-                    className="block h-full rounded-full"
-                    style={{ background: scoreColor(Number(v)) }}
-                    animate={{ width: `${Number(v) * 10}%` }}
-                  />
-                </span>
-                <span className="cp-mono text-[12px] w-9 text-right">{v}/10</span>
-              </div>
-            ))}
-          </dl>
-          <div className="p-5 sm:p-6 space-y-3">
-            <ul className="space-y-1.5">
-              {[
-                { ok: Boolean(selectedPatient), label: 'Paciente selecionado' },
-                { ok: wWeight > 0, label: 'Peso registrado' },
-                { ok: wNotes.trim().length >= 10, label: 'Observações clínicas' },
-              ].map(({ ok, label }) => (
-                <li key={label} className={`flex items-center gap-2 text-[12.5px] ${ok ? 'text-[var(--cream)]' : 'text-[var(--dim)]'}`}>
-                  {ok ? <Check className="w-3.5 h-3.5 text-[var(--teal)]" strokeWidth={3} /> : <Circle className="w-3.5 h-3.5" />}
-                  {label}
-                </li>
-              ))}
-            </ul>
-            <CTAButton type="submit" block disabled={step === 'loading'}>
-              {step === 'loading' ? 'Registrando…' : 'Registrar consulta'}
-            </CTAButton>
-            <button
-              type="button"
-              onClick={() => navigate(backTo)}
-              className="w-full h-10 rounded-full text-[13.5px] text-[var(--muted)] hover:text-white transition-colors"
-            >
-              Cancelar
-            </button>
-          </div>
-        </aside>
+          ) : (
+            <div className="mt-6 grid items-start gap-6 lg:grid-cols-[1.2fr_1fr]">
+              <Card className="p-5 sm:p-6">
+                <SectionTitle icon={Stethoscope}>Consulta de hoje</SectionTitle>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Data" type="date" value={form.date} onChange={set('date')} />
+                  <Field label="Peso" unit="kg" type="number" value={form.weightKg} onChange={set('weightKg')} />
+                  <Field label="Gordura" unit="%" type="number" value={form.bodyFatPercent} onChange={set('bodyFatPercent')} />
+                  <Field label="Cintura" unit="cm" type="number" value={form.waist} onChange={set('waist')} />
+                  <Field label="Quadril" unit="cm" type="number" value={form.hip} onChange={set('hip')} />
+                  <Field label="Retorno" type="date" value={form.nextDate} onChange={set('nextDate')} />
+                </div>
+                <div className="mt-6 space-y-5">
+                  <Score label="Adesão ao plano" value={scores.adherence} onChange={(v) => setScores((s) => ({ ...s, adherence: v }))} />
+                  <Score label="Energia" value={scores.energy} onChange={(v) => setScores((s) => ({ ...s, energy: v }))} />
+                  <Score label="Sono" value={scores.sleep} onChange={(v) => setScores((s) => ({ ...s, sleep: v }))} />
+                  <TextArea label="Anotações e conduta" rows={4} value={form.notes} onChange={set('notes')} placeholder="Queixas, ajustes no plano, orientações para o retorno…" />
+                </div>
+                <div className="mt-6">
+                  <CTAButton type="button" onClick={() => void save()} disabled={saving}>
+                    <Save className="h-4 w-4" /> {saving ? 'Salvando…' : 'Salvar consulta'}
+                  </CTAButton>
+                </div>
+              </Card>
 
-        <MobileActionBar>
-          <p className="text-[13px] text-[var(--muted)] truncate">{selectedPatient ? selectedPatient.name : 'Sem paciente'}</p>
-          <button type="submit" disabled={step === 'loading'} className="cp-selected h-10 px-5 rounded-full text-[14px] font-semibold disabled:opacity-40">
-            {step === 'loading' ? 'Registrando…' : 'Registrar'}
-          </button>
-        </MobileActionBar>
-      </form>
+              <div>
+                <SectionTitle>Consultas anteriores</SectionTitle>
+                {history === null ? (
+                  <Skeleton className="h-40" />
+                ) : history.length === 0 ? (
+                  <EmptyState icon={Stethoscope} title="Primeira consulta">
+                    As próximas mostram a variação de peso e medidas em relação a esta.
+                  </EmptyState>
+                ) : (
+                  <ul className="space-y-3">
+                    {history.map((a, i) => {
+                      const prev = history[i + 1]
+                      return (
+                        <li key={a.id}>
+                          <Card className="p-5">
+                            <div className="flex items-center justify-between">
+                              <p className="font-semibold">{fmtDate(a.date)}</p>
+                              <button type="button" aria-label="Excluir consulta" onClick={() => void remove(a.id)} className="grid h-8 w-8 place-items-center rounded-full text-[var(--dim)] hover:text-white">
+                                <Trash2 className="h-4 w-4" />
+                              </button>
+                            </div>
+                            <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-3">
+                              {(
+                                [
+                                  ['Peso', a.weightKg, prev?.weightKg, ' kg'],
+                                  ['Gordura', a.bodyFatPercent, prev?.bodyFatPercent, '%'],
+                                  ['Cintura', a.circumferences?.waist, prev?.circumferences?.waist, ' cm'],
+                                  ['Quadril', a.circumferences?.hip, prev?.circumferences?.hip, ' cm'],
+                                  ['Adesão', a.adherenceScore, prev?.adherenceScore, '/10'],
+                                  ['Energia', a.energyScore, prev?.energyScore, '/10'],
+                                  ['Sono', a.sleepScore, prev?.sleepScore, '/10'],
+                                ] as [string, number | null | undefined, number | null | undefined, string][]
+                              )
+                                .filter(([, v]) => v != null)
+                                .map(([label, v, pv, unit]) => (
+                                  <div key={label}>
+                                    <dt className="text-[12px] text-[var(--dim)]">{label}</dt>
+                                    <dd className="text-[14.5px] font-semibold">
+                                      {fmtNum(v)}
+                                      {unit} <Delta now={v} before={pv} />
+                                    </dd>
+                                  </div>
+                                ))}
+                            </dl>
+                            {a.notes && <p className="mt-3 whitespace-pre-line text-[13.5px] text-[var(--muted)]">{a.notes}</p>}
+                            {a.nextDate && <p className="mt-2 text-[12.5px] text-[var(--dim)]">Retorno: {fmtDate(a.nextDate)}</p>}
+                          </Card>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                )}
+              </div>
+            </div>
+          )}
+        </>
+      )}
     </Page>
-  );
+  )
 }
-
-function scoreColor(v: number) {
-  return v >= 8 ? '#2ee6c8' : v >= 5 ? '#8c82ff' : '#ffb547';
-}
-
-function ScoreScale({ label, value, onChange }: { label: string; value: number; onChange: (v: number) => void }) {
-  return (
-    <div>
-      <div className="flex items-baseline justify-between mb-2.5">
-        <span className="text-[14px] font-medium">{label}</span>
-        <span className="cp-mono text-[13px] font-semibold" style={{ color: scoreColor(value) }}>
-          {value}/10
-        </span>
-      </div>
-      <div role="radiogroup" aria-label={label} className="grid grid-cols-10 gap-1.5">
-        {Array.from({ length: 10 }, (_, i) => i + 1).map((v) => {
-          const on = v <= value;
-          return (
-            <button
-              key={v}
-              type="button"
-              role="radio"
-              aria-checked={v === value}
-              aria-label={`${v} de 10`}
-              onClick={() => onChange(v)}
-              className={`h-9 rounded-lg cp-mono text-[12px] transition-colors ${
-                on ? 'text-[#05060b] font-semibold' : 'bg-white/[0.05] text-[var(--dim)] hover:bg-white/[0.09] hover:text-white'
-              }`}
-              style={on ? { background: scoreColor(value) } : undefined}
-            >
-              {v}
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-const UnitInput = React.forwardRef<
-  HTMLInputElement,
-  React.InputHTMLAttributes<HTMLInputElement> & { id: string; label: string; unit: string }
->(function UnitInput({ id, label, unit, ...rest }, ref) {
-  return (
-    <div>
-      <FieldLabel htmlFor={id}>{label}</FieldLabel>
-      <div className="relative">
-        <input
-          ref={ref}
-          id={id}
-          type="number"
-          inputMode="decimal"
-          step="any"
-          min={0}
-          max={9999}
-          onWheel={(e) => (e.target as HTMLInputElement).blur()}
-          className="cp-field cp-field-plain h-12 pr-14"
-          {...rest}
-        />
-        <span className="cp-mono absolute right-4 top-1/2 -translate-y-1/2 text-[11px] text-[var(--dim)] pointer-events-none">{unit}</span>
-      </div>
-    </div>
-  );
-});

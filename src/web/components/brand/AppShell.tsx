@@ -1,3 +1,4 @@
+import { AuthedImage } from '../AuthedImage'
 import React from 'react'
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router'
 import { motion, MotionConfig } from 'motion/react'
@@ -24,6 +25,14 @@ function initials(name?: string) {
 }
 
 export function Avatar({ name, src, size = 40 }: { name?: string; src?: string; size?: number }) {
+  const { user } = useAuth()
+  // Foto enviada pelo usuário fica protegida em /api/media: carrega com o token
+  if (src?.includes('/api/media/'))
+    return (
+      <span className="inline-block overflow-hidden rounded-full ring-2 ring-white/10" style={{ width: size, height: size }}>
+        <AuthedImage src={src} alt={name || 'Usuário'} token={user?.accessToken} className="h-full w-full object-cover" />
+      </span>
+    )
   return src ? (
     <img src={src} alt={name || 'Usuário'} className="rounded-full object-cover ring-2 ring-white/10" style={{ width: size, height: size }} />
   ) : (

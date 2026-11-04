@@ -6,8 +6,8 @@ import {
   ChevronRight,
   ClipboardList,
   Copy,
-  DollarSign,
   Dumbbell,
+  MailPlus,
   Link as LinkIcon,
   Search,
   TrendingUp,
@@ -16,7 +16,7 @@ import {
 } from 'lucide-react'
 import { AddPatientModal } from '../AddPatientModal'
 import { useAuth } from '../../context/AuthContext'
-import { PROFESSIONAL_LINKS_API, getJson, qs } from '@/lib/cms'
+import { PROFESSIONAL_LINKS_API, SESSIONS_API, WORKOUT_LOGS_API, getJson, qs } from '@/lib/cms'
 import { CTAButton } from '../brand/Brand'
 import { Avatar } from '../brand/AppShell'
 import { RollingNumber } from '../brand/fx'
@@ -79,6 +79,43 @@ export function PersonalDashboard() {
   const [showAddModal, setShowAddModal] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
 
+  // Números reais do painel: treinos registrados pelos alunos e sessões da agenda
+  const [stats, setStats] = useState<{ logs7d: number; sessionsToday: number; sessionsWeek: number } | null>(null)
+  useEffect(() => {
+    if (!user?.accessToken || !user?.id) return
+    const token = user.accessToken
+    const day = (offset: number) => {
+      const d = new Date()
+      d.setHours(0, 0, 0, 0)
+      d.setDate(d.getDate() + offset)
+      return d.toISOString()
+    }
+    const count = (url: string) => getJson<{ totalDocs: number }>(url, token).then((r) => r.totalDocs).catch(() => 0)
+    void Promise.all([
+      count(`${WORKOUT_LOGS_API}${qs({ 'where[performedAt][greater_than_equal]': day(-6), limit: 1, depth: 0 })}`),
+      count(
+        `${SESSIONS_API}${qs({
+          'where[and][0][professional][equals]': user.id,
+          'where[and][1][date][greater_than_equal]': day(0),
+          'where[and][2][date][less_than]': day(1),
+          'where[and][3][status][not_equals]': 'cancelled',
+          limit: 1,
+          depth: 0,
+        })}`,
+      ),
+      count(
+        `${SESSIONS_API}${qs({
+          'where[and][0][professional][equals]': user.id,
+          'where[and][1][date][greater_than_equal]': day(0),
+          'where[and][2][date][less_than]': day(7),
+          'where[and][3][status][not_equals]': 'cancelled',
+          limit: 1,
+          depth: 0,
+        })}`,
+      ),
+    ]).then(([logs7d, sessionsToday, sessionsWeek]) => setStats({ logs7d, sessionsToday, sessionsWeek }))
+  }, [user?.accessToken, user?.id])
+
   const reload = useCallback(async () => {
     if (!user?.accessToken || !user?.id) {
       setStudents([])
@@ -129,20 +166,20 @@ export function PersonalDashboard() {
   const proProfile = loadProProfile(user?.id)
   const activeCount = students.filter((s) => s.status === 'active').length
   const pendingCount = students.filter((s) => s.status === 'pending').length
-  const bioSlug = user?.email?.split('@')[0] || 'personal'
-  const bioLink = `coachpass.app/${bioSlug}`
+  // Link real de cadastro do aluno (conta grátis); depois é só convidar pelo e-mail
+  const signupLink = typeof window !== 'undefined' ? `${window.location.origin}/cadastro?perfil=aluno&plano=free` : '/cadastro'
 
   const kpis = [
-    { label: 'Alunos ativos', value: String(activeCount), icon: Users, live: true },
-    { label: 'Treinos hoje', value: '12', icon: Dumbbell },
-    { label: 'Taxa de frequência', value: '89%', icon: TrendingUp },
-    { label: 'Receita mensal', value: 'R$ 12.6k', icon: DollarSign },
+    { label: 'Alunos ativos', value: String(activeCount), icon: Users, hint: pendingCount ? `${pendingCount} convite(s) pendente(s)` : 'vínculos aceitos' },
+    { label: 'Treinos registrados', value: stats ? String(stats.logs7d) : '–', icon: Dumbbell, hint: 'pelos alunos, últimos 7 dias' },
+    { label: 'Sessões hoje', value: stats ? String(stats.sessionsToday) : '–', icon: Calendar, hint: 'na sua agenda' },
+    { label: 'Sessões na semana', value: stats ? String(stats.sessionsWeek) : '–', icon: TrendingUp, hint: 'próximos 7 dias' },
   ]
 
-  const copyBioLink = async () => {
+  const copySignupLink = async () => {
     try {
-      await navigator.clipboard.writeText(`https://${bioLink}`)
-      toast.success('Link copiado', { description: bioLink })
+      await navigator.clipboard.writeText(signupLink)
+      toast.success('Link copiado', { description: 'Envie para o aluno criar a conta grátis.' })
     } catch {
       toast.error('Não foi possível copiar o link.')
     }
@@ -176,24 +213,21 @@ export function PersonalDashboard() {
 
       {/* KPIs principais */}
       <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map(({ label, value, icon: Icon, live }, i) => (
+        {kpis.map(({ label, value, icon: Icon, hint }, i) => (
           <Card key={label} className="p-5 sm:p-6" delay={0.04 * i}>
             <div className="flex items-center justify-between">
               <span className="w-10 h-10 rounded-xl grid place-items-center bg-[rgba(85,70,255,0.14)] border border-[rgba(140,130,255,0.25)]">
                 <Icon className="w-[18px] h-[18px] text-[var(--brand-300)]" />
               </span>
-              <Badge tone={live ? 'teal' : 'neutral'}>Ativo</Badge>
             </div>
             <p className="cp-display mt-5 text-[clamp(30px,3.4vw,42px)] font-bold leading-none">
               <RollingNumber value={value} />
             </p>
             <p className="mt-2 text-[13.5px] text-[var(--muted)]">{label}</p>
+            <p className="mt-0.5 text-[12px] text-[var(--dim)]">{hint}</p>
           </Card>
         ))}
       </div>
-      <p className="mt-3 cp-mono text-[11px] text-[var(--dim)]">
-        Alunos ativos vem dos vínculos reais · treinos hoje, frequência e receita são valores de exemplo até a integração.
-      </p>
 
       <div className="mt-8 grid lg:grid-cols-[1.55fr_1fr] gap-6 items-start">
         {/* Carteira de alunos */}
@@ -308,34 +342,25 @@ export function PersonalDashboard() {
             </div>
           </Card>
 
-          {/* Link de captação (do antigo perfil) */}
+          {/* Link de cadastro para novos alunos */}
           <Card className="p-5 sm:p-6 overflow-hidden" delay={0.2}>
             <div className="flex items-center gap-2">
               <LinkIcon className="w-4 h-4 text-[var(--brand-300)]" />
-              <p className="cp-kicker">Link da bio · captação</p>
+              <p className="cp-kicker">Trazer um aluno novo</p>
             </div>
-            <div className="mt-4 rounded-2xl px-4 py-3 border border-[var(--line-2)] bg-white/[0.03]">
-              <p className="text-[12px] text-[var(--dim)]">Seu link personalizado</p>
-              <p className="mt-0.5 text-[15px] font-semibold truncate">{bioLink}</p>
-            </div>
-            <button type="button" onClick={copyBioLink} className="cp-btn-sm mt-3 w-full justify-center h-11">
+            <ol className="mt-4 space-y-2 text-[13.5px] text-[var(--muted)]">
+              <li>1. Envie o link: o aluno cria a conta grátis.</li>
+              <li>2. Convide pelo e-mail que ele usou.</li>
+              <li>3. Ele aceita o convite no app e aparece aqui.</li>
+            </ol>
+            <button type="button" onClick={copySignupLink} className="cp-btn-sm mt-4 w-full justify-center h-11">
               <Copy className="w-4 h-4" />
-              Copiar link
+              Copiar link de cadastro
             </button>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <div className="rounded-2xl px-4 py-3 border border-[var(--line)]">
-                <p className="cp-display text-[24px] font-bold">
-                  <RollingNumber value="328" />
-                </p>
-                <p className="text-[12px] text-[var(--dim)]">Cliques</p>
-              </div>
-              <div className="rounded-2xl px-4 py-3 border border-[var(--line)]">
-                <p className="cp-display text-[24px] font-bold">
-                  <RollingNumber value="12,8%" />
-                </p>
-                <p className="text-[12px] text-[var(--dim)]">Conversão</p>
-              </div>
-            </div>
+            <button type="button" onClick={() => setShowAddModal(true)} className="cp-btn-ghost mt-2 w-full justify-center h-11">
+              <MailPlus className="w-4 h-4" />
+              Convidar por e-mail
+            </button>
           </Card>
         </div>
       </div>

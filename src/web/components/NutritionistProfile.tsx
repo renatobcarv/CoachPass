@@ -44,7 +44,8 @@ import {
   relId,
   updateMealPlan,
 } from '../lib/nutriApi';
-import { defaultMeals, foodDatabase } from './pages/CreateDietPlan';
+import { defaultMeals } from './pages/CreateDietPlan';
+import { useFoodCatalog } from '../lib/useFoodCatalog';
 
 // ─────────── tipos do editor ───────────
 type DraftItem = { key: string; name: string; quantity: string; calories: string };
@@ -53,7 +54,6 @@ type Draft = { id?: string | number; title: string; observations: string; meals:
 type Filter = 'all' | 'withPlan' | 'noPlan' | 'pending';
 
 const uid = () => Math.random().toString(36).slice(2, 10);
-const foodByName = new Map(foodDatabase.map((f) => [f.name.toLowerCase(), f]));
 const mealKcal = (m: { items?: { calories?: number | string | null }[] | null }) =>
   (m.items || []).reduce((s, i) => s + (Number(i.calories) || 0), 0);
 const planKcal = (p: { meals?: { items?: { calories?: number | string | null }[] | null }[] | null }) =>
@@ -854,6 +854,8 @@ function PlanEditor({
   onPublish: () => void;
 }) {
   const [openKey, setOpenKey] = useState<string | null>(draft.meals[0]?.key ?? null);
+  const foods = useFoodCatalog();
+  const foodByName = new Map(foods.map((f) => [f.name.toLowerCase(), f]));
   const total = draft.meals.reduce((s, m) => s + mealKcal(m), 0);
 
   const setMeal = (key: string, fn: (m: DraftMeal) => DraftMeal) =>
@@ -889,7 +891,7 @@ function PlanEditor({
   return (
     <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="rounded-[22px] border border-[var(--brand-400)]/40 bg-white/[0.025] overflow-hidden">
       <datalist id="cp-food-list">
-        {foodDatabase.map((f) => (
+        {foods.map((f) => (
           <option key={f.id} value={f.name}>
             {f.calories} kcal/100{f.unit}
           </option>

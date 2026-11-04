@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react'
+import { AiGenerateButton } from '../student/AiGenerateButton'
 import { Link, useNavigate } from 'react-router'
 import { motion } from 'motion/react'
 import {
@@ -357,19 +358,12 @@ export function Dashboard() {
         <section className="mt-10">
           <SectionTitle icon={Sparkles}>Ainda não há conteúdos cadastrados</SectionTitle>
           <p className="-mt-2 mb-4 text-[14px] text-[var(--muted)] max-w-2xl">
-            Sem personal ou nutricionista vinculado, seu painel começa vazio. Aguarde a publicação de um profissional. A
-            geração com IA estará disponível em breve.
+            Sem personal ou nutricionista vinculado, seu painel começa vazio. Peça o convite ao seu profissional ou gere um
+            ponto de partida com IA ({remainingGenerations} de {quotaLimit} gerações restantes no mês).
           </p>
-          <div className="grid sm:grid-cols-2 gap-4">
-            {['Gerar treino com IA', 'Gerar sugestão alimentar com IA'].map((t, i) => (
-              <Card key={t} className="p-5 opacity-80" delay={0.1 * i}>
-                <Sparkles className="w-5 h-5 text-[var(--violet)]" />
-                <p className="mt-3 font-semibold">{t}</p>
-                <div className="mt-2">
-                  <Badge tone="violet">Em breve</Badge>
-                </div>
-              </Card>
-            ))}
+          <div className="flex flex-wrap gap-3">
+            <AiGenerateButton kind="workout" variant="solid" onDone={() => setReloadKey((k) => k + 1)} />
+            <AiGenerateButton kind="meal" onDone={() => setReloadKey((k) => k + 1)} />
           </div>
         </section>
       )}

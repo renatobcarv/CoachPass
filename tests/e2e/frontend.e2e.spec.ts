@@ -19,10 +19,12 @@ test.describe('SPA CoachPass', () => {
 
   test('cadastro usa copy real, sem jargão de protótipo', async ({ page }) => {
     await page.goto('/cadastro')
-    await expect(page.getByText('Acesso Estudante')).toBeVisible()
-    await page.getByRole('button', { name: /Acesso Estudante/i }).click()
+    await page.getByRole('button', { name: /Sou aluno/i }).click()
+    // Passo do plano: o Grátis libera o próximo passo
+    await page.getByRole('radio', { name: /Grátis/ }).click()
+    await page.getByRole('button', { name: 'Continuar' }).click()
     await expect(page.getByLabel('E-mail')).toBeVisible()
-    await expect(page.getByLabel('Nome Completo')).toBeVisible()
+    await expect(page.getByLabel('Nome completo')).toBeVisible()
     await expect(page.getByText('Correio Eletrônico')).toHaveCount(0)
     await expect(page.getByText('Identificação formal')).toHaveCount(0)
   })
@@ -33,6 +35,14 @@ test.describe('SPA CoachPass', () => {
     await expect(page.locator('#login-email')).toBeVisible()
     await expect(page.locator('#login-password')).toBeVisible()
     await expect(page.getByRole('button', { name: 'Esqueci a senha' })).toBeVisible()
+  })
+
+  test('home mostra os planos', async ({ page }) => {
+    await page.goto('/#planos')
+    await expect(page.getByRole('tab', { name: 'Personal e nutricionista' })).toBeVisible()
+    await expect(page.getByText('R$ 19,90').first()).toBeVisible()
+    await page.getByRole('tab', { name: 'Aluno' }).click()
+    await expect(page.getByText('R$ 249,90').first()).toBeVisible()
   })
 
   test('reset abre /redefinir-senha/:token', async ({ page }) => {
@@ -79,8 +89,8 @@ test.describe('Mobile 375px', () => {
   })
 
   test('cadastro no mobile não usa copy de protótipo', async ({ page }) => {
-    await page.goto('/cadastro')
-    await page.getByRole('button', { name: /Acesso Estudante/i }).click()
+    await page.goto('/cadastro?perfil=aluno&plano=free')
+    await page.getByRole('button', { name: 'Continuar' }).click()
     await expect(page.getByLabel('E-mail')).toBeVisible()
   })
 })

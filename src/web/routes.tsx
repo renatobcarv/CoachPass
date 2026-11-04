@@ -9,11 +9,10 @@ import { Profile } from './components/pages/Profile';
 import { Home } from './components/pages/Home';
 import { Login } from './components/pages/Login';
 import { Register } from './components/pages/Register';
+import { ResetPassword } from './components/pages/ResetPassword';
 import { PersonalDashboard } from './components/pages/PersonalDashboard';
 import { NutritionistDashboard } from './components/pages/NutritionistDashboard';
-import { StudentMeasurement } from './components/pages/StudentMeasurement';
 import { StudentRestriction } from './components/pages/StudentRestriction';
-import { StudentReport } from './components/pages/StudentReport';
 import { NutritionistPatientDetails } from './components/pages/NutritionistPatientDetails';
 import { CreateDietPlan } from './components/pages/CreateDietPlan';
 import { NutritionConsultation } from './components/pages/NutritionConsultation';
@@ -50,6 +49,7 @@ export const router = createBrowserRouter([
   { path: '/', Component: Home },
   { path: '/login', Component: Login },
   { path: '/cadastro', Component: Register },
+  { path: '/redefinir-senha/:token', Component: ResetPassword },
   { path: '/planos', Component: Plans },
   { path: '/privacidade', Component: PrivacyPolicy },
   { path: '/termos', Component: TermsOfUse },
@@ -120,9 +120,9 @@ export const router = createBrowserRouter([
           { path: 'aluno/:id', element: <Navigate to="evolucao" replace /> },
           { path: 'aluno/:id/evolucao', Component: CoachDashboard },
           { path: 'aluno/:id/exercicio/:key', Component: CoachExerciseHistory },
-          { path: 'aluno/:id/medicao', Component: StudentMeasurement },
+          { path: 'aluno/:id/medicao', Component: PersonalAvaliacao },
           { path: 'aluno/:id/restricao', Component: StudentRestriction },
-          { path: 'aluno/:id/relatorio', Component: StudentReport },
+          { path: 'aluno/:id/relatorio', element: <Navigate to="../evolucao" relative="path" replace /> },
           { path: 'avaliacao', Component: PersonalAvaliacao },
           { path: 'avaliacao/:studentId', Component: PersonalAvaliacao },
           { path: 'agenda', Component: PersonalAgenda },
@@ -146,6 +146,7 @@ export const router = createBrowserRouter([
           { path: 'paciente/:id/evolucao', Component: CoachDashboard },
           { path: 'criar-plano', Component: CreateDietPlan },
           { path: 'criar-plano/:patientId', Component: CreateDietPlan },
+          { path: 'consulta', Component: NutritionConsultation },
           { path: 'consulta/:patientId', Component: NutritionConsultation },
           { path: 'anamnese', Component: NutritionistAnamnese },
           { path: 'anamnese/:patientId', Component: NutritionistAnamnese },
