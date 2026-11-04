@@ -109,20 +109,37 @@ export type AbacateSubscription = {
   updatedAt: string
 }
 
+/** Páginas aceitas como volta do checkout (evita redirecionar para fora do app). */
+export const CHECKOUT_RETURN_PATHS = [
+  '/planos',
+  '/onboarding/student',
+  '/onboarding/professional',
+  '/app/configuracoes',
+  '/personal/configuracoes',
+  '/nutritionist/configuracoes',
+] as const
+
+export function safeReturnPath(path: unknown): string {
+  return typeof path === 'string' && (CHECKOUT_RETURN_PATHS as readonly string[]).includes(path) ? path : '/planos'
+}
+
 export async function createSubscriptionCheckout(args: {
   product: ProductKey
   userId: number | string
   customerId?: string | null
   appUrl: string
+  /** Página para onde o cliente volta (só caminhos da lista CHECKOUT_RETURN_PATHS) */
+  returnPath?: string | null
 }): Promise<{ id: string; url: string }> {
+  const back = safeReturnPath(args.returnPath)
   const productId = productIdFor(args.product)
   if (!productId) throw new AbacatePayError('Produto do plano não configurado.', 503)
   const body = {
     items: [{ id: productId, quantity: 1 }],
     // PIX Automático precisa estar liberado na loja do AbacatePay (ABACATE_PIX_AUTOMATICO=true)
     methods: process.env.ABACATE_PIX_AUTOMATICO === 'true' ? ['CARD', 'PIX'] : ['CARD'],
-    returnUrl: `${args.appUrl}/planos`,
-    completionUrl: `${args.appUrl}/planos?assinatura=retorno`,
+    returnUrl: `${args.appUrl}${back}`,
+    completionUrl: `${args.appUrl}${back}?assinatura=retorno`,
     externalId: `coachpass-user-${args.userId}-${Date.now()}`,
     metadata: { userId: String(args.userId), product: args.product },
     ...(args.customerId ? { customerId: args.customerId } : {}),

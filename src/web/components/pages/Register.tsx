@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { motion, AnimatePresence } from 'motion/react';
 import {
   User,
@@ -17,11 +17,29 @@ import { AuthShell, FieldLabel } from '../brand/AuthShell';
 import { CTAButton } from '../brand/Brand';
 import { PasswordInput, PasswordStrength } from '../forms/PasswordInput';
 import { isStrongEnough, isValidEmail, nameError } from '../../lib/validation';
+import { SignupPlanPicker, signupNeedsPayment, signupPlanLabel } from '../pricing/SignupPlanPicker';
+import { saveSignupPlan, subscribeProPlan, subscribeStudentPlan, type SignupPlan } from '../../lib/proPlanApi';
+import { isProTier } from '@/lib/proPlans';
+import { isStudentCycle } from '@/lib/studentPlans';
+
+/** Lê ?perfil= e ?plano= (links da home e da página de planos). */
+function planFromParams(params: URLSearchParams): { type: UserType; plan: SignupPlan | null } {
+  const perfil = params.get('perfil');
+  const plano = params.get('plano');
+  const type: UserType = perfil === 'aluno' ? 'student' : perfil === 'profissional' ? 'professional' : null;
+  if (type === 'student' && (plano === 'free' || isStudentCycle(plano))) {
+    return { type, plan: { audience: 'student', choice: plano } };
+  }
+  if (type === 'professional' && isProTier(plano)) {
+    return { type, plan: { audience: 'professional', choice: plano, action: plano === 'free' ? 'free' : 'subscribe' } };
+  }
+  return { type, plan: null };
+}
 
 // Tipos permitidos no cadastro inicial
 type UserType = 'student' | 'professional' | null;
 
-// Os dados que precisamos para criar a conta na Auth. 
+// Os dados que precisamos para criar a conta na Auth.
 // O restante dos dados (WhatsApp, CREF/CRN) será coletado no Onboarding.
 interface RegisterData {
   userType: UserType;
@@ -34,18 +52,21 @@ export function Register() {
   const navigate = useNavigate();
   // Pega a função 'register' de dentro do nosso contexto de autenticação
   const { register: registerUser } = useAuth();
-  
-  // Controle de qual etapa do cadastro o usuário está (1 ou 2)
-  const [step, setStep] = useState(1);
-  
+  const [params] = useSearchParams();
+  const [initial] = useState(() => planFromParams(params));
+
+  // Etapas: 1 tipo de conta, 2 plano, 3 dados de acesso
+  const [step, setStep] = useState(initial.type ? 2 : 1);
+  const [plan, setPlan] = useState<SignupPlan | null>(initial.plan);
+
   // Guardamos as respostas do formulário aqui
   const [formData, setFormData] = useState<RegisterData>({
-    userType: null,
+    userType: initial.type,
     name: '',
     email: '',
     password: '',
   });
-  
+
   // Status de carregamento e mensagens de erro nos campos
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -91,7 +112,7 @@ export function Register() {
   const handleSubmit = async () => {
     // Se a validação não passar, interrompemos aqui
     if (!validateStep2()) return;
-    
+
     setLoading(true);
     setBackendError(null);
 
@@ -99,17 +120,35 @@ export function Register() {
     const role = formData.userType === 'student' ? 'student' : 'personal';
 
     try {
-      await registerUser(formData.email.trim().toLowerCase(), formData.password, role, {
+      const created = await registerUser(formData.email.trim().toLowerCase(), formData.password, role, {
         name: formData.name,
       });
+      const onboarding = role === 'student' ? '/onboarding/student' : '/onboarding/professional';
+      if (plan) saveSignupPlan(plan);
 
-      toast.success('Conta criada em nossa plataforma.');
-      
-      if (role === 'student') {
-        navigate('/onboarding/student', { replace: true });
+      // Plano pago escolhido: abre o pagamento logo depois de criar a conta
+      if (plan && signupNeedsPayment(plan) && created?.accessToken) {
+        try {
+          const res =
+            plan.audience === 'student'
+              ? await subscribeStudentPlan(plan.choice as 'monthly' | 'semester' | 'annual', created.accessToken, onboarding)
+              : await subscribeProPlan(plan.choice as 'pro' | 'elite', created.accessToken, onboarding);
+          if (res.url) {
+            toast.success('Conta criada. Abrindo o pagamento…');
+            window.location.href = res.url;
+            return;
+          }
+        } catch (err) {
+          const m = err instanceof PayloadApiError ? extractPayloadMessage(err.data) : '';
+          toast.warning(
+            m || 'Conta criada, mas o pagamento não abriu agora. Você pode assinar em Configurações › Plano e cobrança.',
+          );
+        }
       } else {
-        navigate('/onboarding/professional', { replace: true });
+        toast.success('Conta criada.');
       }
+
+      navigate(onboarding, { replace: true });
 
     } catch (err: unknown) {
       console.error('Erro na criação de conta:', err);
@@ -147,7 +186,7 @@ export function Register() {
     }
   };
 
-  const totalSteps = 2;
+  const totalSteps = 3;
   const progressPct = (step / totalSteps) * 100;
 
   // --- Renderização Visual (Interface do Usuário) ---
@@ -157,11 +196,11 @@ export function Register() {
   return (
     <AuthShell
       title="Comece em"
-      accent="dois passos."
-      lead="Escolha como vai usar o CoachPass e crie o acesso. Telefone, medidas, objetivo ou registro profissional ficam para o passo seguinte, já dentro do app."
+      accent="três passos."
+      lead="Escolha como vai usar o CoachPass, o plano e crie o acesso. Telefone, medidas, objetivo ou registro profissional ficam para depois, já dentro do app."
       aside={
         <ol className="mt-10 space-y-3">
-          {['Escolha o tipo de acesso', 'Nome, e-mail e senha', 'Complete o perfil no app'].map((t, i) => (
+          {['Escolha o tipo de acesso', 'Escolha o plano', 'Nome, e-mail e senha', 'Complete o perfil no app'].map((t, i) => (
             <li key={t} className="flex items-center gap-4">
               <span
                 className={`cp-mono w-8 h-8 rounded-full grid place-items-center text-[12px] border ${
@@ -180,12 +219,16 @@ export function Register() {
         <div className="mb-8">
           <p className="cp-kicker">Criar conta</p>
           <h2 className="cp-display mt-3 text-[40px] font-bold leading-none">
-            {step === 1 ? 'Como você vai usar?' : 'Seus dados de acesso'}
+            {step === 1 ? 'Como você vai usar?' : step === 2 ? 'Escolha o seu plano' : 'Seus dados de acesso'}
           </h2>
           <p className="mt-3 text-[15px] text-[var(--muted)]">
             {step === 1
               ? 'Selecione a modalidade de acesso.'
-              : 'Nome, e-mail e senha. No próximo passo você completa telefone, medidas e objetivo.'}
+              : step === 2
+                ? isStudent
+                  ? 'Comece grátis ou já libere o Aluno Pro. Dá para mudar depois em Configurações.'
+                  : 'Pague pelo tamanho da carteira. Dá para mudar depois em Configurações.'
+                : 'Nome, e-mail e senha. Depois você completa o perfil.'}
           </p>
         </div>
 
@@ -236,6 +279,7 @@ export function Register() {
                 <button
                   key={type}
                   onClick={() => {
+                    if (formData.userType !== type) setPlan(null);
                     handleInputChange('userType', type);
                     setStep(2);
                   }}
@@ -270,10 +314,30 @@ export function Register() {
             </motion.div>
           )}
 
-          {/* --- Passo 2: Coleta de Dados Básicos (Nome, E-mail, Senha) --- */}
-          {step === 2 && (
+          {/* --- Passo 2: Plano --- */}
+          {step === 2 && formData.userType && (
             <motion.div
               key="step2"
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+            >
+              <SignupPlanPicker audience={formData.userType} value={plan} onChange={setPlan} />
+              <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row">
+                <button type="button" onClick={() => setStep(1)} className="cp-btn-ghost h-12 justify-center px-6 text-[14px]">
+                  Voltar
+                </button>
+                <CTAButton type="button" block onClick={() => plan && setStep(3)} disabled={!plan}>
+                  {plan ? 'Continuar' : 'Escolha um plano'}
+                </CTAButton>
+              </div>
+            </motion.div>
+          )}
+
+          {/* --- Passo 3: Coleta de Dados Básicos (Nome, E-mail, Senha) --- */}
+          {step === 3 && (
+            <motion.div
+              key="step3"
               initial={{ opacity: 0, scale: 0.98 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.98 }}
@@ -296,6 +360,15 @@ export function Register() {
                   </div>
                 </div>
                 <button onClick={() => setStep(1)} className="cp-btn-ghost h-9 px-4 text-[13px]">
+                  Alterar
+                </button>
+              </div>
+              <div className="-mt-3 mb-6 flex items-center justify-between gap-4 rounded-2xl border border-[var(--line)] bg-white/[0.03] p-4">
+                <div>
+                  <p className="cp-mono text-[10.5px] uppercase tracking-[0.12em] text-[var(--dim)]">Plano</p>
+                  <p className="font-semibold">{signupPlanLabel(plan)}</p>
+                </div>
+                <button onClick={() => setStep(2)} className="cp-btn-ghost h-9 px-4 text-[13px]">
                   Alterar
                 </button>
               </div>
@@ -400,6 +473,8 @@ export function Register() {
                       <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                       Criando conta...
                     </span>
+                  ) : signupNeedsPayment(plan) ? (
+                    'Criar conta e ir para o pagamento'
                   ) : (
                     'Criar conta'
                   )}

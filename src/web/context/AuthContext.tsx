@@ -33,7 +33,7 @@ interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (email: string, password: string, role: UserRole) => Promise<UserRole>;
-  register: (email: string, password: string, role: UserRole, additionalData?: Partial<User>) => Promise<void>;
+  register: (email: string, password: string, role: UserRole, additionalData?: Partial<User>) => Promise<User>;
   logout: () => void;
   updateUser: (data: Partial<User>) => void;
   /** Troca o painel ativo (ex.: personal → aluno) e devolve a rota inicial do novo painel */
@@ -209,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const built = buildUser(data.user, data.token);
       setUser(built);
       persistSession(built);
+      return built;
     } catch (e) {
       const msg =
         e instanceof PayloadApiError

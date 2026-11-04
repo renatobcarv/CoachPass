@@ -31,6 +31,7 @@ import {
   Users,
   X,
 } from 'lucide-react';
+import { HomePricing } from '../pricing/HomePricing';
 import { Backdrop, CTAButton, Counter, Grain, Logo, Reveal, ScrollProgress, SplitWords } from '../brand/Brand';
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
@@ -39,6 +40,7 @@ const nav = [
   { href: '#recursos', label: 'Recursos' },
   { href: '#como-funciona', label: 'Como funciona' },
   { href: '#perfis', label: 'Para quem é' },
+  { href: '#planos', label: 'Planos' },
   { href: '#sobre', label: 'Sobre' },
 ];
 
@@ -916,6 +918,22 @@ export function Home() {
                     </article>
                   </Reveal>
                 ))}
+              </div>
+            </div>
+          </section>
+
+          {/* PLANOS */}
+          <section id="planos" className="relative py-28 sm:py-36 scroll-mt-16">
+            <div className="relative max-w-[1200px] mx-auto px-4 sm:px-8">
+              <SectionHead
+                kicker="Planos"
+                title="Comece grátis."
+                accent="Pague quando crescer."
+                lead="Profissional paga pelo tamanho da carteira. Aluno usa grátis com o seu profissional ou assina o Aluno Pro para montar o próprio plano."
+                center
+              />
+              <div className="mt-14">
+                <HomePricing />
               </div>
             </div>
           </section>

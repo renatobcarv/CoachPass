@@ -91,7 +91,7 @@ function ProfessionalPlans() {
 
   const handleAction = async (tier: ProTier, action: PlanAction) => {
     if (!user?.accessToken || !isPro) {
-      navigate('/cadastro')
+      navigate(`/cadastro?perfil=profissional&plano=${tier}`)
       return
     }
     const token = user.accessToken

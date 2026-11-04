@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   const { payload, user, status } = await authBillingUser()
   if (!user) return authError(status as 401 | 403)
 
-  let body: { tier?: unknown; studentCycle?: unknown }
+  let body: { tier?: unknown; studentCycle?: unknown; returnPath?: unknown }
   try {
     body = await request.json()
   } catch {
@@ -80,6 +80,7 @@ export async function POST(request: Request) {
       userId: user.id,
       customerId: user.abacateCustomerId,
       appUrl: appBaseUrl(),
+      returnPath: typeof body.returnPath === 'string' ? body.returnPath : null,
     })
     await payload.update({
       collection: 'users',

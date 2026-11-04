@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
+import { BillingPanel } from '../pricing/BillingPanel';
 import {
   Settings as SettingsIcon, Bell, Shield, Palette, Globe, Lock,
   User, Mail, Phone, Camera, Save, ChevronRight, CheckCircle,
@@ -100,7 +101,11 @@ export function Settings() {
   const { user, logout, updateUser } = useAuth();
   const { theme, toggleTheme } = useTheme();
 
-  const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const [searchParams] = useSearchParams();
+  // ?aba=cobranca abre direto o plano; a volta do pagamento também
+  const [activeTab, setActiveTab] = useState<SettingsTab>(() =>
+    searchParams.get('aba') === 'cobranca' || searchParams.get('assinatura') ? 'billing' : 'profile',
+  );
   const [saving, setSaving] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -278,7 +283,7 @@ export function Settings() {
     { id: 'privacy', label: 'Privacidade', icon: Shield },
     { id: 'security', label: 'Segurança', icon: Lock },
     { id: 'appearance', label: 'Aparência', icon: Palette },
-    { id: 'billing', label: 'Plano & Cobrança', icon: CreditCard },
+    { id: 'billing', label: 'Plano e cobrança', icon: CreditCard },
     { id: 'data', label: 'Meus Dados', icon: Download },
   ];
 
@@ -796,186 +801,7 @@ export function Settings() {
               )}
 
               {/* ── BILLING TAB ── */}
-              {activeTab === 'billing' && (() => {
-                const hasPaidPlan =
-                  user?.plan === 'monthly' || user?.plan === 'semester' || user?.plan === 'annual'
-                const planLabel =
-                  user?.plan === 'annual'
-                    ? 'Plano Anual'
-                    : user?.plan === 'semester'
-                      ? 'Plano Semestral'
-                      : user?.plan === 'monthly'
-                        ? 'Plano Mensal'
-                        : 'Plano Gratuito'
-                const planPrice =
-                  user?.plan === 'annual'
-                    ? 'R$ 50/mês'
-                    : user?.plan === 'semester'
-                      ? 'R$ 60/mês'
-                      : user?.plan === 'monthly'
-                        ? 'R$ 70/mês'
-                        : 'R$ 0'
-
-                return (
-                <div className="space-y-4">
-                  <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                    <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>Plano Atual</h3>
-                    <div
-                      className={`p-5 rounded-2xl border ${
-                        hasPaidPlan
-                          ? 'border-[#000326]/25 dark:border-white/25 bg-[#000326] dark:bg-white/5'
-                          : 'border-[#000326]/10 dark:border-white/10 bg-[#f3f4f9] dark:bg-[#000137]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-3">
-                        <div>
-                          <p
-                            className={`text-xs uppercase tracking-widest ${
-                              hasPaidPlan
-                                ? 'text-[#C5C5CE]'
-                                : 'text-[#6a6a7a] dark:text-[#C5C5CE]'
-                            }`}
-                            style={{ fontWeight: 600 }}
-                          >
-                            {planLabel}
-                          </p>
-                          <p
-                            className={`text-2xl ${
-                              hasPaidPlan
-                                ? 'text-white'
-                                : 'text-[#000326] dark:text-white'
-                            }`}
-                            style={{ fontWeight: 800 }}
-                          >
-                            {planPrice}
-                          </p>
-                        </div>
-                        <div
-                          className={`w-12 h-12 rounded-2xl flex items-center justify-center ${
-                            hasPaidPlan
-                              ? 'bg-white/10'
-                              : 'bg-white dark:bg-[#000346]'
-                          }`}
-                        >
-                          <Zap
-                            className={`w-6 h-6 ${
-                              hasPaidPlan
-                                ? 'text-[#C5C5CE]'
-                                : 'text-[#000326] dark:text-[#C5C5CE]'
-                            }`}
-                          />
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between text-xs">
-                        <span className={hasPaidPlan ? 'text-[#C5C5CE]/80' : 'text-[#6a6a7a] dark:text-[#C5C5CE]/70'}>
-                          {hasPaidPlan
-                            ? 'Assinatura ativa'
-                            : 'Inclui até 2 gerações de treino com IA por mês'}
-                        </span>
-                        <span
-                          className={`px-2 py-0.5 rounded-full ${
-                            hasPaidPlan
-                              ? 'bg-white/10 text-[#C5C5CE]'
-                              : 'bg-[#000326]/10 text-[#000326] dark:bg-white/10 dark:text-[#C5C5CE]'
-                          }`}
-                          style={{ fontWeight: 600 }}
-                        >
-                          {hasPaidPlan ? 'Ativo' : 'Grátis'}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3">
-                      {(hasPaidPlan
-                        ? [
-                            { label: 'Alunos/Pacientes', value: 'Ilimitado', icon: User },
-                            { label: 'Armazenamento', value: '10 GB', icon: Download },
-                            { label: 'Suporte', value: 'Prioritário', icon: Star },
-                          ]
-                        : [
-                            { label: 'Gerações IA', value: '2 / mês', icon: Zap },
-                            { label: 'Treinos', value: 'Ilimitados*', icon: Activity },
-                            { label: 'Suporte', value: 'Comunidade', icon: Star },
-                          ]
-                      ).map(({ label, value, icon: Icon }) => (
-                        <div key={label} className="flex items-center gap-3 p-3 rounded-xl dark:bg-zinc-800/50 bg-slate-50">
-                          <Icon className="w-4 h-4 text-[#000326] dark:text-[#C5C5CE] flex-shrink-0" />
-                          <div>
-                            <p className="text-xs dark:text-zinc-500 text-slate-400">{label}</p>
-                            <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>{value}</p>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                    {!hasPaidPlan && (
-                      <p className="mt-3 text-xs text-[#6a6a7a] dark:text-[#C5C5CE]/70">
-                        * Treinos publicados por profissionais ou gerados dentro da cota gratuita.
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="dark:bg-zinc-900 bg-white rounded-3xl border dark:border-zinc-800 border-slate-200 p-6">
-                    <h3 className="dark:text-white text-slate-900 mb-4" style={{ fontWeight: 700 }}>
-                      {hasPaidPlan ? 'Método de Pagamento' : 'Assinar um plano'}
-                    </h3>
-                    {hasPaidPlan ? (
-                      <>
-                        <div className="flex items-center justify-between p-4 rounded-2xl dark:bg-zinc-800/50 bg-slate-50 border dark:border-zinc-700 border-slate-200">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-blue-400" />
-                            </div>
-                            <div>
-                              <p className="text-sm dark:text-white text-slate-900" style={{ fontWeight: 600 }}>
-                                Cartão cadastrado
-                              </p>
-                              <p className="text-xs dark:text-zinc-500 text-slate-400">Gerencie pelo provedor de cobrança</p>
-                            </div>
-                          </div>
-                          <button
-                            type="button"
-                            onClick={() => toast.info('Gerenciar método de pagamento em breve')}
-                            className="text-xs text-[#000326] dark:text-[#C5C5CE] hover:underline"
-                            style={{ fontWeight: 600 }}
-                          >
-                            Atualizar
-                          </button>
-                        </div>
-                        <div className="mt-4 space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => toast.info('Histórico de faturas em breve')}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium dark:text-zinc-300 text-slate-700 border dark:border-zinc-700 border-slate-200 hover:dark:bg-zinc-800 hover:bg-slate-50 transition-all"
-                          >
-                            <Download className="w-4 h-4" /> Ver histórico de faturas
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => navigate('/planos')}
-                            className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium text-[#000326] dark:text-white border border-[#000326]/25 dark:border-white/25 hover:bg-[#f3f4f9] dark:hover:bg-white/5 transition-all"
-                          >
-                            <RefreshCw className="w-4 h-4" /> Mudar plano
-                          </button>
-                        </div>
-                      </>
-                    ) : (
-                      <div className="space-y-3">
-                        <p className="text-sm text-[#6a6a7a] dark:text-[#C5C5CE]">
-                          Você ainda não assinou nenhum plano pago. No gratuito, use até 2 gerações de treino com IA por mês.
-                        </p>
-                        <button
-                          type="button"
-                          onClick={() => navigate('/planos')}
-                          className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl text-sm font-semibold text-white bg-[#000326] hover:bg-[#000137] dark:bg-white dark:text-[#000326] dark:hover:bg-[#C5C5CE] transition-all"
-                        >
-                          <Zap className="w-4 h-4" /> Ver planos
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-                )
-              })()}
+              {activeTab === 'billing' && <BillingPanel />}
 
               {/* ── DATA TAB ── */}
               {activeTab === 'data' && (

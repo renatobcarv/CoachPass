@@ -19,7 +19,8 @@ import { saveProProfile } from '../../lib/proProfile'
 import { credentialError, maskPhoneBR, phoneError } from '../../lib/validation'
 import { Backdrop, BrandLogo, CTAButton, Grain } from '../brand/Brand'
 import { ProPricing, type PlanAction } from '../pricing/ProPricing'
-import { chooseProPlan, subscribeProPlan } from '../../lib/proPlanApi'
+import { chooseProPlan, clearSignupPlan, fetchProPlan, readSignupPlan, subscribeProPlan, type ProPlanStatus } from '../../lib/proPlanApi'
+import { useCheckoutReturn } from '../../lib/useCheckoutReturn'
 import { PRO_PLANS, TRIAL_DAYS, formatBRL, type ProTier } from '@/lib/proPlans'
 
 type ProfessionalType = 'personal' | 'nutritionist'
@@ -88,7 +89,29 @@ export function ProfessionalOnboarding() {
     workplaces: [] as string[],
     priorities: [] as string[],
   })
-  const [plan, setPlan] = useState<{ tier: ProTier; action: PlanAction } | null>(null)
+  // Plano escolhido no cadastro já vem marcado
+  const [plan, setPlan] = useState<{ tier: ProTier; action: PlanAction } | null>(() => {
+    const signup = readSignupPlan()
+    return signup?.audience === 'professional' ? { tier: signup.choice, action: signup.action } : null
+  })
+  // Assinatura já paga no cadastro: a etapa de plano só confirma
+  const [paid, setPaid] = useState<ProPlanStatus | null>(null)
+  const loadPaid = useCallback(async () => {
+    if (!user?.accessToken) return
+    try {
+      const s = await fetchProPlan(user.accessToken)
+      if (s.subscriptionStatus === 'active') {
+        setPaid(s)
+        setPlan({ tier: s.chosenTier, action: 'subscribe' })
+      }
+    } catch {
+      /* segue com a escolha local */
+    }
+  }, [user?.accessToken])
+  const checkout = useCheckoutReturn(user?.accessToken, () => void loadPaid())
+  useEffect(() => {
+    if (checkout === 'idle') void loadPaid()
+  }, [checkout, loadPaid])
 
   const handleComplete = async () => {
     if (!user?.accessToken || !user.id) {
@@ -142,7 +165,7 @@ export function ProfessionalOnboarding() {
       saveProProfile(user.id, extra)
 
       // Assinar agora: vai direto para o checkout do AbacatePay
-      if (plan && plan.tier !== 'free' && plan.action === 'subscribe') {
+      if (!paid && plan && plan.tier !== 'free' && plan.action === 'subscribe') {
         try {
           const res = await subscribeProPlan(plan.tier, token)
           if (res.url) {
@@ -158,7 +181,7 @@ export function ProfessionalOnboarding() {
 
       // Teste grátis do plano pago; o grátis já é o padrão da conta
       let planMsg = ''
-      if (plan && plan.tier !== 'free' && plan.action === 'trial') {
+      if (!paid && plan && plan.tier !== 'free' && plan.action === 'trial') {
         try {
           const status = await chooseProPlan(plan.tier, token)
           const until = status.trialEndsAt ? new Date(status.trialEndsAt).toLocaleDateString('pt-BR') : ''
@@ -169,6 +192,7 @@ export function ProfessionalOnboarding() {
         }
       }
 
+      clearSignupPlan()
       toast.success(`Perfil profissional pronto.${planMsg}`)
       navigate(role === 'nutritionist' ? '/nutritionist' : '/personal', { replace: true })
     } catch (err) {
@@ -446,6 +470,28 @@ export function ProfessionalOnboarding() {
         )
       }
       case 'plan':
+        if (paid)
+          return (
+            <div className="rounded-3xl border border-[var(--line-2)] bg-white/[0.025] p-6 sm:p-8">
+              <p className="cp-kicker">Assinatura ativa</p>
+              <p className="cp-display mt-3 text-[30px] font-bold">{paid.planName}</p>
+              <p className="mt-2 text-[15px] text-[var(--muted)]">
+                Pagamento confirmado{paid.paidUntil ? `, renova em ${new Date(paid.paidUntil).toLocaleDateString('pt-BR')}` : ''}.{' '}
+                {paid.limit === null ? `${who[0].toUpperCase()}${who.slice(1)} ilimitados.` : `Até ${paid.limit} ${who}.`} Você muda de plano quando quiser em
+                Configurações › Plano e cobrança.
+              </p>
+              <button type="button" onClick={() => goTo(step + 1)} className="cp-btn-sm mt-6">
+                Continuar
+              </button>
+            </div>
+          )
+        if (checkout === 'checking')
+          return (
+            <div role="status" className="flex items-center gap-3 rounded-2xl border border-[var(--line-2)] px-5 py-4">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/25 border-t-white" />
+              Confirmando seu pagamento com o AbacatePay…
+            </div>
+          )
         return (
           <ProPricing
             audience={type}
@@ -459,7 +505,9 @@ export function ProfessionalOnboarding() {
         const planLabel = plan
           ? plan.tier === 'free'
             ? `Grátis · até ${PRO_PLANS.free.studentLimit} ${who}`
-            : plan.action === 'subscribe'
+            : paid
+              ? `${paid.planName} · assinatura ativa`
+              : plan.action === 'subscribe'
               ? `${PRO_PLANS[plan.tier].name} · ${formatBRL(PRO_PLANS[plan.tier].monthly, true)}/mês (pagamento a seguir)`
               : `${PRO_PLANS[plan.tier].name} · ${TRIAL_DAYS} dias grátis, sem cartão`
           : '—'

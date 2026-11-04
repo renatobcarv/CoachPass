@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCheckoutReturn } from '../../lib/useCheckoutReturn'
 import { useNavigate } from 'react-router'
 import { AnimatePresence, motion, MotionConfig } from 'motion/react'
 import {
@@ -262,6 +263,8 @@ function formatDate(iso: string) {
 export function StudentOnboarding() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  // Volta do pagamento do Aluno Pro escolhido no cadastro
+  useCheckoutReturn(user?.accessToken)
   const [step, setStep] = useState(0)
   const [direction, setDirection] = useState(1)
   const [loading, setLoading] = useState(false)

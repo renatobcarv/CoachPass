@@ -33,12 +33,53 @@ export function chooseProPlan(tier: ProTier, token: string) {
 }
 
 /** Assinar (devolve a URL do checkout) ou trocar de plano se já for assinante. */
-export function subscribeProPlan(tier: Exclude<ProTier, 'free'>, token: string) {
+export function subscribeProPlan(tier: Exclude<ProTier, 'free'>, token: string, returnPath?: string) {
   return postJson<{ url?: string; changed?: boolean; message?: string; plan?: ProPlanStatus }>(
     `${BILLING_API}/subscribe`,
-    { tier },
+    { tier, returnPath },
     token,
   )
+}
+
+/** Assinatura do Aluno Pro (devolve a URL do checkout ou troca o ciclo). */
+export function subscribeStudentPlan(studentCycle: 'monthly' | 'semester' | 'annual', token: string, returnPath?: string) {
+  return postJson<{ url?: string; changed?: boolean; message?: string }>(
+    `${BILLING_API}/subscribe`,
+    { studentCycle, returnPath },
+    token,
+  )
+}
+
+/** Plano escolhido no cadastro, guardado até o fim do onboarding. */
+export type SignupPlan =
+  | { audience: 'student'; choice: 'free' | 'monthly' | 'semester' | 'annual' }
+  | { audience: 'professional'; choice: ProTier; action: 'free' | 'trial' | 'subscribe' }
+
+const SIGNUP_PLAN_KEY = 'cp_signup_plan'
+
+export function saveSignupPlan(plan: SignupPlan) {
+  try {
+    sessionStorage.setItem(SIGNUP_PLAN_KEY, JSON.stringify(plan))
+  } catch {
+    /* sem storage: o onboarding pergunta de novo */
+  }
+}
+
+export function readSignupPlan(): SignupPlan | null {
+  try {
+    const raw = sessionStorage.getItem(SIGNUP_PLAN_KEY)
+    return raw ? (JSON.parse(raw) as SignupPlan) : null
+  } catch {
+    return null
+  }
+}
+
+export function clearSignupPlan() {
+  try {
+    sessionStorage.removeItem(SIGNUP_PLAN_KEY)
+  } catch {
+    /* nada a limpar */
+  }
 }
 
 /** Confere o pagamento direto no AbacatePay (volta do checkout). */
