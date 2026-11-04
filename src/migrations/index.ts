@@ -9,6 +9,7 @@ import * as migration_20261030_051312_workout_log_optional_workout from './20261
 import * as migration_20261030_052008_link_professional_name from './20261030_052008_link_professional_name';
 import * as migration_20261030_142337_v2_periodization_roles_exercises from './20261030_142337_v2_periodization_roles_exercises';
 import * as migration_20261104_032340_performance_tracking from './20261104_032340_performance_tracking';
+import * as migration_20261104_041500_media_blob_key from './20261104_041500_media_blob_key';
 
 export const migrations = [
   {
@@ -65,5 +66,10 @@ export const migrations = [
     up: migration_20261104_032340_performance_tracking.up,
     down: migration_20261104_032340_performance_tracking.down,
     name: '20261104_032340_performance_tracking'
+  },
+  {
+    up: migration_20261104_041500_media_blob_key.up,
+    down: migration_20261104_041500_media_blob_key.down,
+    name: '20261104_041500_media_blob_key',
   },
 ];

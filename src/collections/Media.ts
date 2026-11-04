@@ -1,5 +1,6 @@
 import type { CollectionConfig, Where } from 'payload'
 import { ValidationError } from 'payload'
+import { randomUUID } from 'node:crypto'
 
 import { coerceNumericRelations, toNumericRelationId } from '../access/relationIds'
 import { isSuperUser } from '../access/isSuper'
@@ -29,6 +30,16 @@ export const Media: CollectionConfig = {
     },
   },
   hooks: {
+    // Nome aleatório no envio: o endereço do arquivo não revela nem permite adivinhar o original
+    // (fotos de evolução são dados pessoais). Vale no disco local e no Vercel Blob.
+    beforeOperation: [
+      ({ req, operation }) => {
+        if ((operation === 'create' || operation === 'update') && req.file?.name) {
+          const ext = req.file.name.includes('.') ? req.file.name.slice(req.file.name.lastIndexOf('.')).toLowerCase() : ''
+          req.file.name = `${randomUUID()}${/^\.[a-z0-9]{1,5}$/.test(ext) ? ext : ''}`
+        }
+      },
+    ],
     beforeValidate: [
       ({ data, operation, req, collection }) => {
         if (!data) return data

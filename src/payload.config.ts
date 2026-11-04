@@ -130,8 +130,6 @@ export default buildConfig({
       enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
       collections: { media: true },
       token: process.env.BLOB_READ_WRITE_TOKEN,
-      // Nome com sufixo aleatório: o endereço direto do arquivo não é adivinhável
-      addRandomSuffix: true,
     }),
   ],
 })
