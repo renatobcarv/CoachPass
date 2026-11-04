@@ -25,7 +25,9 @@ import { TrainingCycles } from './collections/TrainingCycles'
 import { CycleWeeks } from './collections/CycleWeeks'
 import { BodyMetrics } from './collections/BodyMetrics'
 import { WeeklyCheckins } from './collections/WeeklyCheckins'
-import { assertRequiredEnv, env, hasSmtpConfig } from './lib/env'
+import { assertRequiredEnv, env, hasSmtpConfig, smtpOptional } from './lib/env'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
+import nodemailer from 'nodemailer'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -59,6 +61,15 @@ function emailAdapter() {
     })
   }
   if (env.isProduction) {
+    if (smtpOptional()) {
+      // Homologação: nada é enviado, o conteúdo do e-mail vai para o log
+      console.warn('[coachpass] SMTP ausente (ALLOW_MISSING_SMTP=true): e-mails não serão enviados.')
+      return nodemailerAdapter({
+        defaultFromAddress: 'noreply@coachpass.app',
+        defaultFromName: 'CoachPass',
+        transport: nodemailer.createTransport({ jsonTransport: true }),
+      })
+    }
     throw new Error('SMTP não configurado. Recuperação de senha não pode usar Ethereal em produção.')
   }
   return nodemailerAdapter()
@@ -112,5 +123,15 @@ export default buildConfig({
     disablePlaygroundInProduction: true,
   },
   sharp,
-  plugins: [],
+  plugins: [
+    // Fotos e anexos no Vercel Blob quando houver token (na Vercel o disco é só leitura).
+    // O acesso continua passando pelo Payload (/api/media/file/...), então as regras de leitura valem.
+    vercelBlobStorage({
+      enabled: Boolean(process.env.BLOB_READ_WRITE_TOKEN),
+      collections: { media: true },
+      token: process.env.BLOB_READ_WRITE_TOKEN,
+      // Nome com sufixo aleatório: o endereço direto do arquivo não é adivinhável
+      addRandomSuffix: true,
+    }),
+  ],
 })

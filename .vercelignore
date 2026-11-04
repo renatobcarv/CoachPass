@@ -1,0 +1,11 @@
+# Nunca enviar segredos locais nem artefatos de build para a Vercel
+.env
+.env.*
+!.env.example
+.next
+.next-build
+node_modules
+media
+backups
+test-results
+playwright-report

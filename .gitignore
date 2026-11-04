@@ -50,3 +50,5 @@ node_modules/
 /blob-report/
 /playwright/.cache/
 /.next-build
+
+.env*
