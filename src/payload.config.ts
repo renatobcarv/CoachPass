@@ -112,8 +112,14 @@ export default buildConfig({
     outputFile: path.resolve(dirname, 'payload-types.ts'),
   },
   db: postgresAdapter({
+    // O pooler do Supabase em "session mode" aceita só 15 conexões no total. Cada instância
+    // serverless abre o próprio pool (o padrão do pg é 10), então poucas instâncias esgotavam o
+    // limite (EMAXCONNSESSION) e as rotas caíam com 500/403. Pool pequeno e conexão ociosa devolvida rápido.
     pool: {
       connectionString: env.databaseUrl(),
+      max: Number(process.env.DATABASE_POOL_MAX) || (process.env.VERCEL ? 2 : 5),
+      idleTimeoutMillis: 10_000,
+      connectionTimeoutMillis: 10_000,
     },
     push: env.databasePush,
     migrationDir: path.resolve(dirname, 'migrations'),
