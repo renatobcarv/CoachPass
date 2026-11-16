@@ -4,7 +4,9 @@
  * progredindo (e um deload), pesagens e medidas semanais, check-ins e plano alimentar.
  *
  * Idempotente: recria só os registros desta aluna. Depende das contas do seed:demo (personal e nutri).
- * DEMO_PASSWORD é obrigatório. Uso: npm run seed:video
+ * DEMO_PASSWORD é obrigatório. Uso: npm run seed:video [-- --personal=email@do.personal]
+ * Sem --personal, o ciclo, os treinos e a agenda ficam com o personal demo (Rafael).
+ * Com --personal, a aluna também é vinculada a esse personal e ele vira o dono do ciclo e da agenda.
  */
 import 'dotenv/config'
 import { getPayload, type Where } from 'payload'
@@ -151,9 +153,20 @@ async function userByEmail(payload: Payload, email: string) {
 async function main() {
   const payload = await getPayload({ config })
 
-  const personal = await userByEmail(payload, 'personal@coachpass.app')
+  const demoPersonal = await userByEmail(payload, 'personal@coachpass.app')
   const nutri = await userByEmail(payload, 'nutri@coachpass.app')
-  if (!personal || !nutri) throw new Error('Rode antes o npm run seed:demo (personal e nutri demo não encontrados).')
+  if (!demoPersonal || !nutri) throw new Error('Rode antes o npm run seed:demo (personal e nutri demo não encontrados).')
+
+  const arg = process.argv.find((a) => a.startsWith('--personal='))?.slice('--personal='.length).trim().toLowerCase()
+  let personal = demoPersonal
+  if (arg) {
+    const target = await userByEmail(payload, arg)
+    const roles = ((target as { roles?: string[] } | undefined)?.roles ?? []) as string[]
+    if (!target || (target.role !== 'personal' && !roles.includes('personal'))) {
+      throw new Error(`--personal: nenhuma conta de personal com o e-mail ${arg}.`)
+    }
+    personal = target
+  }
 
   const student = (await upsert(
     payload,
@@ -186,10 +199,12 @@ async function main() {
     onboardingCompletedAt: START.toISOString(),
   })
 
-  for (const [pro, role] of [
-    [personal, 'personal'],
-    [nutri, 'nutritionist'],
-  ] as const) {
+  const links: Array<{ pro: { id: Id }; role: 'personal' | 'nutritionist' }> = [
+    { pro: demoPersonal, role: 'personal' },
+    { pro: nutri, role: 'nutritionist' },
+  ]
+  if (personal.id !== demoPersonal.id) links.push({ pro: personal, role: 'personal' })
+  for (const { pro, role } of links) {
     await upsert(
       payload,
       'professional-links',
@@ -436,7 +451,7 @@ async function main() {
     })
   }
 
-  console.log(`[seed:video] ${NAME} <${EMAIL}> pronta: ciclo ativo, 4 treinos, ${logs} registros, ${WEEKS} pesagens. Senha = DEMO_PASSWORD.`)
+  console.log(`[seed:video] ${NAME} <${EMAIL}> vinculada a ${personal.name ?? 'personal'}: ciclo ativo, 4 treinos, ${logs} registros, ${WEEKS} pesagens. Senha = DEMO_PASSWORD.`)
 }
 
 main()

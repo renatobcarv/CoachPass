@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { toast } from 'sonner';
 import {
   USERS_API,
@@ -6,7 +6,23 @@ import {
   getJson,
   PayloadApiError,
   extractPayloadMessage,
+  onSessionInvalid,
 } from '@/lib/cms';
+
+/** Validade (ms) gravada no JWT; null se não der para ler. */
+function tokenExpiresAt(token: string): number | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part) return null;
+    const json = JSON.parse(atob(part.replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof json.exp === 'number' ? json.exp * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Renova o token quando faltar este tempo para vencer. */
+const REFRESH_BEFORE_MS = 5 * 60 * 1000;
 
 export type UserRole = 'master' | 'student' | 'personal' | 'nutritionist';
 
@@ -133,6 +149,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, []);
+
+  // Sessão vencida no meio do uso: encerra com aviso em vez de deixar as telas mostrando "sem permissão"
+  const tokenRef = useRef<string | undefined>(undefined);
+  tokenRef.current = user?.accessToken;
+  const expireSession = useCallback(() => {
+    setUser(null);
+    persistSession(null);
+    toast.warning('Sua sessão expirou. Entre novamente.', { id: 'session-expired' });
+  }, [persistSession]);
+
+  // Renova o token antes de vencer, e ao voltar para a aba (timers de abas em segundo plano atrasam)
+  useEffect(() => {
+    const token = user?.accessToken;
+    if (!token) return;
+    const exp = tokenExpiresAt(token);
+    if (!exp) return;
+    let done = false;
+    const refresh = async () => {
+      if (done || tokenRef.current !== token) return;
+      done = true;
+      if (Date.now() >= exp) {
+        expireSession();
+        return;
+      }
+      try {
+        const res = await postJson<{ refreshedToken?: string }>(`${USERS_API}/refresh-token`, {}, token);
+        if (!res.refreshedToken || tokenRef.current !== token) return;
+        setUser((prev) => {
+          if (!prev) return prev;
+          const next = { ...prev, accessToken: res.refreshedToken };
+          persistSession(next);
+          return next;
+        });
+      } catch {
+        if (tokenRef.current === token) expireSession();
+      }
+    };
+    const timer = window.setTimeout(() => void refresh(), Math.max(5_000, exp - Date.now() - REFRESH_BEFORE_MS));
+    const onVisible = () => {
+      if (document.visibilityState === 'visible' && Date.now() >= exp - REFRESH_BEFORE_MS) void refresh();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', onVisible);
+    return () => {
+      done = true;
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', onVisible);
+    };
+  }, [user?.accessToken, expireSession, persistSession]);
+
+  // 401/403 com o token atual: confere no servidor se a sessão ainda vale (403 também pode ser permissão de verdade)
+  useEffect(() => {
+    let checking = false;
+    return onSessionInvalid((_kind, token) => {
+      if (checking || token !== tokenRef.current) return;
+      checking = true;
+      getJson<{ user: PayloadUserDoc | null }>(`${USERS_API}/me`, token)
+        .then((data) => {
+          if (!data.user && token === tokenRef.current) expireSession();
+        })
+        .catch(() => {
+          if (token === tokenRef.current) expireSession();
+        })
+        .finally(() => {
+          checking = false;
+        });
+    });
+  }, [expireSession]);
 
   const login = async (email: string, password: string, _roleHint: UserRole): Promise<UserRole> => {
     try {
