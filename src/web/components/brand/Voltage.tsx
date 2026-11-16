@@ -1,67 +1,15 @@
 import React, { useRef, useState } from 'react';
 import { motion, useReducedMotion, useScroll, useSpring, useTransform } from 'motion/react';
 import { Check, X } from 'lucide-react';
-import { CTAButton, Reveal, SplitWords } from './Brand';
+import { Reveal, SplitWords } from './Brand';
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 
 /**
  * Seções da página de vendas inspiradas na biblioteca de referência (Klasso):
- * mascote com função no produto (KLS-MARCA-01) e Mito × Fato (KLS-CMP-04).
+ * Mito × Fato (KLS-CMP-04) e galeria de telas reais (GEN-LAY-03).
  * Estilos em src/styles/sales.css (prefixo .cpv-).
  */
-
-/**
- * Mascote: a pantera, em linguagem fina (contenção, preto natural, luz de recorte discreta).
- * Entra devagar com a rolagem; sem elementos soltos sobre a imagem.
- */
-export function PantherSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'center 55%'] });
-  const k = useSpring(scrollYProgress, { stiffness: 50, damping: 22 });
-  const y = useTransform(k, [0, 1], [reduce ? 0 : 80, 0]);
-  const scale = useTransform(k, [0, 1], [reduce ? 1 : 1.05, 1]);
-  const opacity = useTransform(k, [0, 0.6], [reduce ? 1 : 0, 1]);
-  const glow = useTransform(k, [0.3, 1], [0, 1]);
-
-  return (
-    <section id="visao" className="relative scroll-mt-16 overflow-clip" aria-labelledby="visao-h">
-      <div className="relative max-w-[1200px] mx-auto px-4 sm:px-8 grid lg:grid-cols-[1fr_1fr] items-end gap-6 lg:gap-0 pt-28 sm:pt-36">
-        <div className="lg:pb-40">
-          <Reveal>
-            <p className="cpv-overline">Visão de pantera</p>
-          </Reveal>
-          <h2 id="visao-h" className="cpv-fine-title mt-6">
-            <SplitWords text="Você vê a ficha." /> <SplitWords text="Ela vê o padrão." delay={0.15} className="cp-accent" />
-          </h2>
-          <Reveal delay={0.2}>
-            <p className="mt-7 max-w-md text-[16.5px] leading-[1.75] text-[var(--muted)]">
-              O CoachPass cruza treino, refeição e medida de cada aluno e aponta o padrão antes que ele vire problema:
-              a semana sem registro, a carga que parou de subir, o plano que deixou de ser seguido.
-            </p>
-          </Reveal>
-          <Reveal delay={0.3} className="mt-10">
-            <CTAButton to="/cadastro">Quero essa visão na minha carteira</CTAButton>
-          </Reveal>
-        </div>
-
-        <div ref={ref} className="cpv-panther">
-          <motion.span className="cpv-panther-light" style={{ opacity: glow }} aria-hidden="true" />
-          <motion.img
-            src="/mascote/pantera.webp"
-            width={806}
-            height={1300}
-            alt="Pantera negra, mascote do CoachPass, deitada e olhando de frente"
-            loading="lazy"
-            style={{ y, scale, opacity }}
-          />
-        </div>
-      </div>
-      <div className="cpv-hairline" aria-hidden="true" />
-    </section>
-  );
-}
 
 const pares = [
   {

@@ -16,9 +16,7 @@ import {
   Check,
   ClipboardList,
   Compass,
-  Droplets,
   Dumbbell,
-  Flame,
   HeartHandshake,
   LineChart,
   Lock,
@@ -26,14 +24,13 @@ import {
   Salad,
   Stethoscope,
   Target,
-  TrendingUp,
   UserRound,
   Users,
   X,
 } from 'lucide-react';
 import { HomePricing } from '../pricing/HomePricing';
 import { Backdrop, CTAButton, Counter, Grain, Logo, Reveal, ScrollProgress, SplitWords } from '../brand/Brand';
-import { MythFact, PantherSection, ProductGallery } from '../brand/Voltage';
+import { MythFact, ProductGallery } from '../brand/Voltage';
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 
@@ -739,8 +736,6 @@ export function Home() {
             </div>
           </section>
 
-          <PantherSection />
-
           {/* RECURSOS (claro) */}
           <section id="recursos" className="cp-paper relative py-28 sm:py-32 scroll-mt-16 overflow-hidden">
             <div className="cp-gridlines opacity-60" />
@@ -950,17 +945,6 @@ export function Home() {
           <section className="relative pt-28 sm:pt-36 pb-44 sm:pb-56 overflow-hidden">
             <div className="cpv-horizon" aria-hidden="true" />
             <div className="relative max-w-[1000px] mx-auto px-4 sm:px-8 text-center">
-              <Reveal>
-                <div className="cpv-gaze">
-                  <img
-                    src="/mascote/pantera-olhar.webp"
-                    width={744}
-                    height={326}
-                    alt="O olhar da pantera, mascote do CoachPass"
-                    loading="lazy"
-                  />
-                </div>
-              </Reveal>
               <Reveal>
                 <span className="cp-eyebrow">
                   <span className="cp-dot" />
