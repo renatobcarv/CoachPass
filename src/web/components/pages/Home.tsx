@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { HomePricing } from '../pricing/HomePricing';
 import { Backdrop, CTAButton, Counter, Grain, Logo, Reveal, ScrollProgress, SplitWords } from '../brand/Brand';
+import { MythFact, PantherSection, ProductGallery } from '../brand/Voltage';
 
 const EASE = [0.2, 0.8, 0.2, 1] as const;
 
@@ -133,7 +134,7 @@ const perfis = [
   {
     icon: Dumbbell,
     tag: 'Personal',
-    color: 'var(--violet)',
+    color: '#080b24',
     title: 'A carteira como lista de trabalho',
     text: 'Prescreve, avalia e acompanha sem sair da tela do aluno.',
     items: [
@@ -147,7 +148,7 @@ const perfis = [
   {
     icon: Stethoscope,
     tag: 'Nutricionista',
-    color: 'var(--amber)',
+    color: 'var(--lime-ink)',
     title: 'Consulta com os dados na mão',
     text: 'Monta o plano e abre a consulta sem pedir as informações de novo.',
     items: [
@@ -173,116 +174,20 @@ function useTicker(length: number, ms: number) {
   return Math.min(step, length);
 }
 
-function CheckRow({ label, meta, done }: { label: string; meta: string; done: boolean }) {
-  return (
-    <div className="flex items-center gap-3 rounded-xl px-3 py-2.5 bg-white/[0.04] border border-white/[0.06]">
-      <motion.span
-        className="w-5 h-5 rounded-md grid place-items-center border"
-        animate={{
-          backgroundColor: done ? 'rgba(46,230,200,0.9)' : 'rgba(255,255,255,0)',
-          borderColor: done ? 'rgba(46,230,200,0.9)' : 'rgba(232,236,255,0.25)',
-        }}
-        transition={{ duration: 0.35 }}
-      >
-        <motion.span animate={{ scale: done ? 1 : 0 }} transition={{ type: 'spring', stiffness: 500, damping: 22 }}>
-          <Check className="w-3.5 h-3.5 text-[#05060b]" strokeWidth={3} />
-        </motion.span>
-      </motion.span>
-      <span className={`flex-1 text-[12.5px] transition-colors ${done ? 'text-white/50 line-through' : 'text-white'}`}>
-        {label}
-      </span>
-      <span className="cp-mono text-[10.5px] text-[var(--muted)]">{meta}</span>
-    </div>
-  );
-}
-
+/** Celular com a captura real do app do aluno (conta demo). */
 function PhoneMock() {
-  const done = useTicker(3, 1300);
-  const circumference = 2 * Math.PI * 34;
   return (
     <div className="relative w-[288px] sm:w-[300px] p-[9px] rounded-[46px] bg-[#16181f] shadow-[inset_0_0_0_1.5px_rgba(255,255,255,0.14),inset_0_0_0_7px_#020308,0_50px_100px_-30px_rgba(0,0,0,0.9)]">
       <div className="absolute top-[19px] left-1/2 -translate-x-1/2 w-[30%] h-[21px] bg-black rounded-full z-10" />
-      <div className="relative aspect-[9/19] rounded-[37px] overflow-hidden bg-[#070914] px-4 pt-12 pb-4 flex flex-col gap-3">
-        <div className="relative flex items-center justify-between">
-          <div>
-            <p className="cp-mono text-[10px] uppercase tracking-[0.14em] text-[var(--muted)]">Terça · hoje</p>
-            <p className="cp-display text-[19px] font-bold text-white">Bom dia, Lucas</p>
-          </div>
-          <span className="w-9 h-9 rounded-full bg-[var(--ink-4)] border border-[var(--line-2)] grid place-items-center text-[12px] font-bold text-white">
-            LS
-          </span>
-        </div>
-
-        <div className="relative flex items-center gap-3 rounded-2xl p-3 bg-white/[0.05] border border-white/[0.07]">
-          <svg viewBox="0 0 80 80" className="w-[72px] h-[72px] -rotate-90">
-            <circle cx="40" cy="40" r="34" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="8" />
-            <motion.circle
-              cx="40"
-              cy="40"
-              r="34"
-              fill="none"
-              stroke="#ffb547"
-              strokeWidth="8"
-              strokeLinecap="round"
-              strokeDasharray={circumference}
-              initial={{ strokeDashoffset: circumference }}
-              animate={{ strokeDashoffset: circumference * (1 - 0.645) }}
-              transition={{ duration: 1.8, ease: EASE, delay: 0.8 }}
-            />
-            <defs>
-              <linearGradient id="cp-ring" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#ffb547" />
-                <stop offset="100%" stopColor="#ff8a5c" />
-              </linearGradient>
-            </defs>
-          </svg>
-          <div>
-            <p className="cp-mono text-[10px] uppercase tracking-[0.12em] text-[var(--muted)] flex items-center gap-1">
-              <Flame className="w-3 h-3 text-[var(--amber)]" /> Calorias
-            </p>
-            <p className="cp-display text-[20px] font-bold text-white leading-tight">
-              <Counter to={1420} duration={1.8} />
-              <span className="text-[12px] font-medium text-[var(--muted)]"> / 2.200</span>
-            </p>
-            <p className="text-[11px] text-[var(--muted)]">Próxima: almoço · 12:30</p>
-          </div>
-        </div>
-
-        <div className="relative space-y-2">
-          <div className="flex items-center justify-between">
-            <p className="text-[12px] font-semibold text-white flex items-center gap-1.5">
-              <Dumbbell className="w-3.5 h-3.5 text-[var(--blue-2)]" /> Push A
-            </p>
-            <span className="cp-mono text-[10px] text-[var(--muted)]">{done}/3 feitos</span>
-          </div>
-          <CheckRow label="Supino reto" meta="4×8–10" done={done >= 1} />
-          <CheckRow label="Desenvolvimento" meta="3×10" done={done >= 2} />
-          <CheckRow label="Tríceps corda" meta="3×12" done={done >= 3} />
-        </div>
-
-        <div className="relative rounded-2xl p-3 bg-white/[0.05] border border-white/[0.07]">
-          <div className="flex items-center justify-between text-[11px]">
-            <span className="flex items-center gap-1.5 text-white">
-              <Droplets className="w-3.5 h-3.5 text-[var(--cyan)]" /> Água
-            </span>
-            <span className="cp-mono text-[var(--muted)]">1,5 / 2,5 L</span>
-          </div>
-          <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-            <motion.div
-              className="h-full rounded-full cp-brand-bar"
-              initial={{ width: 0 }}
-              animate={{ width: '60%' }}
-              transition={{ duration: 1.4, ease: EASE, delay: 1.1 }}
-            />
-          </div>
-        </div>
-
-        <div className="relative mt-auto flex justify-around rounded-2xl py-2.5 bg-white/[0.05] border border-white/[0.07] text-[var(--muted)]">
-          <Target className="w-4 h-4 text-white" />
-          <Dumbbell className="w-4 h-4" />
-          <Salad className="w-4 h-4" />
-          <TrendingUp className="w-4 h-4" />
-        </div>
+      <div className="relative aspect-[9/19.5] rounded-[37px] overflow-hidden bg-[var(--obsidian)]">
+        <img
+          src="/produto/aluno-inicio-mobile.webp"
+          width={780}
+          height={1688}
+          alt="Tela inicial do aluno no CoachPass: próximo treino Costas e bíceps com três exercícios"
+          className="absolute inset-0 w-full h-full object-cover object-top pt-[26px]"
+          fetchPriority="high"
+        />
       </div>
     </div>
   );
@@ -311,7 +216,7 @@ function FloatCard({
       transition={{ duration: 0.9, ease: EASE, delay }}
     >
       <div
-        className="cp-float flex items-center gap-3 rounded-2xl px-3.5 py-3 bg-[rgba(16,19,31,0.78)] backdrop-blur-md border border-white/10 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]"
+        className="cp-float flex items-center gap-3 rounded-2xl px-3.5 py-3 bg-[rgba(8,11,36,0.82)] backdrop-blur-md border border-white/10 shadow-[0_20px_40px_-20px_rgba(0,0,0,0.8)]"
         style={{ animationDelay: `${delay}s` }}
       >
         <span className="w-9 h-9 rounded-xl grid place-items-center" style={{ background: `color-mix(in srgb, ${color} 18%, transparent)` }}>
@@ -362,26 +267,26 @@ function HeroStage() {
       </motion.div>
       <FloatCard
         className="left-0 sm:left-2 top-[18%]"
-        icon={TrendingUp}
-        color="var(--teal)"
-        label="Supino · carga"
-        value="+5 kg"
+        icon={Dumbbell}
+        color="var(--electric-text)"
+        label="Próximo treino"
+        value="Costas e bíceps"
         delay={1.1}
       />
       <FloatCard
         className="right-0 sm:-right-2 top-[46%]"
-        icon={Target}
-        color="var(--amber)"
-        label="Adesão do mês"
-        value="86%"
+        icon={Salad}
+        color="var(--lime)"
+        label="Plano alimentar"
+        value="1.070 kcal"
         delay={1.35}
       />
       <FloatCard
         className="left-2 sm:left-6 bottom-[12%] hidden sm:block"
         icon={Apple}
-        color="var(--violet)"
+        color="var(--ice)"
         label="Nutricionista"
-        value="Plano atualizado"
+        value="Camila Duarte"
         delay={1.6}
       />
     </div>
@@ -399,7 +304,7 @@ function DemoTreino() {
         <div key={r} className="flex items-center gap-2.5 rounded-xl px-3 py-2 bg-[var(--paper)] border border-[var(--paper-line)]">
           <motion.span
             className="w-4 h-4 rounded grid place-items-center"
-            animate={{ backgroundColor: done > i ? '#3d6bff' : 'rgba(0,3,38,0.08)' }}
+            animate={{ backgroundColor: done > i ? '#263bff' : 'rgba(0,3,38,0.08)' }}
           >
             {done > i && <Check className="w-3 h-3 text-white" strokeWidth={3} />}
           </motion.span>
@@ -414,9 +319,9 @@ function DemoTreino() {
 
 function DemoMacros() {
   const macros = [
-    { k: 'Proteína', v: 82, c: '#3d6bff' },
-    { k: 'Carboidrato', v: 64, c: '#ffb547' },
-    { k: 'Gordura', v: 45, c: '#8b5cf6' },
+    { k: 'Proteína', v: 82, c: '#263bff' },
+    { k: 'Carboidrato', v: 64, c: '#080b24' },
+    { k: 'Gordura', v: 45, c: '#b9ff00' },
   ];
   return (
     <div className="space-y-3">
@@ -444,9 +349,9 @@ function DemoMacros() {
 
 function DemoVinculo() {
   const nodes = [
-    { x: 60, y: 22, c: '#3d6bff', t: 'Aluno' },
-    { x: 18, y: 88, c: '#8b5cf6', t: 'Personal' },
-    { x: 102, y: 88, c: '#ffb547', t: 'Nutri' },
+    { x: 60, y: 22, c: '#263bff', t: 'Aluno' },
+    { x: 18, y: 88, c: '#080b24', t: 'Personal' },
+    { x: 102, y: 88, c: '#b9ff00', t: 'Nutri' },
   ];
   return (
     <svg viewBox="0 0 120 112" className="w-full h-[128px]">
@@ -480,7 +385,7 @@ function DemoVinculo() {
           style={{ originX: `${n.x}px`, originY: `${n.y}px` }}
         >
           <circle cx={n.x} cy={n.y} r="13" fill={n.c} />
-          <text x={n.x} y={n.y + 25} textAnchor="middle" fontSize="8.5" fill="#5b6178" fontFamily="Geist Mono, monospace">
+          <text x={n.x} y={n.y + 25} textAnchor="middle" fontSize="8.5" fill="#545a7a" fontFamily="Geist Mono, monospace">
             {n.t}
           </text>
         </motion.g>
@@ -508,7 +413,7 @@ function DemoEvolucao() {
         <motion.path
           d="M2 10 C 18 12, 26 8, 40 16 S 62 22, 76 26 S 100 34, 112 36 S 130 42, 138 44"
           fill="none"
-          stroke="#000326"
+          stroke="#263bff"
           strokeWidth="2.5"
           strokeLinecap="round"
           initial={{ pathLength: 0 }}
@@ -565,7 +470,7 @@ function Nav() {
     <header
       className={`fixed top-0 inset-x-0 z-50 border-b transition-[background,border-color,backdrop-filter] duration-500 ${
         scrolled || open
-          ? 'bg-[rgba(5,6,11,0.72)] backdrop-blur-xl backdrop-saturate-150 border-[var(--line)]'
+          ? 'bg-[rgba(3,4,7,0.72)] backdrop-blur-xl backdrop-saturate-150 border-[var(--line)]'
           : 'bg-transparent border-transparent'
       }`}
     >
@@ -717,7 +622,7 @@ export function Home() {
 
   return (
     <MotionConfig reducedMotion="user">
-      <div className="cp-brand min-h-screen">
+      <div className="cp-brand cp-voltage min-h-screen">
         <Grain />
         <ScrollProgress />
         <Nav />
@@ -735,26 +640,26 @@ export function Home() {
                   transition={{ duration: 0.8, ease: EASE }}
                 >
                   <span className="cp-dot" />
-                  Uma plataforma · três papéis · um login
+                  Para personal, nutricionista e aluno
                 </motion.span>
                 <h1 className="cp-display mt-6 text-[clamp(44px,6.2vw,92px)] font-[760] leading-[0.96]">
-                  <SplitWords text="Personal, nutricionista e aluno" immediate delay={0.1} />{' '}
-                  <SplitWords text="no mesmo lugar." immediate delay={0.4} className="cp-accent" />
+                  <SplitWords text="Pare de caçar print." immediate delay={0.1} />{' '}
+                  <SplitWords text="Acompanhe o aluno." immediate delay={0.4} className="cp-accent" />
                 </h1>
                 <Reveal delay={0.7}>
                   <p className="cp-display mt-6 text-[clamp(20px,2.1vw,27px)] font-medium leading-snug tracking-[-0.02em]">
-                    O histórico do aluno para de morar em{' '}
-                    <span className="cp-mark">planilha, print e WhatsApp.</span>
+                    Treino, dieta e evolução na{' '}
+                    <span className="cp-mark">mesma conta, para os três.</span>
                   </p>
                 </Reveal>
                 <Reveal delay={0.8}>
                   <p className="mt-4 max-w-[540px] text-[17px] leading-relaxed text-[var(--muted)]">
-                    Quem prescreve o treino, quem cuida da alimentação e quem executa o plano usam a mesma conta. Cada
-                    um vê só o que precisa fazer hoje.
+                    O aluno registra em poucos toques. Você abre o painel e já sabe quem sumiu, quem travou a carga e
+                    quem precisa de atenção antes do próximo atendimento.
                   </p>
                 </Reveal>
                 <Reveal delay={0.9} className="mt-9 flex flex-wrap items-center gap-4">
-                  <CTAButton to="/cadastro">Criar conta</CTAButton>
+                  <CTAButton to="/cadastro">Criar conta grátis</CTAButton>
                   <Link to="/login" className="cp-btn-ghost">
                     Já tenho conta
                   </Link>
@@ -791,6 +696,8 @@ export function Home() {
             </div>
           </div>
 
+          <ProductGallery />
+
           {/* PROBLEMA */}
           <section className="relative py-28 sm:py-36">
             <div className="max-w-[1200px] mx-auto px-4 sm:px-8 grid lg:grid-cols-[1fr_1fr] gap-14 lg:gap-20">
@@ -799,7 +706,7 @@ export function Home() {
                   kicker="O problema"
                   title="A informação do aluno existe."
                   accent="Só que está espalhada."
-                  lead="Profissional autônomo conhece bem esse cenário. Antes de cada atendimento, metade do tempo vai para juntar o que já foi dito em algum lugar."
+                  lead="Todo profissional autônomo conhece a cena: antes do atendimento, o tempo vai embora juntando o que já foi dito em algum lugar. E o que ninguém junta, ninguém acompanha."
                 />
               </div>
               <ol className="border-t border-[var(--line)]">
@@ -824,13 +731,15 @@ export function Home() {
                 <SplitWords text="Você cuida do aluno." />
                 <br />
                 <SplitWords text="O CoachPass cuida do" delay={0.2} />{' '}
-                <SplitWords text="<registro/>" delay={0.45} className="cp-mono cp-grad-warm font-medium text-[0.86em]" />
+                <SplitWords text="registro." delay={0.45} className="cp-accent" />
               </h3>
               <Reveal delay={0.3} className="mt-10 flex justify-center">
-                <CTAButton to="/cadastro">Começar agora</CTAButton>
+                <CTAButton to="/cadastro">Começar grátis</CTAButton>
               </Reveal>
             </div>
           </section>
+
+          <PantherSection />
 
           {/* RECURSOS (claro) */}
           <section id="recursos" className="cp-paper relative py-28 sm:py-32 scroll-mt-16 overflow-hidden">
@@ -838,10 +747,10 @@ export function Home() {
             <div className="relative max-w-[1200px] mx-auto px-4 sm:px-8">
               <SectionHead
                 kicker="Recursos"
-                title="Seu acompanhamento nunca mais precisa ficar"
-                accent="espalhado."
+                title="Treino, dieta e evolução"
+                accent="lado a lado."
                 accentTone="cool"
-                lead="Cada pessoa vê o que precisa fazer hoje. O profissional prescreve e acompanha, o aluno executa e registra."
+                lead="Cada pessoa abre o app e vê o que tem para hoje. O profissional prescreve e acompanha; o aluno executa e registra em poucos toques."
               />
               <div className="mt-16 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {recursos.map(({ n, title, quote, demo: Demo }, i) => (
@@ -876,8 +785,8 @@ export function Home() {
             <div className="max-w-[1200px] mx-auto px-4 sm:px-8">
               <SectionHead
                 kicker="Para quem é"
-                title="Três painéis."
-                accent="A mesma plataforma."
+                title="Cada um vê o seu dia."
+                accent="Todos veem o mesmo aluno."
                 accentTone="cool"
                 center
               />
@@ -921,6 +830,8 @@ export function Home() {
               </div>
             </div>
           </section>
+
+          <MythFact />
 
           {/* PLANOS */}
           <section id="planos" className="relative py-28 sm:py-36 scroll-mt-16">
@@ -1014,7 +925,7 @@ export function Home() {
             <div className="max-w-[1200px] mx-auto px-4 sm:px-8">
               <SectionHead
                 kicker="Valores"
-                title="O que a gente usa para decidir"
+                title="Quatro regras que decidem"
                 accent="o que entra no produto."
                 accentTone="cool"
               />
@@ -1036,27 +947,39 @@ export function Home() {
           </section>
 
           {/* CTA FINAL */}
-          <section className="relative py-28 sm:py-36 overflow-hidden">
-            <Backdrop variant="soft" />
+          <section className="relative pt-28 sm:pt-36 pb-44 sm:pb-56 overflow-hidden">
+            <div className="cpv-horizon" aria-hidden="true" />
             <div className="relative max-w-[1000px] mx-auto px-4 sm:px-8 text-center">
+              <Reveal>
+                <div className="cpv-gaze">
+                  <img
+                    src="/mascote/pantera-olhar.webp"
+                    width={744}
+                    height={326}
+                    alt="O olhar da pantera, mascote do CoachPass"
+                    loading="lazy"
+                  />
+                </div>
+              </Reveal>
               <Reveal>
                 <span className="cp-eyebrow">
                   <span className="cp-dot" />
-                  Conta gratuita para começar
+                  Grátis para sempre até 5 alunos
                 </span>
               </Reveal>
               <h2 className="cp-display mt-7 text-[clamp(40px,6vw,84px)] font-bold leading-[0.98]">
-                <SplitWords text="Seu acompanhamento" />{' '}
-                <SplitWords text="começa com um login." delay={0.2} className="cp-accent" />
+                <SplitWords text="Sua carteira inteira" />{' '}
+                <SplitWords text="num só olhar." delay={0.2} className="cp-accent" />
               </h2>
               <Reveal delay={0.2}>
                 <p className="mt-6 text-[18px] text-[var(--muted)] max-w-xl mx-auto">
-                  A conta já vem com o perfil definido. Depois de entrar, o painel certo abre sozinho.
+                  Crie a conta, escolha seu perfil e o painel certo abre sozinho. Quando a carteira crescer, você
+                  muda de plano.
                 </p>
               </Reveal>
               <Reveal delay={0.3} className="mt-10 flex flex-wrap justify-center items-center gap-4">
                 <CTAButton to="/cadastro" size="lg">
-                  Criar conta
+                  Criar conta grátis
                 </CTAButton>
                 <Link to="/login" className="cp-btn-ghost">
                   Já tenho conta

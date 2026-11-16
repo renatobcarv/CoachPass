@@ -1,0 +1,433 @@
+/*
+ * VØLTAGE (fundo preto, cor principal Midnight Navy #080B24): paleta da página de vendas (rota "/"), escopada em .cp-voltage.
+ * Login, cadastro e painéis continuam com a paleta de brand.css.
+ *   Obsidian Black #030407 fundo · Midnight Navy #080B24 superfícies · Electric Blue #263BFF ações
+ *   Volt Lime #B9FF00 destaques · Ice White #F4F6FF textos
+ * Padrões da biblioteca de referência (renatobcarv/biblioteca-referencia):
+ *   KLS-MARCA-01 / KLS-MO-01 mascote entrando com a rolagem · KLS-CMP-03 ícones de vidro 3D
+ *   KLS-CMP-04 Mito × Fato · GEN-LAY-02 texturas (retícula, vidro canelado, luz de baixo)
+ *   GEN-MO-13 cena ligada à rolagem · GEN-MO-14 tilt · GEN-LAY-04 vidro vira sólido no celular
+ */
+
+.cp-brand.cp-voltage {
+  --obsidian: #030407;
+  --midnight: #080b24;
+  --electric: #263bff;
+  --lime: #b9ff00;
+  --ice: #f4f6ff;
+  --lime-ink: #4a6600;
+  /* Electric Blue para texto em fundo preto: mesma matiz, clareada para contraste AA */
+  --electric-text: #5466ff;
+
+  /* Fundo preto (Obsidian); Midnight Navy é a cor principal das superfícies */
+  --ink: var(--obsidian);
+  --ink-2: var(--midnight);
+  --ink-3: #0e1236;
+  --ink-4: #161c4a;
+  --cream: var(--ice);
+  --muted: #a3a9c7;
+  --dim: #7a80a3;
+  --line: rgba(244, 246, 255, 0.08);
+  --line-2: rgba(244, 246, 255, 0.16);
+
+  --brand-600: #1b2bd6;
+  --brand-500: var(--electric);
+  --brand-400: #4a5cff;
+  --brand-300: #8d99ff;
+  --brand-grad-btn: linear-gradient(180deg, #2e43ff 0%, #263bff 100%);
+
+  --blue: var(--electric);
+  --blue-2: #8d99ff;
+  --violet: var(--electric);
+  --amber: var(--lime);
+  --teal: var(--lime);
+  --cyan: #8d99ff;
+
+  --paper: var(--ice);
+  --paper-ink: var(--midnight);
+  --paper-muted: #545a7a;
+  --paper-line: rgba(8, 11, 36, 0.09);
+}
+
+/* Destaque de texto: Electric Blue (no escuro, um tom acima para ler bem). Lime é só complemento. Sem degradê. */
+.cp-voltage .cp-accent,
+.cp-voltage .cp-accent .cp-wi,
+.cp-voltage .cp-grad-cool,
+.cp-voltage .cp-grad-cool .cp-wi {
+  background: none;
+  -webkit-background-clip: border-box;
+  background-clip: border-box;
+  color: var(--electric-text);
+}
+
+.cp-voltage .cp-paper .cp-accent,
+.cp-voltage .cp-paper .cp-accent .cp-wi,
+.cp-voltage .cp-paper .cp-grad-cool,
+.cp-voltage .cp-paper .cp-grad-cool .cp-wi {
+  color: var(--electric);
+}
+
+.cp-voltage .cp-grad-warm {
+  color: var(--electric-text);
+}
+
+.cp-voltage .cp-mark {
+  background: linear-gradient(transparent 60%, rgba(38, 59, 255, 0.55) 60%);
+}
+
+.cp-voltage .cp-paper .cp-mark {
+  background: linear-gradient(transparent 60%, rgba(38, 59, 255, 0.18) 60%);
+}
+
+.cp-voltage .cp-dot {
+  background: var(--lime);
+  box-shadow: 0 0 0 4px rgba(185, 255, 0, 0.18);
+}
+
+.cp-voltage .cp-btn {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.3),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 14px 32px -14px rgba(38, 59, 255, 0.95);
+}
+
+.cp-voltage .cp-btn .cp-arr {
+  background: var(--lime);
+  color: var(--obsidian);
+}
+
+.cp-voltage .cp-btn-sm {
+  background: var(--electric);
+  color: #ffffff;
+}
+
+.cp-voltage .cp-btn-sm:hover {
+  background: #4a5cff;
+}
+
+.cp-voltage .cp-paper .cp-card {
+  background: #ffffff;
+}
+
+.cp-voltage ::selection {
+  background: var(--lime);
+  color: var(--obsidian);
+}
+
+.cp-voltage :focus-visible {
+  outline-color: var(--lime);
+}
+
+.cp-voltage .cp-paper :focus-visible {
+  outline-color: var(--electric);
+}
+
+/* ---------- Texturas das referências ---------- */
+
+.cpv-flutes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(244, 246, 255, 0.04) 0px,
+    rgba(244, 246, 255, 0) 24px,
+    rgba(0, 0, 0, 0.35) 50px,
+    rgba(244, 246, 255, 0.05) 52px
+  );
+  -webkit-mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 0%, transparent 75%);
+  mask-image: radial-gradient(ellipse 70% 70% at 50% 50%, #000 0%, transparent 75%);
+}
+
+/* Horizonte de luz (referência: cards com luz vindo de baixo) */
+.cpv-horizon {
+  position: absolute;
+  left: 50%;
+  bottom: -820px;
+  width: 1600px;
+  height: 1000px;
+  margin-left: -800px;
+  border-radius: 50%;
+  background: var(--obsidian);
+  box-shadow:
+    0 -2px 0 rgba(185, 255, 0, 0.85),
+    0 -30px 90px rgba(38, 59, 255, 0.55),
+    0 -110px 200px rgba(38, 59, 255, 0.35);
+  pointer-events: none;
+}
+
+/* ---------- Mascote: pantera, linguagem fina ---------- */
+
+.cpv-overline {
+  font-family: var(--f-mono);
+  font-size: 11.5px;
+  font-weight: 400;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+
+.cpv-overline::before {
+  content: '';
+  display: inline-block;
+  width: 28px;
+  height: 1px;
+  margin-right: 14px;
+  vertical-align: middle;
+  background: var(--line-2);
+}
+
+.cpv-fine-title {
+  font-family: var(--f-display);
+  font-size: clamp(36px, 4.8vw, 68px);
+  font-weight: 500;
+  line-height: 1.02;
+  letter-spacing: -0.04em;
+  color: var(--ice);
+}
+
+.cpv-panther {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+.cpv-panther img {
+  position: relative;
+  display: block;
+  width: min(520px, 100%);
+  height: auto;
+  -webkit-mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 82%, transparent 100%);
+}
+
+/* luz de recorte: azul quase imperceptível atrás da cabeça */
+.cpv-panther-light {
+  position: absolute;
+  left: 50%;
+  top: 4%;
+  width: 70%;
+  aspect-ratio: 1;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(38, 59, 255, 0.16) 0%, rgba(38, 59, 255, 0.05) 40%, transparent 70%);
+  pointer-events: none;
+}
+
+.cpv-hairline {
+  height: 1px;
+  max-width: 1200px;
+  margin: 0 auto;
+  background: linear-gradient(90deg, transparent, var(--line-2), transparent);
+}
+
+@media (max-width: 1023px) {
+  .cpv-panther img {
+    width: min(380px, 82%);
+  }
+}
+
+/* ---------- Telas reais em moldura de vidro (GEN-LAY-03) ---------- */
+
+.cpv-tabs {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cpv-tabs button {
+  height: 44px;
+  padding: 0 18px;
+  border-radius: 9999px;
+  border: 1px solid var(--line-2);
+  background: transparent;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 550;
+  transition: background-color 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.cpv-tabs button:hover {
+  color: var(--ice);
+}
+
+.cpv-tabs button[aria-selected='true'] {
+  background: var(--ice);
+  border-color: var(--ice);
+  color: var(--obsidian);
+}
+
+.cpv-shot {
+  margin: 0;
+  border-radius: 22px;
+  border: 1px solid var(--line-2);
+  background: var(--midnight);
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.08) inset,
+    0 0 0 8px rgba(244, 246, 255, 0.03),
+    0 60px 140px -50px rgba(38, 59, 255, 0.45);
+}
+
+.cpv-shot-bar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  height: 38px;
+  padding: 0 16px;
+  border-bottom: 1px solid var(--line);
+}
+
+.cpv-shot-bar i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 1px solid var(--line-2);
+}
+
+.cpv-shot-bar span {
+  margin-left: 10px;
+  font-family: var(--f-mono);
+  font-size: 12px;
+  color: var(--dim);
+}
+
+.cpv-shot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* ---------- Ícones de vidro 3D (KLS-CMP-03) ---------- */
+
+.cpv-glass {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 19px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(150deg, #1a1f4a 0%, #04050f 65%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    inset 0 -12px 22px rgba(0, 0, 0, 0.6),
+    0 26px 36px -20px rgba(0, 0, 0, 0.9);
+  transform: rotate(-12deg);
+}
+
+.cpv-glass::before {
+  content: '';
+  position: absolute;
+  inset: 4px 9px auto 9px;
+  height: 40%;
+  border-radius: 14px 14px 40% 40%;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.16), transparent);
+}
+
+.cpv-glass svg {
+  position: relative;
+  width: 28px;
+  height: 28px;
+}
+
+/* ---------- Mito × Fato (KLS-CMP-04) ---------- */
+
+.cpv-mvf-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 640px;
+  height: 640px;
+  margin: -320px 0 0 -320px;
+  border-radius: 50%;
+  border: 92px solid var(--midnight);
+  box-shadow:
+    inset 0 0 0 1px var(--line-2),
+    0 0 0 1px var(--line-2),
+    inset 0 -40px 120px rgba(38, 59, 255, 0.35);
+  pointer-events: none;
+}
+
+.cpv-mvf-card {
+  position: relative;
+  z-index: 1;
+  padding: 32px 64px 32px 30px;
+  border-radius: 30px;
+  border: 1px solid rgba(244, 246, 255, 0.16);
+  background: rgba(8, 11, 36, 0.62);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 30px 60px -30px rgba(0, 0, 0, 0.85);
+}
+
+.cpv-mvf-tag {
+  position: absolute;
+  top: -16px;
+  left: 26px;
+  padding: 6px 14px;
+  border-radius: 9px;
+  font-family: var(--f-display);
+  font-size: 15px;
+  font-weight: 800;
+  transform: rotate(-6deg);
+}
+
+.cpv-orb {
+  position: absolute;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+@media (max-width: 760px) {
+  .cpv-mvf-card {
+    background: var(--midnight);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  .cpv-mvf-ring {
+    width: 420px;
+    height: 420px;
+    margin: -210px 0 0 -210px;
+    border-width: 60px;
+  }
+}
+
+
+/* Superfícies em Midnight Navy sobre o preto */
+.cp-voltage .cp-card {
+  background: var(--midnight);
+}
+
+.cp-voltage .cp-paper .cp-card {
+  background: #ffffff;
+}
+
+/* Olhar do falcão no CTA final */
+.cpv-gaze {
+  position: relative;
+  width: min(820px, 100%);
+  aspect-ratio: 820 / 300;
+  margin: 0 auto 28px;
+  overflow: hidden;
+  -webkit-mask-image:
+    linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, transparent 0%, #000 22%, #000 78%, transparent 100%),
+    linear-gradient(180deg, transparent 0%, #000 22%, #000 78%, transparent 100%);
+  mask-composite: intersect;
+}
+
+.cpv-gaze img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 30%;
+}

@@ -24,10 +24,10 @@
   --brand-400: #5546ff;
   --brand-300: #8c82ff;
   --brand-200: #c4bfff;
-  /* degradê oficial (logo) e versão clara para títulos em fundo escuro */
-  --brand-grad: linear-gradient(120deg, #01022c 0%, #0c0467 45%, #16059f 100%);
-  --brand-grad-light: linear-gradient(100deg, #e1deff 0%, #a59dff 38%, #6a5cff 72%, #3f27ff 100%);
-  --brand-grad-btn: linear-gradient(180deg, #3a24ff 0%, #2412d0 55%, #16059f 100%);
+  /* degradês quase imperceptíveis: mesma cor com variação mínima de tom (pedido do dono, 15/11/2026) */
+  --brand-grad: linear-gradient(120deg, #0a0560 0%, #0c0467 100%);
+  --brand-grad-light: linear-gradient(100deg, #9a91ff 0%, #8c82ff 100%);
+  --brand-grad-btn: linear-gradient(180deg, #2d18f0 0%, #2412d0 100%);
 
   --blue: var(--brand-500);
   --blue-2: var(--brand-300);
@@ -153,7 +153,7 @@
 
   .cp-paper .cp-accent,
   .cp-paper .cp-grad-cool {
-    --cp-grad: linear-gradient(100deg, #000326 0%, #0c0467 45%, #2a14e0 100%);
+    --cp-grad: linear-gradient(100deg, #1a0cb8 0%, #2412d0 100%);
   }
 
   /* background-clip:text não atravessa filhos com transform (palavras animadas): aplica em cada uma */
@@ -603,11 +603,11 @@
 
 /* Barras e seleções com o degradê da marca */
 .cp-brand-bar {
-  background: linear-gradient(90deg, #2a14e0 0%, #5546ff 60%, #8c82ff 100%);
+  background: linear-gradient(90deg, #4433ff 0%, #5546ff 100%);
 }
 
 .cp-brand-bar-v {
-  background: linear-gradient(180deg, #8c82ff 0%, #5546ff 50%, #2a14e0 100%);
+  background: linear-gradient(180deg, #5546ff 0%, #4433ff 100%);
 }
 
 .cp-selected {
@@ -738,7 +738,7 @@
 .cp-modal-bar {
   display: block;
   height: 3px;
-  background: linear-gradient(90deg, #16059f 0%, #2a14e0 35%, #5546ff 70%, #8c82ff 100%);
+  background: linear-gradient(90deg, #2a14e0 0%, #3a28f0 100%);
 }
 
 /* Avisos (sonner) */
