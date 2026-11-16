@@ -23,6 +23,7 @@ import {
   workoutTitle,
 } from '../student/ui'
 import { PhotoLoop } from '../exercise/PhotoLoop'
+import { AiGenerateButton } from '../student/AiGenerateButton'
 import { exercisePhotos } from '../../data/exercisePhotos'
 
 
@@ -92,9 +93,12 @@ export function Workouts() {
         accent="treino."
         lead="Treinos publicados pelo personal, gerados por IA ou montados por você. Toque em Iniciar para registrar cada série."
         action={
-          <Link to="/app/treinos/novo" className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--line-2)] px-4 text-[14px] font-semibold text-[var(--muted)] hover:text-white">
-            <Plus className="h-4 w-4" /> Criar treino
-          </Link>
+          <div className="flex flex-wrap items-center gap-3">
+            <AiGenerateButton kind="workout" variant="solid" onDone={() => void reload()} />
+            <Link to="/app/treinos/novo" className="inline-flex h-11 items-center gap-2 rounded-full border border-[var(--line-2)] px-4 text-[14px] font-semibold text-[var(--muted)] hover:text-white">
+              <Plus className="h-4 w-4" /> Criar treino
+            </Link>
+          </div>
         }
       />
 

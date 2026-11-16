@@ -96,12 +96,18 @@ export function ProfessionalOnboarding() {
   })
   // Assinatura já paga no cadastro: a etapa de plano só confirma
   const [paid, setPaid] = useState<ProPlanStatus | null>(null)
+  // Pagamento feito no cadastro mas ainda em confirmação: não pode abrir o checkout de novo
+  const [payPending, setPayPending] = useState(false)
   const loadPaid = useCallback(async () => {
     if (!user?.accessToken) return
     try {
       const s = await fetchProPlan(user.accessToken)
       if (s.subscriptionStatus === 'active') {
         setPaid(s)
+        setPayPending(false)
+        setPlan({ tier: s.chosenTier, action: 'subscribe' })
+      } else if (s.subscriptionStatus === 'pending') {
+        setPayPending(true)
         setPlan({ tier: s.chosenTier, action: 'subscribe' })
       }
     } catch {
@@ -165,7 +171,7 @@ export function ProfessionalOnboarding() {
       saveProProfile(user.id, extra)
 
       // Assinar agora: vai direto para o checkout do AbacatePay
-      if (!paid && plan && plan.tier !== 'free' && plan.action === 'subscribe') {
+      if (!paid && !payPending && plan && plan.tier !== 'free' && plan.action === 'subscribe') {
         try {
           const res = await subscribeProPlan(plan.tier, token)
           if (res.url) {
@@ -485,6 +491,20 @@ export function ProfessionalOnboarding() {
               </button>
             </div>
           )
+        if (payPending && plan)
+          return (
+            <div className="rounded-3xl border border-[var(--line-2)] bg-white/[0.025] p-6 sm:p-8">
+              <p className="cp-kicker">Pagamento em confirmação</p>
+              <p className="cp-display mt-3 text-[30px] font-bold">{PRO_PLANS[plan.tier].name}</p>
+              <p className="mt-2 text-[15px] text-[var(--muted)]">
+                Recebemos o seu pagamento e o AbacatePay está confirmando. Não precisa pagar de novo: conclua o cadastro e
+                o plano é liberado assim que a confirmação chegar.
+              </p>
+              <button type="button" onClick={() => goTo(step + 1)} className="cp-btn-sm mt-6">
+                Continuar
+              </button>
+            </div>
+          )
         if (checkout === 'checking')
           return (
             <div role="status" className="flex items-center gap-3 rounded-2xl border border-[var(--line-2)] px-5 py-4">
@@ -507,7 +527,9 @@ export function ProfessionalOnboarding() {
             ? `Grátis · até ${PRO_PLANS.free.studentLimit} ${who}`
             : paid
               ? `${paid.planName} · assinatura ativa`
-              : plan.action === 'subscribe'
+              : payPending
+                ? `${PRO_PLANS[plan.tier].name} · pagamento em confirmação`
+                : plan.action === 'subscribe'
               ? `${PRO_PLANS[plan.tier].name} · ${formatBRL(PRO_PLANS[plan.tier].monthly, true)}/mês (pagamento a seguir)`
               : `${PRO_PLANS[plan.tier].name} · ${TRIAL_DAYS} dias grátis, sem cartão`
           : '—'
@@ -628,9 +650,11 @@ export function ProfessionalOnboarding() {
                     {loading
                       ? 'Salvando…'
                       : current.id === 'review'
-                        ? plan?.action === 'subscribe' && plan.tier !== 'free'
-                          ? 'Continuar para o pagamento'
-                          : 'Continuar para o painel'
+                        ? paid || payPending
+                          ? 'Concluir cadastro'
+                          : plan?.action === 'subscribe' && plan.tier !== 'free'
+                            ? 'Continuar para o pagamento'
+                            : 'Continuar para o painel'
                         : current.id === 'plan' && !plan
                           ? 'Escolha um plano'
                           : current.optional && !hasValue(current.id)

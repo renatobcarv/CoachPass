@@ -333,8 +333,22 @@ export async function fetchAiQuota(token: string): Promise<AiQuota> {
   return getJson<AiQuota>(AI_GENERATE_WORKOUT_API, token)
 }
 
-export async function generateWorkoutWithAi(token: string): Promise<GenerateWorkoutResult> {
-  return postJson<GenerateWorkoutResult>(AI_GENERATE_WORKOUT_API, {}, token)
+/** Respostas do quiz "Gerar treino com IA" (validadas de novo no servidor). */
+export type AiWorkoutPreferences = {
+  goal?: 'hypertrophy' | 'weight_loss' | 'strength' | 'conditioning'
+  daysPerWeek?: number
+  sessionMinutes?: number
+  experienceLevel?: ExperienceLevel
+  equipment?: EquipmentAccess[]
+  focus?: string[]
+  avoid?: string
+}
+
+export async function generateWorkoutWithAi(
+  token: string,
+  preferences?: AiWorkoutPreferences,
+): Promise<GenerateWorkoutResult> {
+  return postJson<GenerateWorkoutResult>(AI_GENERATE_WORKOUT_API, preferences ? { preferences } : {}, token)
 }
 
 export async function generateMealPlanWithAi(token: string): Promise<{

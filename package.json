@@ -12,6 +12,7 @@
     "generate:types": "cross-env NODE_OPTIONS=--no-deprecation payload generate:types",
     "seed:master": "cross-env NODE_OPTIONS=--no-deprecation npx tsx src/scripts/ensureMasterUser.ts",
     "seed:demo": "cross-env NODE_OPTIONS=--no-deprecation npx tsx src/scripts/seedDemo.ts",
+    "seed:video": "cross-env NODE_OPTIONS=--no-deprecation npx tsx src/scripts/seedVideoStudent.ts",
     "seed:exercises": "cross-env NODE_OPTIONS=--no-deprecation npx tsx src/scripts/seedExercises.ts",
     "homologate": "cross-env NODE_OPTIONS=--no-deprecation npx tsx src/scripts/homologate.ts",
     "migrate": "cross-env NODE_OPTIONS=--no-deprecation payload migrate",

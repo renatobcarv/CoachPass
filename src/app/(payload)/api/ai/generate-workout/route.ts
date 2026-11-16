@@ -3,7 +3,7 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import { headers as getHeaders } from 'next/headers'
 
-import { createAiWorkoutForStudent } from '@/services/ai/workoutGenerator'
+import { createAiWorkoutForStudent, sanitizeWorkoutPreferences } from '@/services/ai/workoutGenerator'
 import { getAiQuota } from '@/services/ai/quota'
 
 export const dynamic = 'force-dynamic'
@@ -26,7 +26,7 @@ export async function GET() {
   return NextResponse.json(quota)
 }
 
-export async function POST() {
+export async function POST(request: Request) {
   const { payload, user } = await getAuthUser()
   if (!user) {
     return NextResponse.json({ error: 'Não autenticado' }, { status: 401 })
@@ -53,10 +53,15 @@ export async function POST() {
     )
   }
 
+  // Respostas do quiz (opcionais): só valores de listas fechadas passam
+  const body = (await request.json().catch(() => ({}))) as { preferences?: unknown }
+  const preferences = sanitizeWorkoutPreferences(body?.preferences)
+
   const result = await createAiWorkoutForStudent({
     payload,
     userId: user.id,
     profile: profile as never,
+    preferences,
   })
 
   if (!result.ok) {
