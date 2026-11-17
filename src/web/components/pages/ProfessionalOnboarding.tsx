@@ -286,6 +286,12 @@ export function ProfessionalOnboarding() {
   )
 
   const next = () => {
+    if (current.id === 'review' && !valid('review')) {
+      const missing = !data.professionalType ? 'area' : credentialError(data.credential, type) ? 'credential' : 'phone'
+      toast.error(missing === 'credential' ? credentialError(data.credential, type) : missing === 'phone' ? phoneError(data.phone, false) : 'Escolha sua área de atuação.')
+      goTo(STEPS.findIndex((s) => s.id === missing))
+      return
+    }
     if (!valid(current.id)) return
     if (current.id === 'review') void handleComplete()
     else goTo(step + 1)
@@ -546,6 +552,11 @@ export function ProfessionalOnboarding() {
         ]
         return (
           <div className="rounded-3xl border border-[var(--line-2)] bg-white/[0.025] px-5 sm:px-7 py-2">
+            {credentialError(data.credential, type) && (
+              <p role="alert" className="py-3 text-[14px] text-[#ff8a95]">
+                {credentialError(data.credential, type)} Toque na linha abaixo para preencher.
+              </p>
+            )}
             {rows.map(([label, value, id]) => (
               <button
                 key={label}
@@ -646,7 +657,7 @@ export function ProfessionalOnboarding() {
 
                 {/* Na etapa de plano os próprios cards são os botões */}
                 <div className={`mt-10 flex flex-wrap items-center gap-4 ${current.id === 'plan' ? 'hidden' : ''}`}>
-                  <CTAButton type="button" onClick={next} disabled={!valid(current.id) || loading}>
+                  <CTAButton type="button" onClick={next} disabled={loading || (current.id !== 'review' && !valid(current.id))}>
                     {loading
                       ? 'Salvando…'
                       : current.id === 'review'
