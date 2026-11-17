@@ -127,6 +127,9 @@ async function deleteUserData(req: PayloadRequest, id: string | number) {
 
 export const Users: CollectionConfig = {
   slug: 'users',
+  // O bloqueio do Payload consulta o banco fora da transação e pode esgotar
+  // o pool pequeno da Vercel durante atualizações concorrentes de perfil.
+  lockDocuments: false,
   admin: {
     useAsTitle: 'email',
   },
